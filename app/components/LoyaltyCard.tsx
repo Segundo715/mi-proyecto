@@ -273,6 +273,14 @@ export default function LoyaltyCard() {
     )
   }
 
+  // Auto-polling mientras se espera activación (cada 5 segundos)
+  useEffect(() => {
+    if (step !== 'waiting' || !customer) return
+    const interval = setInterval(refreshCard, 5000)
+    return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, customer?.id])
+
   // ── Esperando activación del empleado ─────────────────────────────────────
   if (step === 'waiting') {
     return (
@@ -288,18 +296,18 @@ export default function LoyaltyCard() {
               Hola <strong>{customer?.name}</strong>, tu registro fue recibido.
             </p>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-              El empleado del negocio te enviará un <strong>WhatsApp o SMS</strong> con
-              el link para activar tu tarjeta. Tócalo para continuar.
+              Muéstrale esta pantalla al empleado para que active tu tarjeta.
+            </div>
+            <div className="flex items-center justify-center gap-2 text-amber-600 text-sm animate-pulse">
+              <span>⏳</span>
+              <span>Esperando activación...</span>
             </div>
             <button
               onClick={refreshCard}
               className="w-full bg-amber-700 active:bg-amber-900 text-white font-bold py-3 rounded-xl"
             >
-              Ya recibí mi activación
+              Verificar ahora
             </button>
-            <p className="text-xs text-gray-400">
-              Si ya tocaste el link de activación, pulsa el botón de arriba.
-            </p>
           </div>
         </div>
       </div>

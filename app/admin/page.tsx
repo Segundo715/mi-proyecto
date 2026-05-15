@@ -97,6 +97,32 @@ export default function AdminPage() {
     setScanMode('idle')
   }
 
+  async function activateCustomer(id: string) {
+    await fetch(`/api/customers/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'confirm' }),
+    })
+    loadCustomers()
+  }
+
+  async function redeemCoffee() {
+    if (!scanned) return
+    setScanState('stamping')
+    const res = await fetch(`/api/customers/${scanned.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'redeem' }),
+    })
+    if (res.ok) {
+      setScanned(await res.json())
+      setScanState('done')
+      loadCustomers()
+    } else {
+      setScanState('found')
+    }
+  }
+
   async function stampVisit() {
     if (!scanned) return
     setScanState('stamping')
@@ -183,9 +209,13 @@ export default function AdminPage() {
           ✅ Visita registrada — {scanned.visits}/5 sellos
         </div>
       ) : scanned.visits >= 5 ? (
-        <div className="bg-yellow-100 text-yellow-800 rounded-xl p-4 text-center font-bold">
-          🎉 ¡Este cliente tiene un café gratis pendiente!
-        </div>
+        <button
+          onClick={redeemCoffee}
+          disabled={scanState === 'stamping'}
+          className="w-full bg-yellow-400 active:bg-yellow-500 text-amber-900 font-bold py-4 rounded-xl text-base disabled:opacity-60"
+        >
+          {scanState === 'stamping' ? 'Canjeando...' : '🎉 Canjear café gratis y reiniciar'}
+        </button>
       ) : (
         <button
           onClick={stampVisit}
@@ -352,21 +382,29 @@ export default function AdminPage() {
                       </div>
                       <span className="text-xs bg-red-100 text-red-600 font-semibold px-2 py-1 rounded-full">Pendiente</span>
                     </div>
-                    <div className="flex gap-2">
-                      <a
-                        href={activationWALink(c)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 bg-green-500 active:bg-green-700 text-white font-bold py-2 rounded-xl text-sm text-center"
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => activateCustomer(c.id)}
+                        className="w-full bg-amber-600 active:bg-amber-800 text-white font-bold py-2 rounded-xl text-sm"
                       >
-                        💬 WhatsApp
-                      </a>
-                      <a
-                        href={activationSMSLink(c)}
-                        className="flex-1 bg-blue-500 active:bg-blue-700 text-white font-bold py-2 rounded-xl text-sm text-center"
-                      >
-                        ✉️ SMS
-                      </a>
+                        ✅ Activar tarjeta ahora
+                      </button>
+                      <div className="flex gap-2">
+                        <a
+                          href={activationWALink(c)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 bg-green-500 active:bg-green-700 text-white font-bold py-2 rounded-xl text-sm text-center"
+                        >
+                          💬 WhatsApp
+                        </a>
+                        <a
+                          href={activationSMSLink(c)}
+                          className="flex-1 bg-blue-500 active:bg-blue-700 text-white font-bold py-2 rounded-xl text-sm text-center"
+                        >
+                          ✉️ SMS
+                        </a>
+                      </div>
                     </div>
                   </div>
                 ))}
