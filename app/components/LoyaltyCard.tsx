@@ -70,6 +70,14 @@ export default function LoyaltyCard() {
     return () => clearTimeout(fallback)
   }, [])
 
+  // Auto-polling mientras se espera activación (cada 5 segundos)
+  useEffect(() => {
+    if (step !== 'waiting' || !customer) return
+    const interval = setInterval(refreshCard, 5000)
+    return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, customer?.id])
+
   function validate() {
     const e: { name?: string; phone?: string } = {}
     if (!name.trim()) e.name = 'El nombre es obligatorio'
@@ -272,14 +280,6 @@ export default function LoyaltyCard() {
       </div>
     )
   }
-
-  // Auto-polling mientras se espera activación (cada 5 segundos)
-  useEffect(() => {
-    if (step !== 'waiting' || !customer) return
-    const interval = setInterval(refreshCard, 5000)
-    return () => clearInterval(interval)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, customer?.id])
 
   // ── Esperando activación del empleado ─────────────────────────────────────
   if (step === 'waiting') {
