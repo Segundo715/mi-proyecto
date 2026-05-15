@@ -29,6 +29,7 @@ export default function LoyaltyCard() {
   const [phone, setPhone] = useState('')
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({})
   const [submitting, setSubmitting] = useState(false)
+  const [notified, setNotified] = useState(false)
 
   useEffect(() => {
     // Fallback: si algo falla, mostrar el formulario en 4 segundos
@@ -115,6 +116,17 @@ export default function LoyaltyCard() {
         setStep('card')
       }
     }
+  }
+
+  async function notifyEmployee() {
+    if (!customer) return
+    await fetch(`/api/customers/${customer.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'checkin' }),
+    })
+    setNotified(true)
+    setTimeout(() => setNotified(false), 4000)
   }
 
   const earned = (customer?.visits ?? 0) >= STAMPS
@@ -291,6 +303,17 @@ export default function LoyaltyCard() {
             {STAMPS - (customer?.visits ?? 0) === 1 ? 'visita' : 'visitas'} para tu café gratis
           </p>
         )}
+
+        <button
+          onClick={notifyEmployee}
+          className={`w-full font-bold py-3 rounded-xl transition-colors ${
+            notified
+              ? 'bg-green-500 text-white'
+              : 'bg-amber-700 active:bg-amber-900 text-white'
+          }`}
+        >
+          {notified ? '✅ Empleado notificado' : '🔔 Avisar al empleado'}
+        </button>
 
         <button onClick={refreshCard} className="w-full text-amber-700 text-sm underline py-1">
           Actualizar tarjeta

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getCustomer, confirmCustomer, addStamp, redeemCoffee } from '@/lib/db'
+import { getCustomer, confirmCustomer, addStamp, redeemCoffee, requestCheckIn, deleteCustomer } from '@/lib/db'
 
 export async function GET(
   _req: NextRequest,
@@ -36,5 +36,20 @@ export async function PATCH(
     return Response.json(c)
   }
 
+  if (action === 'checkin') {
+    const c = requestCheckIn(id)
+    if (!c) return Response.json({ error: 'No encontrado' }, { status: 404 })
+    return Response.json(c)
+  }
+
   return Response.json({ error: 'Acción inválida' }, { status: 400 })
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  ctx: RouteContext<'/api/customers/[id]'>
+) {
+  const { id } = await ctx.params
+  const ok = deleteCustomer(id)
+  return ok ? Response.json({ ok: true }) : Response.json({ error: 'No encontrado' }, { status: 404 })
 }

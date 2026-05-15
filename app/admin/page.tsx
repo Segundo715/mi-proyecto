@@ -20,6 +20,7 @@ interface Customer {
   confirmed: boolean
   registeredAt: string
   stamps: Stamp[]
+  requestedAt?: string
 }
 
 type ScanMode = 'idle' | 'camera' | 'phone'
@@ -49,6 +50,9 @@ export default function AdminPage() {
   useEffect(() => {
     setOrigin(window.location.origin)
     loadCustomers()
+    const poll = setInterval(loadCustomers, 8000)
+    return () => clearInterval(poll)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadCustomers() {
@@ -95,6 +99,13 @@ export default function AdminPage() {
   function handleCameraError() {
     setScanError('La cámara no pudo abrirse. Usa la búsqueda por teléfono.')
     setScanMode('idle')
+  }
+
+  async function deleteCustomerFn(id: string) {
+    if (!confirm('¿Eliminar este cliente? Esta acción no se puede deshacer.')) return
+    await fetch(`/api/customers/${id}`, { method: 'DELETE' })
+    loadCustomers()
+    if (scanned?.id === id) resetScan()
   }
 
   async function activateCustomer(id: string) {
@@ -166,6 +177,10 @@ export default function AdminPage() {
 
   const pending = customers.filter(c => !c.confirmed)
   const confirmed = customers.filter(c => c.confirmed)
+  const checkIns = customers.filter(c => {
+    if (!c.requestedAt) return false
+    return Date.now() - new Date(c.requestedAt).getTime() < 3 * 60 * 1000
+  })
   const sortedConfirmed = [...confirmed].sort((a, b) => {
     const aT = a.stamps.at(-1)?.timestamp ?? a.registeredAt
     const bT = b.stamps.at(-1)?.timestamp ?? b.registeredAt
@@ -262,6 +277,17 @@ export default function AdminPage() {
         {/* ────── TAB: SELLAR ────── */}
         {tab === 'scan' && (
           <>
+            {/* Notificaciones de check-in */}
+            {checkIns.map(c => (
+              <div key={c.id} className="bg-green-500 text-white rounded-2xl p-4 flex items-center gap-3 shadow-lg animate-pulse">
+                <span className="text-2xl">🔔</span>
+                <div>
+                  <p className="font-bold">{c.name} está en el mostrador</p>
+                  <p className="text-xs text-green-100">{c.phone} · {c.visits}/5 sellos</p>
+                </div>
+              </div>
+            ))}
+
             {/* QR del negocio */}
             <div className="bg-white rounded-2xl shadow p-5 text-center">
               <h2 className="font-bold text-amber-900 text-base mb-1">QR del negocio</h2>
@@ -454,6 +480,12 @@ export default function AdminPage() {
                     {lastStamp && <p>Último sello: {fmt(lastStamp.timestamp)}</p>}
                     {c.stamps.length > 0 && <p>{c.stamps.length} sello{c.stamps.length !== 1 ? 's' : ''} en total</p>}
                   </div>
+                  <button
+                    onClick={() => deleteCustomerFn(c.id)}
+                    className="mt-3 w-full text-red-500 border border-red-200 rounded-xl py-1.5 text-sm font-medium active:bg-red-50"
+                  >
+                    🗑 Eliminar cliente
+                  </button>
                 </div>
               )
             })}

@@ -15,6 +15,7 @@ export interface Customer {
   confirmed: boolean
   registeredAt: string
   stamps: Stamp[]
+  requestedAt?: string
 }
 
 const DB_PATH = join(process.cwd(), 'data', 'customers.json')
@@ -90,4 +91,22 @@ export function redeemCoffee(id: string): Customer | null {
   rows[i].visits = 0
   save(rows)
   return rows[i]
+}
+
+export function requestCheckIn(id: string): Customer | null {
+  const rows = load()
+  const i = rows.findIndex(c => c.id === id)
+  if (i === -1) return null
+  rows[i].requestedAt = new Date().toISOString()
+  save(rows)
+  return rows[i]
+}
+
+export function deleteCustomer(id: string): boolean {
+  const rows = load()
+  const i = rows.findIndex(c => c.id === id)
+  if (i === -1) return false
+  rows.splice(i, 1)
+  save(rows)
+  return true
 }
