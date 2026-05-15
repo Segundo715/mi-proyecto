@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import QRCode from 'react-qr-code'
 
 const STAMPS = 5
-const BUSINESS_WA = '4471078185' // Número de WhatsApp del negocio (con código de país, sin +)
 
 interface Stamp {
   timestamp: string
@@ -21,16 +20,14 @@ interface Customer {
   stamps: Stamp[]
 }
 
-type Step = 'loading' | 'form' | 'confirm' | 'waiting' | 'card'
+type Step = 'loading' | 'form' | 'waiting' | 'card'
 
 export default function LoyaltyCard() {
   const [step, setStep] = useState<Step>('loading')
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
-  const [method, setMethod] = useState<'whatsapp' | 'sms' | null>(null)
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({})
-  const [messageSent, setMessageSent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -78,35 +75,14 @@ export default function LoyaltyCard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, customer?.id])
 
-  function validate() {
+  async function completeRegistration() {
     const e: { name?: string; phone?: string } = {}
     if (!name.trim()) e.name = 'El nombre es obligatorio'
     if (!phone.trim()) e.phone = 'El teléfono es obligatorio'
     else if (!/^\+?[\d\s\-()]{8,}$/.test(phone.trim()))
       e.phone = 'Número inválido (mín. 8 dígitos)'
     setErrors(e)
-    return Object.keys(e).length === 0
-  }
-
-  function chooseMethod(m: 'whatsapp' | 'sms') {
-    if (!validate()) return
-    setMethod(m)
-    setStep('confirm')
-  }
-
-  function openConfirmation() {
-    const msg = encodeURIComponent(
-      `¡Hola! Quiero registrarme en la tarjeta de fidelización ☕\nNombre: ${name}\nTeléfono: ${phone}`
-    )
-    if (method === 'whatsapp') {
-      window.open(`https://wa.me/${BUSINESS_WA}?text=${msg}`, '_blank')
-    } else {
-      window.open(`sms:?body=${msg}`, '_blank')
-    }
-    setMessageSent(true)
-  }
-
-  async function completeRegistration() {
+    if (Object.keys(e).length > 0) return
     setSubmitting(true)
     try {
       const res = await fetch('/api/customers', {
@@ -203,77 +179,15 @@ export default function LoyaltyCard() {
             </div>
 
             <p className="text-xs text-gray-500 text-center pt-1">
-              El empleado del negocio te enviará un WhatsApp o SMS para activar tu tarjeta.
+              El empleado activará tu tarjeta desde el panel.
             </p>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => chooseMethod('whatsapp')}
-                className="w-full bg-green-500 active:bg-green-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2"
-              >
-                💬 Recibir activación por WhatsApp
-              </button>
-              <button
-                onClick={() => chooseMethod('sms')}
-                className="w-full bg-blue-500 active:bg-blue-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2"
-              >
-                ✉️ Recibir activación por SMS
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // ── Confirmar datos antes de enviar (no se puede omitir) ──────────────────
-  if (step === 'confirm') {
-    return (
-      <div className="fixed inset-0 z-50 bg-amber-950 flex items-center justify-center p-5">
-        <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
-          <div className="bg-amber-800 px-6 py-5 text-center">
-            <p className="text-5xl mb-1">{method === 'whatsapp' ? '💬' : '✉️'}</p>
-            <h2 className="text-white text-xl font-bold">Confirma tus datos</h2>
-          </div>
-
-          <div className="px-6 py-6 space-y-4">
-            <div className="bg-amber-50 rounded-xl p-4 space-y-1 text-sm">
-              <p><span className="font-semibold text-amber-900">Nombre:</span> {name}</p>
-              <p><span className="font-semibold text-amber-900">Teléfono:</span> {phone}</p>
-              <p>
-                <span className="font-semibold text-amber-900">Activación:</span>{' '}
-                {method === 'whatsapp' ? 'WhatsApp' : 'SMS'}
-              </p>
-            </div>
-
-            <p className="text-gray-600 text-sm text-center">
-              El empleado te mandará el link de activación a este número. ¿Todo correcto?
-            </p>
-
-            {!messageSent ? (
-              <button
-                onClick={openConfirmation}
-                className={`w-full font-bold py-4 rounded-xl text-white ${
-                  method === 'whatsapp' ? 'bg-green-500 active:bg-green-700' : 'bg-blue-500 active:bg-blue-700'
-                }`}
-              >
-                {method === 'whatsapp' ? '📱 Avisar al empleado por WhatsApp' : '✉️ Avisar al empleado por SMS'}
-              </button>
-            ) : (
-              <button
-                onClick={completeRegistration}
-                disabled={submitting}
-                className="w-full bg-amber-600 active:bg-amber-800 text-white font-bold py-4 rounded-xl disabled:opacity-60"
-              >
-                {submitting ? 'Registrando...' : '✅ Listo, ya avisé'}
-              </button>
-            )}
 
             <button
-              onClick={() => { setStep('form'); setMessageSent(false) }}
-              className="w-full text-sm text-amber-700 underline py-1"
+              onClick={completeRegistration}
+              disabled={submitting}
+              className="w-full bg-amber-700 active:bg-amber-900 text-white font-bold py-3 rounded-xl disabled:opacity-60"
             >
-              ← Corregir datos
+              {submitting ? 'Registrando...' : '☕ Registrarme'}
             </button>
           </div>
         </div>
