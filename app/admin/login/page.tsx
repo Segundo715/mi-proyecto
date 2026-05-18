@@ -9,7 +9,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!name.trim() || !password) { setError('Completa todos los campos'); return }
     setError('')
@@ -47,6 +47,7 @@ export default function LoginPage() {
           {(['login', 'register'] as const).map(t => (
             <button
               key={t}
+              type="button"
               onClick={() => { setTab(t); setError('') }}
               className={`flex-1 py-3 text-sm font-semibold transition-colors ${
                 tab === t ? 'text-amber-800 border-b-2 border-amber-700' : 'text-gray-400'
