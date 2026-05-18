@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { QRScanner } from '../components/QRScanner'
+import AdminNav from '../components/AdminNav'
 
 // Cargado sólo en cliente para evitar problemas de renderizado en móvil
 const QRCode = dynamic(() => import('react-qr-code'), { ssr: false })
@@ -249,6 +250,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <AdminNav />
       {/* Header */}
       <div className="bg-amber-900 text-white sticky top-0 z-20 shadow">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">

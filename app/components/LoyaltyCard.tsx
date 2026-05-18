@@ -243,7 +243,15 @@ export default function LoyaltyCard() {
   // ── Tarjeta de fidelización con QR ────────────────────────────────────────
   return (
     <div className="min-h-screen bg-amber-50 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-4">
+      {/* Top nav */}
+      <div className="fixed top-0 left-0 right-0 z-10 bg-amber-900 text-white">
+        <div className="max-w-sm mx-auto px-4 py-2 flex items-center justify-end">
+          <a href="/menu" className="text-sm bg-amber-800 hover:bg-amber-700 px-3 py-1 rounded-lg font-medium">
+            🍽 Ver menú
+          </a>
+        </div>
+      </div>
+      <div className="w-full max-w-sm space-y-4 pt-10">
         <div className="bg-amber-900 rounded-3xl shadow-2xl p-6 text-white">
           <div className="flex justify-between items-start mb-1">
             <div>
