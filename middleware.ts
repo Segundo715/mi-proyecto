@@ -2,19 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 
 async function verifySession(session: string | undefined): Promise<boolean> {
   if (!session) return false
+  const dot = session.lastIndexOf('.')
+  if (dot === -1) return false
+  const adminId = session.slice(0, dot)
+  const sig = session.slice(dot + 1)
+  if (!adminId) return false
   const secret = process.env.ADMIN_SECRET ?? 'dev-secret'
-  const password = process.env.ADMIN_PASSWORD ?? 'admin123'
   const enc = new TextEncoder()
   const key = await crypto.subtle.importKey(
     'raw', enc.encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false, ['sign']
   )
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(password))
-  const expected = Array.from(new Uint8Array(sig))
+  const computed = await crypto.subtle.sign('HMAC', key, enc.encode(adminId))
+  const expected = Array.from(new Uint8Array(computed))
     .map(b => b.toString(16).padStart(2, '0'))
     .join('')
-  return session === expected
+  return sig === expected
 }
 
 export async function middleware(req: NextRequest) {

@@ -1,16 +1,21 @@
 import { createHmac } from 'node:crypto'
 
 const SECRET = process.env.ADMIN_SECRET ?? 'dev-secret'
-const PASSWORD = process.env.ADMIN_PASSWORD ?? 'admin123'
 
-export function checkPassword(pwd: string): boolean {
-  return pwd === PASSWORD
+function hmac(data: string): string {
+  return createHmac('sha256', SECRET).update(data).digest('hex')
 }
 
-export function createSession(): string {
-  return createHmac('sha256', SECRET).update(PASSWORD).digest('hex')
+export function createSession(adminId: string): string {
+  return `${adminId}.${hmac(adminId)}`
 }
 
-export function verifySession(session?: string): boolean {
-  return !!session && session === createSession()
+export function verifySession(session?: string): string | null {
+  if (!session) return null
+  const dot = session.lastIndexOf('.')
+  if (dot === -1) return null
+  const adminId = session.slice(0, dot)
+  const sig = session.slice(dot + 1)
+  if (!adminId || hmac(adminId) !== sig) return null
+  return adminId
 }

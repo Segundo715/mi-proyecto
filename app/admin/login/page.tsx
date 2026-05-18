@@ -5,24 +5,27 @@ import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const router = useRouter()
+  const [tab, setTab] = useState<'login' | 'register'>('login')
+  const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!name.trim() || !password) { setError('Completa todos los campos'); return }
     setError('')
     setLoading(true)
     try {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ action: tab, name: name.trim(), password }),
       })
+      const data = await res.json()
       if (res.ok) {
         router.replace('/admin')
       } else {
-        const data = await res.json()
         setError(data.error ?? 'Error al iniciar sesión')
       }
     } catch {
@@ -41,19 +44,43 @@ export default function LoginPage() {
           <p className="text-amber-200 text-sm mt-1">Acceso exclusivo para staff</p>
         </div>
 
+        {/* Tabs */}
+        <div className="flex border-b border-amber-100">
+          {(['login', 'register'] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => { setTab(t); setError('') }}
+              className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+                tab === t ? 'text-amber-800 border-b-2 border-amber-700' : 'text-gray-400'
+              }`}
+            >
+              {t === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
+            </button>
+          ))}
+        </div>
+
         <form onSubmit={handleSubmit} className="px-6 py-6 space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-amber-900 mb-1">
-              Contraseña
-            </label>
+            <label className="block text-sm font-semibold text-amber-900 mb-1">Nombre</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Ej. Carlos"
+              autoComplete="username"
+              className="w-full border-2 border-amber-200 rounded-xl px-4 py-3 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-amber-500"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-amber-900 mb-1">Contraseña</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Ingresa la contraseña"
-              autoComplete="current-password"
+              placeholder="Contraseña"
+              autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
               className="w-full border-2 border-amber-200 rounded-xl px-4 py-3 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-amber-500"
-              autoFocus
             />
           </div>
 
@@ -68,7 +95,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-amber-700 active:bg-amber-900 text-white font-bold py-3 rounded-xl disabled:opacity-60"
           >
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? 'Cargando...' : tab === 'login' ? 'Entrar' : 'Crear cuenta'}
           </button>
         </form>
       </div>

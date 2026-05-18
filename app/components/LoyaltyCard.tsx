@@ -1,14 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import QRCode from 'react-qr-code'
+import dynamic from 'next/dynamic'
+
+const QRCode = dynamic(() => import('react-qr-code'), { ssr: false })
 
 const STAMPS = 5
-
-interface Stamp {
-  timestamp: string
-  visitsAfter: number
-}
 
 interface Customer {
   id: string
@@ -17,45 +14,31 @@ interface Customer {
   visits: number
   confirmed: boolean
   registeredAt: string
-  stamps: Stamp[]
 }
 
-type Step = 'loading' | 'form' | 'waiting' | 'card'
+type Step = 'loading' | 'form' | 'card'
 
 export default function LoyaltyCard() {
   const [step, setStep] = useState<Step>('loading')
   const [customer, setCustomer] = useState<Customer | null>(null)
+  const [tab, setTab] = useState<'login' | 'register'>('login')
   const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [errors, setErrors] = useState<{ name?: string; phone?: string }>({})
+  const [password, setPassword] = useState('')
+  const [formError, setFormError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [notified, setNotified] = useState(false)
 
   useEffect(() => {
-    // Fallback: si algo falla, mostrar el formulario en 4 segundos
     const fallback = setTimeout(() => setStep(s => s === 'loading' ? 'form' : s), 4000)
 
     ;(async () => {
       try {
         const confirmedId = localStorage.getItem('loyalty_id')
-        const pendingId = localStorage.getItem('loyalty_pending_id')
-
         if (confirmedId) {
           const r = await fetch(`/api/customers/${confirmedId}`)
           const data: Customer | null = r.ok ? await r.json() : null
           if (data?.confirmed) { setCustomer(data); setStep('card') }
           else { localStorage.removeItem('loyalty_id'); setStep('form') }
-        } else if (pendingId) {
-          const r = await fetch(`/api/customers/${pendingId}`)
-          const data: Customer | null = r.ok ? await r.json() : null
-          if (!data) { localStorage.removeItem('loyalty_pending_id'); setStep('form') }
-          else if (data.confirmed) {
-            localStorage.removeItem('loyalty_pending_id')
-            localStorage.setItem('loyalty_id', data.id)
-            setCustomer(data); setStep('card')
-          } else {
-            setCustomer(data); setStep('waiting')
-          }
         } else {
           setStep('form')
         }
@@ -68,37 +51,23 @@ export default function LoyaltyCard() {
     return () => clearTimeout(fallback)
   }, [])
 
-  // Auto-polling mientras se espera activación (cada 5 segundos)
-  useEffect(() => {
-    if (step !== 'waiting' || !customer) return
-    const interval = setInterval(refreshCard, 5000)
-    return () => clearInterval(interval)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, customer?.id])
-
-  async function completeRegistration() {
-    const e: { name?: string; phone?: string } = {}
-    if (!name.trim()) e.name = 'El nombre es obligatorio'
-    if (!phone.trim()) e.phone = 'El teléfono es obligatorio'
-    else if (!/^\+?[\d\s\-()]{8,}$/.test(phone.trim()))
-      e.phone = 'Número inválido (mín. 8 dígitos)'
-    setErrors(e)
-    if (Object.keys(e).length > 0) return
+  async function handleAuth() {
+    if (!name.trim() || !password) { setFormError('Completa todos los campos'); return }
+    setFormError('')
     setSubmitting(true)
     try {
-      const res = await fetch('/api/customers', {
+      const res = await fetch('/api/customer-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim() }),
+        body: JSON.stringify({ action: tab, name: name.trim(), password }),
       })
-      if (!res.ok) throw new Error()
-      const c: Customer = await res.json()
-      // Guardamos como pendiente; el empleado manda el link de activación
-      localStorage.setItem('loyalty_pending_id', c.id)
+      const c = await res.json()
+      if (!res.ok) { setFormError(c.error ?? 'Error'); return }
+      localStorage.setItem('loyalty_id', c.id)
       setCustomer(c)
-      setStep('waiting')
+      setStep('card')
     } catch {
-      alert('Error al registrar. Intenta de nuevo.')
+      setFormError('Error de conexión. Intenta de nuevo.')
     } finally {
       setSubmitting(false)
     }
@@ -110,11 +79,6 @@ export default function LoyaltyCard() {
     if (res.ok) {
       const data: Customer = await res.json()
       setCustomer(data)
-      if (data.confirmed && step === 'waiting') {
-        localStorage.removeItem('loyalty_pending_id')
-        localStorage.setItem('loyalty_id', data.id)
-        setStep('card')
-      }
     }
   }
 
@@ -127,6 +91,14 @@ export default function LoyaltyCard() {
     })
     setNotified(true)
     setTimeout(() => setNotified(false), 4000)
+  }
+
+  function handleLogout() {
+    localStorage.removeItem('loyalty_id')
+    setCustomer(null)
+    setName('')
+    setPassword('')
+    setStep('form')
   }
 
   const earned = (customer?.visits ?? 0) >= STAMPS
@@ -146,93 +118,75 @@ export default function LoyaltyCard() {
     )
   }
 
-  // ── Formulario de registro (no se puede omitir) ───────────────────────────
+  // ── Login / Registro ───────────────────────────────────────────────────────
   if (step === 'form') {
     return (
       <div className="fixed inset-0 z-50 bg-amber-950 flex items-center justify-center p-5">
         <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
           <div className="bg-amber-800 px-6 py-5 text-center">
             <p className="text-5xl mb-1">☕</p>
-            <h1 className="text-white text-xl font-bold">¡Bienvenido!</h1>
+            <h1 className="text-white text-xl font-bold">Tarjeta de fidelización</h1>
             <p className="text-amber-200 text-sm mt-1">
-              Regístrate y gana un café gratis por cada 5 visitas
+              5 visitas = 1 café gratis
             </p>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex border-b border-amber-100">
+            {(['login', 'register'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => { setTab(t); setFormError('') }}
+                className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+                  tab === t ? 'text-amber-800 border-b-2 border-amber-700' : 'text-gray-400'
+                }`}
+              >
+                {t === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
+              </button>
+            ))}
           </div>
 
           <div className="px-6 py-6 space-y-4">
             <div>
               <label className="block text-sm font-semibold text-amber-900 mb-1">
-                Nombre completo <span className="text-red-500">*</span>
+                Nombre
               </label>
               <input
                 type="text"
                 value={name}
-                onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: undefined })) }}
+                onChange={e => { setName(e.target.value); setFormError('') }}
                 placeholder="Ej. María González"
-                autoComplete="name"
+                autoComplete="username"
                 className="w-full border-2 border-amber-200 rounded-xl px-4 py-3 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-amber-500"
               />
-              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-amber-900 mb-1">
-                Número de teléfono <span className="text-red-500">*</span>
+                Contraseña
               </label>
               <input
-                type="tel"
-                value={phone}
-                onChange={e => { setPhone(e.target.value); setErrors(p => ({ ...p, phone: undefined })) }}
-                placeholder="Ej. +52 55 1234 5678"
-                autoComplete="tel"
+                type="password"
+                value={password}
+                onChange={e => { setPassword(e.target.value); setFormError('') }}
+                placeholder="Contraseña"
+                autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
                 className="w-full border-2 border-amber-200 rounded-xl px-4 py-3 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-amber-500"
               />
-              {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
             </div>
 
-            <p className="text-xs text-gray-500 text-center pt-1">
-              El empleado activará tu tarjeta desde el panel.
-            </p>
+            {formError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+                {formError}
+              </div>
+            )}
 
             <button
-              onClick={completeRegistration}
+              onClick={handleAuth}
               disabled={submitting}
               className="w-full bg-amber-700 active:bg-amber-900 text-white font-bold py-3 rounded-xl disabled:opacity-60"
             >
-              {submitting ? 'Registrando...' : '☕ Registrarme'}
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // ── Esperando activación del empleado ─────────────────────────────────────
-  if (step === 'waiting') {
-    return (
-      <div className="fixed inset-0 bg-amber-950 flex items-center justify-center p-5">
-        <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
-          <div className="bg-amber-800 px-6 py-5 text-center">
-            <p className="text-5xl mb-1">⏳</p>
-            <h2 className="text-white text-xl font-bold">Activación pendiente</h2>
-          </div>
-
-          <div className="px-6 py-6 text-center space-y-4">
-            <p className="text-gray-700 text-sm">
-              Hola <strong>{customer?.name}</strong>, tu registro fue recibido.
-            </p>
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-              Muéstrale esta pantalla al empleado para que active tu tarjeta.
-            </div>
-            <div className="flex items-center justify-center gap-2 text-amber-600 text-sm animate-pulse">
-              <span>⏳</span>
-              <span>Esperando activación...</span>
-            </div>
-            <button
-              onClick={refreshCard}
-              className="w-full bg-amber-700 active:bg-amber-900 text-white font-bold py-3 rounded-xl"
-            >
-              Verificar ahora
+              {submitting ? 'Cargando...' : tab === 'login' ? '☕ Entrar' : '☕ Crear cuenta'}
             </button>
           </div>
         </div>
@@ -245,7 +199,10 @@ export default function LoyaltyCard() {
     <div className="min-h-screen bg-amber-50 flex flex-col items-center justify-center p-4">
       {/* Top nav */}
       <div className="fixed top-0 left-0 right-0 z-10 bg-amber-900 text-white">
-        <div className="max-w-sm mx-auto px-4 py-2 flex items-center justify-end">
+        <div className="max-w-sm mx-auto px-4 py-2 flex items-center justify-between">
+          <button onClick={handleLogout} className="text-sm text-amber-300 underline">
+            Salir
+          </button>
           <a href="/menu" className="text-sm bg-amber-800 hover:bg-amber-700 px-3 py-1 rounded-lg font-medium">
             🍽 Ver menú
           </a>
@@ -256,7 +213,6 @@ export default function LoyaltyCard() {
           <div className="flex justify-between items-start mb-1">
             <div>
               <h2 className="font-bold text-lg">¡Hola, {customer?.name}!</h2>
-              <p className="text-amber-300 text-xs">{customer?.phone}</p>
             </div>
             <span className="text-4xl">☕</span>
           </div>

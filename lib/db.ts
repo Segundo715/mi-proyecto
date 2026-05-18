@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { randomUUID, createHash } from 'node:crypto'
 
 export interface Stamp {
   timestamp: string
@@ -16,6 +16,11 @@ export interface Customer {
   registeredAt: string
   stamps: Stamp[]
   requestedAt?: string
+  passwordHash?: string
+}
+
+function hashPassword(name: string, password: string): string {
+  return createHash('sha256').update(`customer:${name.toLowerCase()}:${password}`).digest('hex')
 }
 
 const DB_PATH = join(process.cwd(), 'data', 'customers.json')
@@ -109,4 +114,29 @@ export function deleteCustomer(id: string): boolean {
   rows.splice(i, 1)
   save(rows)
   return true
+}
+
+export function createCustomerAccount(name: string, password: string): Customer | null {
+  const rows = load()
+  if (rows.find(c => c.name.toLowerCase() === name.toLowerCase() && c.passwordHash))
+    return null
+  const customer: Customer = {
+    id: randomUUID(),
+    name: name.trim(),
+    phone: '',
+    visits: 0,
+    confirmed: true,
+    registeredAt: new Date().toISOString(),
+    stamps: [],
+    passwordHash: hashPassword(name, password),
+  }
+  rows.push(customer)
+  save(rows)
+  return customer
+}
+
+export function authenticateCustomer(name: string, password: string): Customer | null {
+  const rows = load()
+  const hash = hashPassword(name, password)
+  return rows.find(c => c.name.toLowerCase() === name.toLowerCase() && c.passwordHash === hash) ?? null
 }
