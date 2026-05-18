@@ -1,10 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [tab, setTab] = useState<'login' | 'register'>('login')
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
@@ -24,7 +22,7 @@ export default function LoginPage() {
       })
       const data = await res.json()
       if (res.ok) {
-        router.replace('/admin')
+        window.location.href = '/admin'
       } else {
         setError(data.error ?? 'Error al iniciar sesión')
       }

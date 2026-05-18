@@ -29,7 +29,10 @@ export default function LoyaltyCard() {
   const [notified, setNotified] = useState(false)
 
   useEffect(() => {
-    const fallback = setTimeout(() => setStep(s => s === 'loading' ? 'form' : s), 4000)
+    // Limpiar datos del flujo anterior (loyalty_pending_id ya no se usa)
+    localStorage.removeItem('loyalty_pending_id')
+
+    const fallback = setTimeout(() => setStep(s => s === 'loading' ? 'form' : s), 1500)
 
     ;(async () => {
       try {
