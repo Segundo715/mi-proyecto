@@ -134,16 +134,18 @@ export default function AdminReviewsPage() {
               </div>
               <p className="text-sm text-gray-700 mb-3">{review.comment}</p>
               <div className="flex gap-2">
-                <button
-                  onClick={() => togglePublish(review)}
-                  className={`flex-1 py-1.5 rounded-xl text-sm font-medium border-2 ${
-                    review.published
-                      ? 'border-orange-200 text-orange-600 hover:bg-orange-50'
-                      : 'border-green-200 text-green-600 hover:bg-green-50'
-                  }`}
-                >
-                  {review.published ? 'Despublicar' : 'Publicar'}
-                </button>
+                {!review.bad && (
+                  <button
+                    onClick={() => togglePublish(review)}
+                    className={`flex-1 py-1.5 rounded-xl text-sm font-medium border-2 ${
+                      review.published
+                        ? 'border-orange-200 text-orange-600 hover:bg-orange-50'
+                        : 'border-green-200 text-green-600 hover:bg-green-50'
+                    }`}
+                  >
+                    {review.published ? 'Despublicar' : 'Publicar'}
+                  </button>
+                )}
                 <button
                   onClick={() => deleteReview(review.id)}
                   className="flex-1 py-1.5 rounded-xl text-sm font-medium border-2 border-red-200 text-red-500 hover:bg-red-50"
