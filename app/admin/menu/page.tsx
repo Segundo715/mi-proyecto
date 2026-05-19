@@ -31,6 +31,53 @@ const EMPTY_FORM = {
   available: true,
 }
 
+const INPUT = 'w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-amber-500'
+
+async function uploadImage(file: File, path: 'menu'): Promise<string | null> {
+  const fd = new FormData()
+  fd.append('file', file)
+  const res = await fetch(`/api/${path}/upload`, { method: 'POST', body: fd })
+  if (!res.ok) return null
+  const { url } = await res.json()
+  return url
+}
+
+function ImagePicker({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const [uploading, setUploading] = useState(false)
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const url = await uploadImage(file, 'menu')
+      if (url) onChange(url)
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  return (
+    <div>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleFile}
+        className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-amber-500 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-800"
+      />
+      {uploading && <p className="text-xs text-amber-600 mt-1">Subiendo imagen...</p>}
+      {value && (
+        <div className="mt-2 flex items-center gap-2">
+          <img src={value} alt="preview" className="h-16 rounded-xl object-cover" />
+          <button type="button" onClick={() => onChange('')}
+            className="text-xs text-red-500 underline">Quitar</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AdminMenuPage() {
   const [items, setItems] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -72,7 +119,7 @@ export default function AdminMenuPage() {
           description: form.description.trim(),
           price: parseFloat(form.price),
           category: form.category.trim(),
-          imageUrl: form.imageUrl.trim() || undefined,
+          imageUrl: form.imageUrl || undefined,
           available: form.available,
         }),
       })
@@ -107,7 +154,7 @@ export default function AdminMenuPage() {
           description: editState.description.trim(),
           price: parseFloat(editState.price),
           category: editState.category.trim(),
-          imageUrl: editState.imageUrl.trim() || undefined,
+          imageUrl: editState.imageUrl || undefined,
         }),
       })
       if (res.ok) {
@@ -134,7 +181,6 @@ export default function AdminMenuPage() {
     fetchItems()
   }
 
-  // Group items by category
   const grouped: Record<string, MenuItem[]> = {}
   for (const item of items) {
     if (!grouped[item.category]) grouped[item.category] = []
@@ -161,75 +207,45 @@ export default function AdminMenuPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-amber-900 mb-1">Nombre *</label>
-              <input
-                type="text"
-                value={form.name}
+              <input type="text" value={form.name}
                 onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                placeholder="Ej. Café Americano"
-                className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500"
-              />
+                placeholder="Ej. Café Americano" className={INPUT} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-amber-900 mb-1">Categoría *</label>
-              <input
-                type="text"
-                value={form.category}
+              <input type="text" value={form.category}
                 onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
-                placeholder="Ej. Bebidas calientes"
-                className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500"
-              />
+                placeholder="Ej. Bebidas calientes" className={INPUT} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-amber-900 mb-1">Precio *</label>
-              <input
-                type="number"
-                value={form.price}
+              <input type="number" value={form.price}
                 onChange={e => setForm(p => ({ ...p, price: e.target.value }))}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-                className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500"
-              />
+                placeholder="0.00" min="0" step="0.01" className={INPUT} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-amber-900 mb-1">URL de imagen (opcional)</label>
-              <input
-                type="url"
-                value={form.imageUrl}
-                onChange={e => setForm(p => ({ ...p, imageUrl: e.target.value }))}
-                placeholder="https://..."
-                className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500"
-              />
+              <label className="block text-xs font-semibold text-amber-900 mb-1">Imagen (opcional)</label>
+              <ImagePicker value={form.imageUrl} onChange={url => setForm(p => ({ ...p, imageUrl: url }))} />
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-amber-900 mb-1">Descripción</label>
-            <textarea
-              value={form.description}
+            <textarea value={form.description}
               onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-              placeholder="Descripción del producto..."
-              rows={2}
-              className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500 resize-none"
-            />
+              placeholder="Descripción del producto..." rows={2}
+              className={INPUT + ' resize-none'} />
           </div>
 
           <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="available"
-              checked={form.available}
+            <input type="checkbox" id="available" checked={form.available}
               onChange={e => setForm(p => ({ ...p, available: e.target.checked }))}
-              className="w-4 h-4 accent-amber-600"
-            />
+              className="w-4 h-4 accent-amber-600" />
             <label htmlFor="available" className="text-sm font-medium text-amber-900">Disponible</label>
           </div>
 
-          <button
-            onClick={createItem}
-            disabled={saving}
-            className="w-full bg-amber-700 active:bg-amber-900 text-white font-bold py-3 rounded-xl disabled:opacity-60"
-          >
+          <button onClick={createItem} disabled={saving}
+            className="w-full bg-amber-700 active:bg-amber-900 text-white font-bold py-3 rounded-xl disabled:opacity-60">
             {saving ? 'Guardando...' : '+ Añadir producto'}
           </button>
         </div>
@@ -245,9 +261,7 @@ export default function AdminMenuPage() {
         ) : (
           Object.entries(grouped).map(([category, categoryItems]) => (
             <div key={category} className="space-y-3">
-              <h2 className="font-bold text-amber-900 text-lg border-b border-amber-200 pb-1">
-                {category}
-              </h2>
+              <h2 className="font-bold text-amber-900 text-lg border-b border-amber-200 pb-1">{category}</h2>
               {categoryItems.map(item => (
                 <div key={item.id} className="bg-white rounded-2xl shadow p-4">
                   {editingId === item.id ? (
@@ -255,64 +269,40 @@ export default function AdminMenuPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs font-semibold text-amber-900 mb-1">Nombre</label>
-                          <input
-                            type="text"
-                            value={editState.name}
+                          <input type="text" value={editState.name}
                             onChange={e => setEditState(p => ({ ...p, name: e.target.value }))}
-                            className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500"
-                          />
+                            className={INPUT} />
                         </div>
                         <div>
                           <label className="block text-xs font-semibold text-amber-900 mb-1">Categoría</label>
-                          <input
-                            type="text"
-                            value={editState.category}
+                          <input type="text" value={editState.category}
                             onChange={e => setEditState(p => ({ ...p, category: e.target.value }))}
-                            className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500"
-                          />
+                            className={INPUT} />
                         </div>
                         <div>
                           <label className="block text-xs font-semibold text-amber-900 mb-1">Precio</label>
-                          <input
-                            type="number"
-                            value={editState.price}
+                          <input type="number" value={editState.price}
                             onChange={e => setEditState(p => ({ ...p, price: e.target.value }))}
-                            min="0"
-                            step="0.01"
-                            className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500"
-                          />
+                            min="0" step="0.01" className={INPUT} />
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-amber-900 mb-1">URL imagen</label>
-                          <input
-                            type="url"
-                            value={editState.imageUrl}
-                            onChange={e => setEditState(p => ({ ...p, imageUrl: e.target.value }))}
-                            className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500"
-                          />
+                          <label className="block text-xs font-semibold text-amber-900 mb-1">Imagen</label>
+                          <ImagePicker value={editState.imageUrl} onChange={url => setEditState(p => ({ ...p, imageUrl: url }))} />
                         </div>
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-amber-900 mb-1">Descripción</label>
-                        <textarea
-                          value={editState.description}
+                        <textarea value={editState.description}
                           onChange={e => setEditState(p => ({ ...p, description: e.target.value }))}
-                          rows={2}
-                          className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500 resize-none"
-                        />
+                          rows={2} className={INPUT + ' resize-none'} />
                       </div>
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => saveEdit(item.id)}
-                          disabled={saving}
-                          className="flex-1 bg-amber-700 text-white font-bold py-2 rounded-xl text-sm disabled:opacity-60"
-                        >
+                        <button onClick={() => saveEdit(item.id)} disabled={saving}
+                          className="flex-1 bg-amber-700 text-white font-bold py-2 rounded-xl text-sm disabled:opacity-60">
                           {saving ? 'Guardando...' : 'Guardar'}
                         </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="flex-1 border-2 border-gray-200 text-gray-600 font-bold py-2 rounded-xl text-sm"
-                        >
+                        <button onClick={() => setEditingId(null)}
+                          className="flex-1 border-2 border-gray-200 text-gray-600 font-bold py-2 rounded-xl text-sm">
                           Cancelar
                         </button>
                       </div>
@@ -321,18 +311,12 @@ export default function AdminMenuPage() {
                     <div>
                       <div className="flex items-start gap-3">
                         {item.imageUrl && (
-                          <img
-                            src={item.imageUrl}
-                            alt={item.name}
-                            className="w-16 h-16 object-cover rounded-xl shrink-0"
-                          />
+                          <img src={item.imageUrl} alt={item.name} className="w-16 h-16 object-cover rounded-xl shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-bold text-gray-900">{item.name}</h3>
-                            <span className="text-sm font-bold text-green-600">
-                              ${item.price.toFixed(2)}
-                            </span>
+                            <span className="text-sm font-bold text-green-600">${item.price.toFixed(2)}</span>
                             {item.available ? (
                               <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Disponible</span>
                             ) : (
@@ -345,26 +329,20 @@ export default function AdminMenuPage() {
                         </div>
                       </div>
                       <div className="flex gap-2 mt-3">
-                        <button
-                          onClick={() => toggleAvailable(item)}
+                        <button onClick={() => toggleAvailable(item)}
                           className={`flex-1 py-1.5 rounded-xl text-sm font-medium border-2 ${
                             item.available
                               ? 'border-orange-200 text-orange-600 hover:bg-orange-50'
                               : 'border-green-200 text-green-600 hover:bg-green-50'
-                          }`}
-                        >
+                          }`}>
                           {item.available ? 'Desactivar' : 'Activar'}
                         </button>
-                        <button
-                          onClick={() => startEdit(item)}
-                          className="flex-1 py-1.5 rounded-xl text-sm font-medium border-2 border-amber-200 text-amber-700 hover:bg-amber-50"
-                        >
+                        <button onClick={() => startEdit(item)}
+                          className="flex-1 py-1.5 rounded-xl text-sm font-medium border-2 border-amber-200 text-amber-700 hover:bg-amber-50">
                           Editar
                         </button>
-                        <button
-                          onClick={() => deleteItem(item.id)}
-                          className="flex-1 py-1.5 rounded-xl text-sm font-medium border-2 border-red-200 text-red-500 hover:bg-red-50"
-                        >
+                        <button onClick={() => deleteItem(item.id)}
+                          className="flex-1 py-1.5 rounded-xl text-sm font-medium border-2 border-red-200 text-red-500 hover:bg-red-50">
                           Eliminar
                         </button>
                       </div>

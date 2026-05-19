@@ -9,6 +9,7 @@ interface TVSlide {
   subtitle?: string
   price?: string
   imageUrl?: string
+  isOffer: boolean
   order: number
   active: boolean
   createdAt: string
@@ -19,6 +20,7 @@ const EMPTY_FORM = {
   subtitle: '',
   price: '',
   imageUrl: '',
+  isOffer: false,
   active: true,
 }
 
@@ -27,6 +29,7 @@ export default function AdminTVPage() {
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [formError, setFormError] = useState('')
   const [previewSlide, setPreviewSlide] = useState<TVSlide | null>(null)
 
@@ -64,6 +67,7 @@ export default function AdminTVPage() {
           subtitle: form.subtitle.trim() || undefined,
           price: form.price.trim() || undefined,
           imageUrl: form.imageUrl.trim() || undefined,
+          isOffer: form.isOffer,
           active: form.active,
         }),
       })
@@ -106,6 +110,23 @@ export default function AdminTVPage() {
     fetchSlides()
   }
 
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/tv/upload', { method: 'POST', body: fd })
+      if (res.ok) {
+        const { url } = await res.json()
+        setForm(p => ({ ...p, imageUrl: url }))
+      }
+    } finally {
+      setUploading(false)
+    }
+  }
+
   async function deleteSlide(id: string) {
     if (!confirm('¿Eliminar este slide?')) return
     await fetch(`/api/tv/${id}`, { method: 'DELETE' })
@@ -142,7 +163,7 @@ export default function AdminTVPage() {
                   value={form.title}
                   onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
                   placeholder="Ej. Café del día"
-                  className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500"
+                  className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-amber-500"
                 />
               </div>
               <div>
@@ -152,7 +173,7 @@ export default function AdminTVPage() {
                   value={form.subtitle}
                   onChange={e => setForm(p => ({ ...p, subtitle: e.target.value }))}
                   placeholder="Ej. Recién tostado"
-                  className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500"
+                  className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-amber-500"
                 />
               </div>
               <div>
@@ -162,18 +183,35 @@ export default function AdminTVPage() {
                   value={form.price}
                   onChange={e => setForm(p => ({ ...p, price: e.target.value }))}
                   placeholder="Ej. $50"
-                  className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500"
+                  className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-amber-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-amber-900 mb-1">URL de imagen (opcional)</label>
+                <label className="block text-xs font-semibold text-amber-900 mb-1">Imagen (opcional)</label>
                 <input
-                  type="url"
-                  value={form.imageUrl}
-                  onChange={e => setForm(p => ({ ...p, imageUrl: e.target.value }))}
-                  placeholder="https://..."
-                  className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-800"
                 />
+                {uploading && <p className="text-xs text-amber-600 mt-1">Subiendo imagen...</p>}
+                {form.imageUrl && (
+                  <div className="mt-2 relative inline-block">
+                    <img src={form.imageUrl} alt="preview" className="h-20 rounded-xl object-cover" />
+                    <button type="button" onClick={() => setForm(p => ({ ...p, imageUrl: '' }))}
+                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center leading-none">×</button>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="slideOffer"
+                  checked={form.isOffer}
+                  onChange={e => setForm(p => ({ ...p, isOffer: e.target.checked }))}
+                  className="w-4 h-4 accent-amber-600"
+                />
+                <label htmlFor="slideOffer" className="text-sm font-medium text-amber-900">Es oferta / promoción (2x1, descuento…)</label>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -233,11 +271,23 @@ export default function AdminTVPage() {
                       {slide.price && (
                         <p className="text-sm font-bold text-green-600">{slide.price}</p>
                       )}
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium mt-1 inline-block ${
-                        slide.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                      }`}>
-                        {slide.active ? 'Activo' : 'Inactivo'}
-                      </span>
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          slide.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {slide.active ? 'Activo' : 'Inactivo'}
+                        </span>
+                        {slide.isOffer && (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-orange-100 text-orange-700">
+                            🏷 Oferta · 30s
+                          </span>
+                        )}
+                        {!slide.isOffer && (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-600">
+                            🖼 Imagen · 15s
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-2 mt-3">

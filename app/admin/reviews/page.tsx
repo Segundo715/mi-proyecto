@@ -40,7 +40,7 @@ export default function AdminReviewsPage() {
   async function fetchReviews() {
     setLoading(true)
     try {
-      const res = await fetch('/api/reviews')
+      const res = await fetch('/api/reviews?all=1')
       if (res.ok) setReviews(await res.json())
     } finally {
       setLoading(false)

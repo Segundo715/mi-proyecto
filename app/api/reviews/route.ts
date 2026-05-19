@@ -5,7 +5,8 @@ import { sendBadReviewEmail } from '@/lib/email'
 
 export async function GET(req: NextRequest) {
   const isAdmin = verifySession(req.cookies.get('admin_session')?.value)
-  return Response.json(isAdmin ? getAllReviews() : getPublishedReviews())
+  const all = req.nextUrl.searchParams.get('all') === '1'
+  return Response.json(isAdmin && all ? getAllReviews() : getPublishedReviews())
 }
 
 export async function POST(req: NextRequest) {

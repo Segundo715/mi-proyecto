@@ -8,11 +8,13 @@ interface TVSlide {
   subtitle?: string
   price?: string
   imageUrl?: string
+  isOffer: boolean
   order: number
   active: boolean
 }
 
-const SLIDE_DURATION = 6000 // ms
+const IMAGE_DURATION = 15000
+const OFFER_DURATION = 30000
 
 export default function TVPage() {
   const [slides, setSlides] = useState<TVSlide[]>([])
@@ -44,7 +46,8 @@ export default function TVPage() {
   // Auto-rotate slides
   useEffect(() => {
     if (slides.length <= 1) return
-    startSlideTimer()
+    const duration = slides[currentIdx]?.isOffer ? OFFER_DURATION : IMAGE_DURATION
+    startSlideTimer(duration)
     return () => clearTimers()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slides, currentIdx])
@@ -66,14 +69,14 @@ export default function TVPage() {
     if (slideTimerRef.current) clearTimeout(slideTimerRef.current)
   }
 
-  function startSlideTimer() {
+  function startSlideTimer(duration: number) {
     clearTimers()
     setProgress(0)
 
     const startTime = Date.now()
     progressRef.current = setInterval(() => {
       const elapsed = Date.now() - startTime
-      const pct = Math.min((elapsed / SLIDE_DURATION) * 100, 100)
+      const pct = Math.min((elapsed / duration) * 100, 100)
       setProgress(pct)
     }, 50)
 
@@ -84,7 +87,7 @@ export default function TVPage() {
         setVisible(true)
         setProgress(0)
       }, 400)
-    }, SLIDE_DURATION)
+    }, duration)
   }
 
   const current = slides[currentIdx] ?? null

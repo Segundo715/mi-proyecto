@@ -8,6 +8,7 @@ export interface TVSlide {
   subtitle?: string
   price?: string
   imageUrl?: string
+  isOffer: boolean
   order: number
   active: boolean
   createdAt: string
