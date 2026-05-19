@@ -2,13 +2,13 @@ import { NextRequest } from 'next/server'
 import { createCustomerAccount, authenticateCustomer } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
-  const { action, name, password } = await req.json()
+  const { action, name, password, phone } = await req.json()
 
   if (!name?.trim() || !password)
     return Response.json({ error: 'Nombre y contraseña requeridos' }, { status: 400 })
 
   if (action === 'register') {
-    const customer = createCustomerAccount(name.trim(), password)
+    const customer = createCustomerAccount(name.trim(), password, phone)
     if (!customer)
       return Response.json({ error: 'Ese nombre ya está registrado' }, { status: 409 })
     return Response.json(customer, { status: 201 })

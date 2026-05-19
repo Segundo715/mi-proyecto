@@ -1,0 +1,14 @@
+[
+  {
+    "id": "9dec943e-e4bc-4bee-91e0-838c6a86d358",
+    "name": "Angel",
+    "passwordHash": "cd049cd83c6259031a9a7e4924e6ba1066af989b5fafbb080d6f0b93fb3df14b",
+    "createdAt": "2026-05-19T00:22:33.824Z"
+  },
+  {
+    "id": "f3262a68-aa56-4423-b0ce-0c94b2a56ea1",
+    "name": "Jesus",
+    "passwordHash": "23c6bc63b586cc6e023943e8763972bbae560c672839f286df90d6ca44de608b",
+    "createdAt": "2026-05-19T00:32:51.156Z"
+  }
+]

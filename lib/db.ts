@@ -116,14 +116,14 @@ export function deleteCustomer(id: string): boolean {
   return true
 }
 
-export function createCustomerAccount(name: string, password: string): Customer | null {
+export function createCustomerAccount(name: string, password: string, phone = ''): Customer | null {
   const rows = load()
   if (rows.find(c => c.name.toLowerCase() === name.toLowerCase() && c.passwordHash))
     return null
   const customer: Customer = {
     id: randomUUID(),
     name: name.trim(),
-    phone: '',
+    phone: phone.trim(),
     visits: 0,
     confirmed: true,
     registeredAt: new Date().toISOString(),
