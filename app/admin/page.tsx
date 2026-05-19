@@ -254,7 +254,7 @@ export default function AdminPage() {
       {/* Header */}
       <div className="bg-amber-900 text-white sticky top-0 z-20 shadow">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="font-bold text-base">☕ Panel del empleado</h1>
+          <h1 className="font-bold text-base">☕ Chubis</h1>
           <div className="flex gap-2">
             <button
               onClick={() => setTab('scan')}

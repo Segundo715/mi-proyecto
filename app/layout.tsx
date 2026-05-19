@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tarjeta de Fidelización",
-  description: "Acumula 5 visitas y gana un café gratis",
+  title: "Chubis",
+  description: "Tarjeta de fidelización Chubis — acumula 5 visitas y gana un café gratis",
 };
 
 export default function RootLayout({

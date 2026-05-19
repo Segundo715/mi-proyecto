@@ -31,7 +31,7 @@ export default function AdminNav() {
   return (
     <div className="bg-amber-900 text-white sticky top-0 z-20 shadow">
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-2 flex-wrap">
-        <span className="font-bold text-base shrink-0">☕ Restaurante</span>
+        <span className="font-bold text-base shrink-0">☕ Chubis</span>
         <div className="flex gap-1 flex-wrap">
           {NAV_LINKS.map(link => (
             <a

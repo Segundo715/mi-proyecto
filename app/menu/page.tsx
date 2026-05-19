@@ -76,7 +76,7 @@ export default function MenuPage() {
       .catch(() => setLoadingReviews(false))
   }, [])
 
-  async function submitReview(e: React.FormEvent) {
+  async function submitReview(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setReviewError('')
     if (rating === 0) { setReviewError('Por favor selecciona una calificación.'); return }
@@ -120,7 +120,7 @@ export default function MenuPage() {
       {/* Top nav */}
       <div className="bg-amber-900 text-white sticky top-0 z-20 shadow">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="font-bold text-base">☕ Menú</h1>
+          <h1 className="font-bold text-base">☕ Chubis — Menú</h1>
           <a
             href="/"
             className="text-sm bg-amber-800 hover:bg-amber-700 px-3 py-1 rounded-lg font-medium"

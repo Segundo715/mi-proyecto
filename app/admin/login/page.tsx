@@ -38,8 +38,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
         <div className="bg-amber-800 px-6 py-6 text-center">
           <p className="text-5xl mb-2">☕</p>
-          <h1 className="text-white text-xl font-bold">Panel del empleado</h1>
-          <p className="text-amber-200 text-sm mt-1">Acceso exclusivo para staff</p>
+          <h1 className="text-white text-2xl font-bold tracking-wide">Chubis</h1>
+          <p className="text-amber-200 text-sm mt-1">Panel de empleados</p>
         </div>
 
         {/* Tabs */}

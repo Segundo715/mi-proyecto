@@ -100,7 +100,7 @@ export default function LoyaltyCard() {
         <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
           <div className="bg-amber-800 px-6 py-5 text-center">
             <p className="text-5xl mb-1">☕</p>
-            <h1 className="text-white text-xl font-bold">Tarjeta de fidelización</h1>
+            <h1 className="text-white text-2xl font-bold tracking-wide">Chubis</h1>
             <p className="text-amber-200 text-sm mt-1">5 visitas = 1 café gratis</p>
           </div>
 
@@ -184,7 +184,7 @@ export default function LoyaltyCard() {
             <h2 className="font-bold text-lg">¡Hola, {customer?.name}!</h2>
             <span className="text-4xl">☕</span>
           </div>
-          <p className="text-amber-200 text-xs mb-5 mt-1">Tarjeta de fidelización</p>
+          <p className="text-amber-200 text-xs mb-5 mt-1">Tarjeta Chubis</p>
 
           <div className="grid grid-cols-5 gap-3 mb-3">
             {Array.from({ length: STAMPS }).map((_, i) => {
