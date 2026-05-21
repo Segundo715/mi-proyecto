@@ -3,7 +3,6 @@
 import { useState } from 'react'
 
 export default function LoginPage() {
-  const [tab, setTab] = useState<'login' | 'register'>('login')
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -18,7 +17,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: tab, name: name.trim(), password }),
+        body: JSON.stringify({ action: 'login', name: name.trim(), password }),
       })
       const data = await res.json()
       if (res.ok) window.location.href = '/admin'
@@ -30,60 +29,48 @@ export default function LoginPage() {
     }
   }
 
-  const INPUT = 'w-full border-2 border-amber-200 rounded-2xl px-4 py-3.5 text-gray-800 bg-white placeholder-gray-400 focus:outline-none focus:border-amber-500 text-sm transition-colors'
+  const INPUT = 'w-full border border-[#B90F45]/40 rounded-2xl px-4 py-3.5 text-white bg-[#1a1a1a] placeholder-gray-500 focus:outline-none focus:border-[#B90F45] text-sm transition-colors'
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center p-5"
-      style={{ background: 'linear-gradient(160deg, #1c0a03 0%, #431c0d 50%, #78350f 100%)' }}>
+    <div className="fixed inset-0 flex flex-col items-center justify-center p-5" style={{ backgroundColor: '#000000' }}>
 
       {/* Brand */}
       <div className="text-center mb-8">
-        <div className="w-20 h-20 bg-amber-800 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-4 shadow-xl shadow-amber-950/50">
-          ☕
+        <div className="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl overflow-hidden"
+          style={{ backgroundColor: '#0d0d0d', border: '2px solid #B90F45' }}>
+          <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-2" />
         </div>
-        <h1 className="text-white text-3xl font-black tracking-tight">Chubis</h1>
-        <p className="text-amber-400 text-sm mt-1 font-medium">Panel de empleados</p>
+        <p className="text-sm mt-1 font-medium" style={{ color: '#B90F45' }}>Panel de empleados</p>
       </div>
 
-      <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
-        {/* Tabs */}
-        <div className="flex p-1.5 gap-1.5 bg-amber-50 m-4 rounded-2xl">
-          {(['login', 'register'] as const).map(t => (
-            <button key={t} type="button"
-              onClick={() => { setTab(t); setError('') }}
-              className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all ${
-                tab === t ? 'bg-amber-900 text-white shadow-sm' : 'text-amber-700 hover:bg-amber-100'
-              }`}>
-              {t === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
-            </button>
-          ))}
-        </div>
+      <div className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden" style={{ backgroundColor: '#0d0d0d', border: '1px solid #1a1a1a' }}>
+        <p className="text-center text-xs font-bold uppercase tracking-widest pt-5 pb-1" style={{ color: '#B90F45' }}>Iniciar sesión</p>
 
-        <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3">
+        <form onSubmit={handleSubmit} className="px-5 pb-5 pt-3 space-y-3">
           <div>
-            <label className="block text-xs font-bold text-amber-900 mb-1.5 uppercase tracking-wide">Nombre</label>
+            <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Nombre</label>
             <input type="text" value={name} onChange={e => setName(e.target.value)}
               placeholder="Ej. Carlos" autoComplete="username" autoFocus className={INPUT} />
           </div>
           <div>
-            <label className="block text-xs font-bold text-amber-900 mb-1.5 uppercase tracking-wide">Contraseña</label>
+            <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Contraseña</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••" autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
-              className={INPUT} />
+              placeholder="••••••••" autoComplete="current-password" className={INPUT} />
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl px-4 py-3 text-sm font-medium">{error}</div>
+            <div className="border rounded-2xl px-4 py-3 text-sm font-medium text-red-300" style={{ backgroundColor: '#2d0a0a', borderColor: '#7f1d1d' }}>{error}</div>
           )}
 
           <button type="submit" disabled={loading}
-            className="w-full bg-amber-900 active:bg-amber-950 text-white font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors mt-1">
-            {loading ? 'Cargando...' : tab === 'login' ? '→ Entrar' : '→ Crear cuenta'}
+            className="w-full text-white font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors mt-1"
+            style={{ backgroundColor: '#B90F45' }}>
+            {loading ? 'Cargando...' : '→ Entrar'}
           </button>
         </form>
       </div>
 
-      <p className="text-amber-700 text-xs mt-6">Solo para uso del personal</p>
+      <p className="text-xs mt-6" style={{ color: '#B90F45' }}>Solo para uso del personal</p>
     </div>
   )
 }
