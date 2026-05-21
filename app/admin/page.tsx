@@ -7,10 +7,14 @@ import AdminNav from '../components/AdminNav'
 
 const QRCode = dynamic(() => import('react-qr-code'), { ssr: false })
 
-interface Customer {
+interface LoyaltyCard {
   id: string; name: string; phone: string; visits: number
-  confirmed: boolean; registeredAt: string; requestedAt?: string
+  registeredAt: string; stamps: { timestamp: string }[]
 }
+
+const AVATAR_COLORS = ['bg-amber-500','bg-rose-500','bg-violet-500','bg-sky-500','bg-emerald-500','bg-orange-500']
+function avatarColor(name: string) { return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length] }
+function initial(name: string) { return name.trim().charAt(0).toUpperCase() }
 
 type ScanMode = 'idle' | 'camera' | 'phone'
 type ScanState = 'idle' | 'scanning' | 'found' | 'stamping' | 'done'
@@ -21,74 +25,65 @@ export default function AdminPage() {
   const [origin, setOrigin] = useState('')
   const [scanMode, setScanMode] = useState<ScanMode>('idle')
   const [scanState, setScanState] = useState<ScanState>('idle')
-  const [scanned, setScanned] = useState<Customer | null>(null)
+  const [scanned, setScanned] = useState<LoyaltyCard | null>(null)
   const [scanError, setScanError] = useState('')
   const [phoneSearch, setPhoneSearch] = useState('')
   const [searching, setSearching] = useState(false)
-  const [checkIns, setCheckIns] = useState<Customer[]>([])
+  const [loyaltyCards, setLoyaltyCards] = useState<LoyaltyCard[]>([])
+  const [cardSearch, setCardSearch] = useState('')
   const scanKey = useRef(0)
 
   useEffect(() => {
     setOrigin(window.location.origin)
-    loadCheckIns()
-    const poll = setInterval(loadCheckIns, 8000)
+    loadCards()
+    const poll = setInterval(loadCards, 8000)
     return () => clearInterval(poll)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function loadCheckIns() {
-    const res = await fetch('/api/customers')
-    if (res.ok) {
-      const all: Customer[] = await res.json()
-      setCheckIns(all.filter(c => {
-        if (!c.requestedAt) return false
-        return Date.now() - new Date(c.requestedAt).getTime() < 3 * 60 * 1000
-      }))
-    }
+  async function loadCards() {
+    const res = await fetch('/api/loyalty')
+    if (res.ok) setLoyaltyCards(await res.json())
   }
 
-  async function loadCustomer(id: string) {
+  async function loadCard(id: string) {
     setScanState('found'); setScanError('')
-    const res = await fetch(`/api/customers/${id}`)
+    const res = await fetch(`/api/loyalty/${id}`)
     if (res.ok) setScanned(await res.json())
-    else { setScanError('Cliente no encontrado.'); setScanState('idle') }
+    else { setScanError('Tarjeta no encontrada.'); setScanState('idle') }
   }
 
   async function searchByPhone() {
     const q = phoneSearch.replace(/\D/g, '')
     if (q.length < 6) { setScanError('Ingresa al menos 6 dígitos.'); return }
     setSearching(true); setScanError('')
-    const res = await fetch('/api/customers')
-    if (res.ok) {
-      const all: Customer[] = await res.json()
-      const match = all.find(c => c.phone.replace(/\D/g, '').includes(q) && c.confirmed)
-      if (match) { setScanned(match); setScanState('found') }
-      else setScanError('No se encontró ningún cliente confirmado con ese número.')
-    }
+    const match = loyaltyCards.find(c => c.phone.replace(/\D/g, '').includes(q))
+    if (match) { setScanned(match); setScanState('found') }
+    else setScanError('No se encontró ninguna tarjeta con ese número.')
     setSearching(false)
   }
 
   async function stampVisit() {
     if (!scanned) return
     setScanState('stamping')
-    const res = await fetch(`/api/customers/${scanned.id}`, {
+    const res = await fetch(`/api/loyalty/${scanned.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'stamp' }),
     })
-    if (res.ok) { setScanned(await res.json()); setScanState('done') }
+    if (res.ok) { setScanned(await res.json()); setScanState('done'); loadCards() }
     else { setScanState('found'); setScanError('Error al registrar la visita.') }
   }
 
   async function redeemCoffee() {
     if (!scanned) return
     setScanState('stamping')
-    const res = await fetch(`/api/customers/${scanned.id}`, {
+    const res = await fetch(`/api/loyalty/${scanned.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'redeem' }),
     })
-    if (res.ok) { setScanned(await res.json()); setScanState('done') }
+    if (res.ok) { setScanned(await res.json()); setScanState('done'); loadCards() }
     else setScanState('found')
   }
 
@@ -103,27 +98,16 @@ export default function AdminPage() {
       <AdminNav />
       <div className="max-w-lg mx-auto p-4 space-y-4">
 
-        {/* Check-in alerts */}
-        {checkIns.map(c => (
-          <div key={c.id} className="bg-green-500 text-white rounded-2xl p-4 flex items-center gap-3 shadow-lg">
-            <span className="text-3xl animate-bounce">🔔</span>
-            <div className="flex-1">
-              <p className="font-black text-base">{c.name} está en el mostrador</p>
-              <p className="text-xs text-green-100">{c.phone} · {c.visits}/{STAMPS} sellos</p>
-            </div>
-          </div>
-        ))}
-
         {/* Business QR */}
         <div className="bg-white rounded-2xl shadow p-5 text-center">
           <h2 className="font-black text-amber-900 text-base mb-1">QR del negocio</h2>
           <p className="text-xs text-gray-400 mb-4">Los clientes escanean este para registrarse</p>
           <div className="flex justify-center mb-3">
             <div className="p-3 border-2 border-amber-100 rounded-2xl bg-white inline-flex items-center justify-center min-h-[172px] min-w-[172px]">
-              {origin ? <QRCode value={origin} size={160} /> : <span className="text-gray-300 text-sm">Cargando…</span>}
+              {origin ? <QRCode value={`${origin}/loyalty`} size={160} /> : <span className="text-gray-300 text-sm">Cargando…</span>}
             </div>
           </div>
-          {origin && <p className="text-xs text-gray-400 break-all">{origin}</p>}
+          {origin && <p className="text-xs text-gray-400 break-all">{origin}/loyalty</p>}
         </div>
 
         {/* Stamp visit */}
@@ -154,7 +138,7 @@ export default function AdminPage() {
 
             {scanMode === 'camera' && scanState === 'scanning' && (
               <div>
-                <QRScanner key={scanKey.current} onScan={id => loadCustomer(id)}
+                <QRScanner key={scanKey.current} onScan={id => loadCard(id)}
                   onCameraError={() => { setScanError('Cámara no disponible. Usa búsqueda por teléfono.'); setScanMode('idle') }} />
                 <button type="button" onClick={resetScan} className="w-full mt-3 text-sm text-gray-400 underline py-1">Cancelar</button>
               </div>
@@ -202,11 +186,7 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {!scanned.confirmed ? (
-                  <div className="bg-red-50 border-2 border-red-200 text-red-700 rounded-2xl p-4 text-center font-semibold text-sm">
-                    ⚠️ Este cliente aún no activó su tarjeta.
-                  </div>
-                ) : scanState === 'done' ? (
+                {scanState === 'done' ? (
                   <div className="bg-green-50 border-2 border-green-300 text-green-800 rounded-2xl p-4 text-center font-black text-base">
                     ✅ ¡Visita sellada! — {scanned.visits}/{STAMPS} sellos
                   </div>
@@ -229,6 +209,55 @@ export default function AdminPage() {
             )}
           </div>
         </div>
+
+        {/* Active loyalty cards */}
+        <div className="bg-white rounded-2xl shadow overflow-hidden">
+          <div className="bg-amber-800 px-5 py-3 flex items-center justify-between">
+            <h2 className="font-black text-white text-base">☕ Tarjetas activas</h2>
+            <span className="text-amber-300 text-xs font-bold">{loyaltyCards.length}</span>
+          </div>
+          <div className="p-3 space-y-2">
+            <input
+              type="text"
+              value={cardSearch}
+              onChange={e => setCardSearch(e.target.value)}
+              placeholder="Buscar cliente..."
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 bg-gray-50 focus:outline-none focus:border-amber-400"
+            />
+            {loyaltyCards
+              .filter(c => !cardSearch.trim() || c.name.toLowerCase().includes(cardSearch.toLowerCase()) || c.phone.includes(cardSearch))
+              .slice(0, 15)
+              .map(c => (
+                <button key={c.id} type="button"
+                  onClick={() => { loadCard(c.id); setScanMode('camera') }}
+                  className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-colors active:scale-[0.98] ${
+                    c.visits >= STAMPS ? 'bg-yellow-50 border-2 border-yellow-300' : 'bg-gray-50 hover:bg-amber-50'
+                  }`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-base shrink-0 ${avatarColor(c.name)}`}>
+                    {initial(c.name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-900 text-sm truncate">{c.name}</p>
+                    <div className="flex gap-1 mt-1">
+                      {Array.from({ length: STAMPS }).map((_, i) => (
+                        <div key={i} className={`w-4 h-1.5 rounded-full ${i < c.visits ? 'bg-amber-500' : 'bg-gray-200'}`} />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    {c.visits >= STAMPS
+                      ? <span className="text-lg">🎉</span>
+                      : <span className="text-sm font-black text-amber-700">{c.visits}/{STAMPS}</span>
+                    }
+                  </div>
+                </button>
+              ))}
+            {loyaltyCards.length === 0 && (
+              <p className="text-center text-gray-400 text-sm py-4">Aún no hay tarjetas registradas</p>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   )

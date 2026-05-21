@@ -28,7 +28,6 @@ export default function LoyaltyCard() {
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [tab, setTab] = useState<'login' | 'register'>('login')
   const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [formError, setFormError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -50,12 +49,10 @@ export default function LoyaltyCard() {
 
   async function handleAuth() {
     if (!name.trim() || !password) { setFormError('Completa todos los campos'); return }
-    if (tab === 'register' && !phone.trim()) { setFormError('El teléfono es obligatorio'); return }
     setFormError('')
     setSubmitting(true)
     try {
       const body: Record<string, string> = { action: tab, name: name.trim(), password }
-      if (tab === 'register') body.phone = phone.trim()
       const res = await fetch('/api/customer-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -92,7 +89,7 @@ export default function LoyaltyCard() {
 
   function handleLogout() {
     localStorage.removeItem('loyalty_id')
-    setCustomer(null); setName(''); setPhone(''); setPassword(''); setStep('form')
+    setCustomer(null); setName(''); setPassword(''); setStep('form')
   }
 
   const earned = (customer?.visits ?? 0) >= STAMPS
@@ -134,14 +131,6 @@ export default function LoyaltyCard() {
               <input type="text" value={name} onChange={e => { setName(e.target.value); setFormError('') }}
                 placeholder="Ej. María González" autoComplete="username" className={INPUT} />
             </div>
-
-            {tab === 'register' && (
-              <div>
-                <label className="block text-xs font-bold text-amber-900 mb-1.5 uppercase tracking-wide">Teléfono</label>
-                <input type="tel" value={phone} onChange={e => { setPhone(e.target.value); setFormError('') }}
-                  placeholder="Ej. 55 1234 5678" autoComplete="tel" className={INPUT} />
-              </div>
-            )}
 
             <div>
               <label className="block text-xs font-bold text-amber-900 mb-1.5 uppercase tracking-wide">Contraseña</label>

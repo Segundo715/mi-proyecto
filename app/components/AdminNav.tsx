@@ -2,15 +2,30 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { FEATURES, type FeatureKey } from '@/lib/features'
 
-const NAV_LINKS = [
-  { href: '/admin',           emoji: '🔍', label: 'Sellar',   exact: true },
-  { href: '/admin/orders',    emoji: '📋', label: 'Pedidos'              },
-  { href: '/admin/menu',      emoji: '🍽', label: 'Menú'                 },
-  { href: '/admin/reviews',   emoji: '⭐', label: 'Reseñas'              },
-  { href: '/admin/tv',        emoji: '📺', label: 'TV'                   },
-  { href: '/admin/customers', emoji: '👥', label: 'Clientes'             },
+interface NavLink {
+  href: string
+  emoji: string
+  label: string
+  exact?: boolean
+  feature?: FeatureKey
+}
+
+const NAV_LINKS: NavLink[] = [
+  { href: '/admin',             emoji: '🔍', label: 'Sellar',         exact: true },
+  { href: '/admin/orders',      emoji: '📋', label: 'Pedidos',        feature: 'orders' },
+  { href: '/admin/menu',        emoji: '🍽', label: 'Menú',           feature: 'menu' },
+  { href: '/admin/reviews',     emoji: '⭐', label: 'Reseñas',        feature: 'reviews' },
+  { href: '/admin/tv',          emoji: '📺', label: 'Pantalla TV',    feature: 'tv' },
+  { href: '/admin/customers',   emoji: '👥', label: 'Clientes',       feature: 'customers' },
+  { href: '/admin/analytics',   emoji: '📊', label: 'Analytics',      feature: 'analytics' },
 ]
+
+function isEnabled(feature?: FeatureKey) {
+  if (!feature) return true
+  return FEATURES[feature].enabled
+}
 
 export default function AdminNav() {
   const router = useRouter()
@@ -32,6 +47,7 @@ export default function AdminNav() {
   }
 
   const current = NAV_LINKS.find(l => isActive(l.href, l.exact))
+  const premiumCount = NAV_LINKS.filter(l => l.feature && !isEnabled(l.feature)).length
 
   return (
     <>
@@ -61,7 +77,7 @@ export default function AdminNav() {
         </div>
       </div>
 
-      {/* Overlay + sidebar — always in DOM for smooth animation */}
+      {/* Overlay + sidebar */}
       <div
         className={`fixed inset-0 z-50 flex transition-all duration-200 ${
           open ? 'visible' : 'invisible pointer-events-none'
@@ -100,26 +116,40 @@ export default function AdminNav() {
           <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
             {NAV_LINKS.map(link => {
               const active = isActive(link.href, link.exact)
+              const enabled = isEnabled(link.feature)
               return (
                 <a
                   key={link.href}
-                  href={link.href}
+                  href={enabled ? link.href : undefined}
+                  onClick={enabled ? undefined : e => e.preventDefault()}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-                    active
+                    !enabled
+                      ? 'opacity-40 cursor-not-allowed text-amber-200'
+                      : active
                       ? 'bg-white text-amber-900 shadow-sm'
                       : 'text-amber-200 hover:bg-amber-800 active:bg-amber-700'
                   }`}
                 >
                   <span className="text-lg">{link.emoji}</span>
-                  <span>{link.label}</span>
-                  {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-600" />}
+                  <span className="flex-1">{link.label}</span>
+                  {!enabled && (
+                    <span className="text-[10px] font-bold bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-full">
+                      Premium
+                    </span>
+                  )}
+                  {enabled && active && <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />}
                 </a>
               )
             })}
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-amber-800">
+          <div className="p-4 border-t border-amber-800 space-y-1">
+            {premiumCount > 0 && (
+              <p className="text-amber-500 text-xs text-center mb-2">
+                {premiumCount} módulo{premiumCount !== 1 ? 's' : ''} Premium disponible{premiumCount !== 1 ? 's' : ''}
+              </p>
+            )}
             <button
               type="button"
               onClick={logout}
