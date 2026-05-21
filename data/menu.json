@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Cafe americano",
+    "description": "sbdshdsnbbds",
+    "price": 45,
+    "category": "Bebidas calientes",
+    "imageUrl": "https://sl.bing.net/e4rlidRPXlk",
+    "available": true,
+    "id": "8d0b9dbf-e01e-46da-9b97-1a219d0ea95e",
+    "createdAt": "2026-05-19T01:03:38.182Z"
+  },
+  {
+    "name": "Tacos al pastor",
+    "description": "Skkskskks",
+    "price": 25,
+    "category": "Comida mexicana",
+    "imageUrl": "/uploads/menu/feb42b35-3ff9-45a8-a95f-ec251ce3dfce.jpg",
+    "available": true,
+    "id": "04073f30-539e-4bef-a0d7-b686451a0752",
+    "createdAt": "2026-05-19T16:37:13.318Z"
+  }
+]

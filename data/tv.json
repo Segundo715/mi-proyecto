@@ -1,0 +1,13 @@
+[
+  {
+    "title": "Tacos al pastor",
+    "subtitle": "2x1",
+    "price": "25",
+    "imageUrl": "/uploads/tv/35df6de5-3948-4300-8368-068d964150fa.jpg",
+    "isOffer": true,
+    "active": true,
+    "id": "47402023-a8e2-4c4c-822c-7587a8ccf198",
+    "createdAt": "2026-05-19T16:43:13.541Z",
+    "order": 0
+  }
+]

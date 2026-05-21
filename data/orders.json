@@ -1,0 +1,69 @@
+[
+  {
+    "customerName": "Eder",
+    "tableNumber": "4",
+    "items": [
+      {
+        "menuItemId": "8d0b9dbf-e01e-46da-9b97-1a219d0ea95e",
+        "name": "Cafe americano",
+        "quantity": 2,
+        "price": 45
+      }
+    ],
+    "total": 90,
+    "id": "fd3f33a1-5bb7-48eb-b1cc-145ce9bb7d82",
+    "status": "delivered",
+    "createdAt": "2026-05-19T01:08:38.874Z"
+  },
+  {
+    "customerName": "Eder",
+    "tableNumber": "3",
+    "items": [
+      {
+        "menuItemId": "8d0b9dbf-e01e-46da-9b97-1a219d0ea95e",
+        "name": "Cafe americano",
+        "quantity": 3,
+        "price": 45
+      }
+    ],
+    "total": 135,
+    "notes": "Sin cafe",
+    "id": "caa0b671-5a85-414c-9089-f25871bba5d8",
+    "status": "delivered",
+    "createdAt": "2026-05-19T01:24:08.501Z"
+  },
+  {
+    "customerName": "Eder",
+    "tableNumber": "4",
+    "items": [
+      {
+        "menuItemId": "8d0b9dbf-e01e-46da-9b97-1a219d0ea95e",
+        "name": "Cafe americano",
+        "quantity": 1,
+        "price": 45
+      }
+    ],
+    "total": 45,
+    "notes": "Ksks",
+    "id": "cc171204-a899-4fc1-80c5-71244bc33796",
+    "status": "delivered",
+    "createdAt": "2026-05-19T01:35:29.205Z"
+  },
+  {
+    "customerName": "Eder",
+    "tableNumber": "4",
+    "items": [
+      {
+        "menuItemId": "04073f30-539e-4bef-a0d7-b686451a0752",
+        "name": "Tacos al pastor",
+        "quantity": 3,
+        "price": 25
+      }
+    ],
+    "total": 75,
+    "notes": "Sin cebolla",
+    "id": "82be0986-488a-4531-8864-52a3750f7f67",
+    "status": "delivered",
+    "createdAt": "2026-05-19T16:45:15.299Z"
+  }
+]

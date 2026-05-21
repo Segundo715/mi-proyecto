@@ -44,3 +44,8 @@ next-env.d.ts
 /data/customers.json
 
 .claude/
+
+# proyectos de referencia externos (tienen su propio node_modules)
+pantallas/
+Pantallas1/
+dashboard-prototype/
