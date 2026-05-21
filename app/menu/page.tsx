@@ -18,11 +18,11 @@ interface Order {
   items: { name: string; quantity: number; price: number }[]; total: number
 }
 
-const STATUS_MSG: Record<Order['status'], { text: string; sub: string; color: string; emoji: string }> = {
-  pending:   { text: 'Pedido recibido',           sub: 'En espera de preparación',       color: 'bg-yellow-900/40 border-yellow-600 text-yellow-300', emoji: '🕐' },
-  preparing: { text: '¡Lo están preparando!',     sub: 'Tu pedido está en cocina',        color: 'bg-blue-900/40 border-blue-600 text-blue-300',       emoji: '🍳' },
-  ready:     { text: '¡Tu pedido está listo!',    sub: 'Pasa a recogerlo',                color: 'bg-green-900/40 border-green-600 text-green-300',    emoji: '✅' },
-  delivered: { text: 'Pedido entregado',          sub: '¡Buen provecho!',                 color: 'bg-gray-800 border-gray-600 text-gray-400',          emoji: '🎉' },
+const STATUS_MSG: Record<Order['status'], { text: string; sub: string; emoji: string }> = {
+  pending:   { text: 'Pedido recibido',        sub: 'En espera de preparación', emoji: '🕐' },
+  preparing: { text: '¡Lo están preparando!',  sub: 'Tu pedido está en cocina', emoji: '🍳' },
+  ready:     { text: '¡Tu pedido está listo!', sub: 'Pasa a recogerlo',         emoji: '✅' },
+  delivered: { text: 'Pedido entregado',        sub: '¡Buen provecho!',         emoji: '🎉' },
 }
 
 const MY_ORDERS_KEY = 'my_order_ids'
@@ -31,25 +31,11 @@ export default function MenuPage() {
   const [items, setItems] = useState<MenuItem[]>([])
   const [loadingMenu, setLoadingMenu] = useState(true)
   const [myOrders, setMyOrders] = useState<Order[]>([])
-  const [activeCategory, setActiveCategory] = useState<string>('')
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
   const [favorites, setFavorites] = useState<string[]>([])
-
-  useEffect(() => {
-    if (FEATURES.favorites.enabled) {
-      setFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? '[]'))
-    }
-  }, [])
-
-  function toggleFavorite(id: string) {
-    setFavorites(prev => {
-      const next = prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
-      localStorage.setItem(FAVORITES_KEY, JSON.stringify(next))
-      return next
-    })
-  }
+  const [openCategory, setOpenCategory] = useState<string | null>(null)
+  const [openItem, setOpenItem] = useState<string | null>(null)
 
   const [cart, setCart] = useState<CartItem[]>([])
   const [showOrder, setShowOrder] = useState(false)
@@ -60,10 +46,13 @@ export default function MenuPage() {
   const [orderSuccess, setOrderSuccess] = useState(false)
 
   useEffect(() => {
+    if (FEATURES.favorites.enabled) {
+      setFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? '[]'))
+    }
     fetch('/api/menu').then(r => r.ok ? r.json() : []).then((d: MenuItem[]) => {
       setItems(d)
       setLoadingMenu(false)
-      if (d.length > 0) setActiveCategory(d[0].category)
+      if (d.length > 0) setOpenCategory(d[0].category)
     }).catch(() => setLoadingMenu(false))
     pollMyOrders()
     pollRef.current = setInterval(pollMyOrders, 10000)
@@ -86,6 +75,23 @@ export default function MenuPage() {
       }
       setMyOrders(mine)
     } catch {}
+  }
+
+  function toggleFavorite(id: string) {
+    setFavorites(prev => {
+      const next = prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  function toggleCategory(cat: string) {
+    setOpenCategory(prev => prev === cat ? null : cat)
+    setOpenItem(null)
+  }
+
+  function toggleItem(id: string) {
+    setOpenItem(prev => prev === id ? null : id)
   }
 
   function addToCart(item: MenuItem) {
@@ -132,11 +138,6 @@ export default function MenuPage() {
     }
   }
 
-  function scrollToCategory(cat: string) {
-    setActiveCategory(cat)
-    categoryRefs.current[cat]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
   const grouped: Record<string, MenuItem[]> = {}
   for (const item of items) {
     if (!grouped[item.category]) grouped[item.category] = []
@@ -146,36 +147,73 @@ export default function MenuPage() {
 
   const INPUT = 'w-full border border-[#B90F45]/40 rounded-2xl px-4 py-3 text-white bg-[#1a1a1a] placeholder-gray-500 focus:outline-none focus:border-[#B90F45] transition-colors'
 
-  return (
-    <div className="min-h-screen pb-32" style={{ backgroundColor: '#000000' }}>
-      {/* Header */}
-      <div className="sticky top-0 z-20 shadow-lg" style={{ backgroundColor: '#000000', borderBottom: '1px solid #B90F45' }}>
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <img src="/logo.png" alt="Logo" className="h-9 w-auto" />
-          <h1 className="font-black text-base tracking-tight text-white">Menú</h1>
+  function ItemDetail({ item }: { item: MenuItem }) {
+    const inCart = cart.find(c => c.item.id === item.id)
+    return (
+      <div className="text-center" style={{ backgroundColor: '#0d0d0d', padding: '15px 0' }}>
+        {item.imageUrl && (
+          <img src={item.imageUrl} alt={item.name}
+            className="mx-auto block rounded-lg object-cover"
+            style={{ maxWidth: '300px', height: '200px', width: '90%' }} />
+        )}
+        <div className="flex justify-center items-center gap-4 mt-3 mb-2">
+          <span className="text-gray-400 text-sm">C/U</span>
+          <span className="text-white font-bold text-xl">${item.price.toFixed(2)}</span>
+          {FEATURES.favorites.enabled && (
+            <button type="button" onClick={() => toggleFavorite(item.id)}
+              className="text-lg transition-transform active:scale-125"
+              style={{ color: favorites.includes(item.id) ? '#B90F45' : '#555' }}>
+              {favorites.includes(item.id) ? '❤️' : '🤍'}
+            </button>
+          )}
         </div>
+        {inCart ? (
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <span className="text-gray-300 text-sm">Cantidad:</span>
+            <button type="button" onClick={() => changeQty(item.id, -1)}
+              className="text-white font-black text-lg w-8 h-8 rounded flex items-center justify-center"
+              style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>−</button>
+            <span className="text-white font-bold w-6 text-center">{inCart.qty}</span>
+            <button type="button" onClick={() => changeQty(item.id, 1)}
+              className="text-white font-black text-lg w-8 h-8 rounded flex items-center justify-center"
+              style={{ backgroundColor: '#B90F45' }}>+</button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => addToCart(item)}
+            className="text-white font-bold mt-3 py-2.5 transition-colors"
+            style={{ backgroundColor: '#B90F45', width: '90%', maxWidth: '300px', display: 'block', margin: '12px auto 0' }}>
+            Agregar al Pedido
+          </button>
+        )}
       </div>
+    )
+  }
 
-      {/* Order success toast */}
+  return (
+    <div className="min-h-screen pb-20" style={{ backgroundColor: '#000000' }}>
+
+      {/* Toast pedido enviado */}
       {orderSuccess && (
-        <div className="fixed top-16 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-          <div className="text-white font-bold px-6 py-3.5 rounded-2xl shadow-xl flex items-center gap-2" style={{ backgroundColor: '#B90F45' }}>
-            <span>✅</span> ¡Pedido enviado! Lo prepararemos pronto.
+        <div className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
+          <div className="text-white font-bold px-6 py-3.5 rounded-2xl shadow-xl flex items-center gap-2"
+            style={{ backgroundColor: '#B90F45' }}>
+            ✅ ¡Pedido enviado! Lo prepararemos pronto.
           </div>
         </div>
       )}
 
-      {/* My order status banners */}
+      {/* Banners de estado de pedidos */}
       {myOrders.length > 0 && (
-        <div className="max-w-2xl mx-auto px-4 pt-3 space-y-2">
+        <div className="px-4 pt-3 space-y-2" style={{ maxWidth: '800px', margin: '0 auto' }}>
           {myOrders.map(order => {
             const s = STATUS_MSG[order.status]
             return (
-              <div key={order.id} className={`border rounded-2xl px-4 py-3 flex items-center gap-3 ${s.color}`}>
+              <div key={order.id} className="border rounded-xl px-4 py-3 flex items-center gap-3"
+                style={{ backgroundColor: '#0d0d0d', borderColor: '#B90F45' }}>
                 <span className="text-2xl shrink-0">{s.emoji}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm">{s.text}</p>
-                  <p className="text-xs opacity-70">{s.sub} · {order.items.map(i => `${i.quantity}× ${i.name}`).join(', ')}</p>
+                  <p className="font-bold text-sm text-white">{s.text}</p>
+                  <p className="text-xs text-gray-400">{s.sub} · {order.items.map(i => `${i.quantity}× ${i.name}`).join(', ')}</p>
                 </div>
               </div>
             )
@@ -183,204 +221,138 @@ export default function MenuPage() {
         </div>
       )}
 
-      {/* Category scroll nav */}
-      {categories.length > 1 && (
-        <div className="sticky top-[52px] z-10 backdrop-blur" style={{ backgroundColor: '#0d0d0d', borderBottom: '1px solid #1a1a1a' }}>
-          <div className="max-w-2xl mx-auto px-4 flex gap-2 overflow-x-auto py-2.5 scrollbar-hide">
-            {categories.map(cat => (
-              <button key={cat} type="button"
-                onClick={() => scrollToCategory(cat)}
-                className="whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold transition-all shrink-0 text-white"
-                style={{
-                  backgroundColor: activeCategory === cat ? '#B90F45' : '#1a1a1a',
-                }}>
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Logo */}
+      <div className="text-center py-5">
+        <img src="/logo.png" alt="Logo" className="mx-auto" style={{ maxWidth: '90px' }} />
+      </div>
 
-      <div className="max-w-2xl mx-auto p-4 space-y-8">
+      {/* Menú acordeón */}
+      <div className="mx-auto" style={{ maxWidth: '800px' }}>
         {loadingMenu ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="rounded-2xl p-4 flex gap-3 animate-pulse" style={{ backgroundColor: '#0d0d0d' }}>
-                <div className="w-20 h-20 rounded-2xl shrink-0" style={{ backgroundColor: '#1a1a1a' }} />
-                <div className="flex-1 space-y-2 py-1">
-                  <div className="h-4 rounded-full w-2/3" style={{ backgroundColor: '#1a1a1a' }} />
-                  <div className="h-3 rounded-full w-full" style={{ backgroundColor: '#1a1a1a' }} />
-                  <div className="h-3 rounded-full w-1/3" style={{ backgroundColor: '#1a1a1a' }} />
-                </div>
-              </div>
+          <div className="space-y-px">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-11 animate-pulse" style={{ backgroundColor: '#0d0d0d' }} />
             ))}
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-16 text-gray-500">
             <p className="text-5xl mb-3">🍽</p>
-            <p className="font-semibold text-lg">El menú aún no está disponible</p>
+            <p className="font-semibold text-lg text-white">El menú aún no está disponible</p>
           </div>
         ) : (
           <>
-          {FEATURES.favorites.enabled && favorites.length > 0 && (() => {
-            const favItems = items.filter(i => favorites.includes(i.id))
-            return (
-              <div>
-                <h2 className="font-black text-lg mb-3 flex items-center gap-2" style={{ color: '#B90F45' }}>
-                  <span>❤️ Mis favoritos</span>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: '#B90F45' }}>{favItems.length}</span>
-                </h2>
-                <div className="space-y-2">
-                  {favItems.map(item => {
-                    const inCart = cart.find(c => c.item.id === item.id)
-                    return (
-                      <div key={item.id}
-                        className={`rounded-2xl flex overflow-hidden transition-all ${!item.available ? 'opacity-50' : ''}`}
-                        style={{ backgroundColor: '#0d0d0d' }}>
-                        {item.imageUrl ? (
-                          <img src={item.imageUrl} alt={item.name} className="w-24 h-24 object-cover shrink-0" />
-                        ) : (
-                          <div className="w-24 h-24 shrink-0 flex items-center justify-center text-3xl" style={{ backgroundColor: '#1a1a1a' }}>🍽</div>
-                        )}
-                        <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
-                          <div>
-                            <div className="flex items-start gap-1">
-                              <h4 className="font-bold text-white text-sm leading-tight flex-1">{item.name}</h4>
-                              <button type="button" onClick={() => toggleFavorite(item.id)}
-                                className="shrink-0 text-base leading-none active:scale-125 transition-transform" style={{ color: '#B90F45' }}>❤️</button>
-                            </div>
-                            {item.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{item.description}</p>}
+            {/* Favoritos */}
+            {FEATURES.favorites.enabled && (() => {
+              const favItems = items.filter(i => favorites.includes(i.id))
+              if (!favItems.length) return null
+              const catKey = '__favoritos__'
+              const isOpen = openCategory === catKey
+              return (
+                <div key={catKey}>
+                  <button type="button" onClick={() => toggleCategory(catKey)}
+                    className="w-full flex items-center justify-between px-3 py-3 text-white font-bold text-base"
+                    style={{ backgroundColor: isOpen ? '#B90F45' : '#000000', borderTop: '1px solid #1a1a1a' }}>
+                    <span>❤️ Mis favoritos</span>
+                    <span style={{ fontSize: '18px' }}>{isOpen ? '∧' : '∨'}</span>
+                  </button>
+                  {isOpen && (
+                    <div style={{ backgroundColor: '#0d0d0d' }}>
+                      {favItems.map(item => {
+                        const isItemOpen = openItem === item.id
+                        return (
+                          <div key={item.id}>
+                            <button type="button" onClick={() => toggleItem(item.id)}
+                              className="w-full flex items-center justify-center relative py-3 text-white"
+                              style={{ backgroundColor: isItemOpen ? '#B90F45' : '#0d0d0d', borderTop: '1px solid #1a1a1a' }}>
+                              <span style={{ width: '200px', textAlign: 'left' }}>{item.name}</span>
+                              <span className="absolute right-4" style={{ fontSize: '18px' }}>{isItemOpen ? '∧' : '∨'}</span>
+                            </button>
+                            {isItemOpen && <ItemDetail item={item} />}
                           </div>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="font-black text-sm" style={{ color: '#B90F45' }}>${item.price.toFixed(2)}</span>
-                            {item.available && (
-                              inCart ? (
-                                <div className="flex items-center gap-2">
-                                  <button type="button" onClick={() => changeQty(item.id, -1)}
-                                    className="w-7 h-7 rounded-full font-black text-base flex items-center justify-center text-white"
-                                    style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>−</button>
-                                  <span className="font-black text-white text-sm w-4 text-center">{inCart.qty}</span>
-                                  <button type="button" onClick={() => changeQty(item.id, 1)}
-                                    className="w-7 h-7 rounded-full font-black text-base flex items-center justify-center text-white"
-                                    style={{ backgroundColor: '#B90F45' }}>+</button>
-                                </div>
-                              ) : (
-                                <button type="button" onClick={() => addToCart(item)}
-                                  className="text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-colors"
-                                  style={{ backgroundColor: '#B90F45' }}>
-                                  + Agregar
-                                </button>
-                              )
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })()}
-          {Object.entries(grouped).map(([category, catItems]) => (
-            <div key={category} ref={el => { categoryRefs.current[category] = el }}>
-              <h2 className="font-black text-white text-lg mb-3 flex items-center gap-2">
-                <span className="flex-1">{category}</span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: '#B90F45' }}>{catItems.length}</span>
-              </h2>
-              <div className="space-y-2">
-                {catItems.map(item => {
-                  const inCart = cart.find(c => c.item.id === item.id)
-                  return (
-                    <div key={item.id}
-                      className={`rounded-2xl flex overflow-hidden transition-all ${!item.available ? 'opacity-50' : ''}`}
-                      style={{ backgroundColor: '#0d0d0d' }}>
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.name}
-                          className="w-24 h-24 object-cover shrink-0" />
-                      ) : (
-                        <div className="w-24 h-24 shrink-0 flex items-center justify-center text-3xl" style={{ backgroundColor: '#1a1a1a' }}>🍽</div>
-                      )}
-                      <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
-                        <div>
-                          <div className="flex items-start gap-1">
-                            <h4 className="font-bold text-white text-sm leading-tight flex-1">{item.name}</h4>
-                            {!item.available && (
-                              <span className="text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0 text-white" style={{ backgroundColor: '#7f1d1d' }}>Agotado</span>
-                            )}
-                            {FEATURES.favorites.enabled && (
-                              <button type="button" onClick={() => toggleFavorite(item.id)}
-                                className={`shrink-0 text-base leading-none transition-transform active:scale-125 ${favorites.includes(item.id) ? '' : 'opacity-30'}`}
-                                style={{ color: favorites.includes(item.id) ? '#B90F45' : 'white' }}>
-                                {favorites.includes(item.id) ? '❤️' : '🤍'}
-                              </button>
-                            )}
-                          </div>
-                          {item.description && (
-                            <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{item.description}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="font-black text-sm" style={{ color: '#B90F45' }}>${item.price.toFixed(2)}</span>
-                          {item.available && (
-                            inCart ? (
-                              <div className="flex items-center gap-2">
-                                <button type="button" onClick={() => changeQty(item.id, -1)}
-                                  className="w-7 h-7 rounded-full font-black text-base flex items-center justify-center text-white"
-                                  style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>−</button>
-                                <span className="font-black text-white text-sm w-4 text-center">{inCart.qty}</span>
-                                <button type="button" onClick={() => changeQty(item.id, 1)}
-                                  className="w-7 h-7 rounded-full font-black text-base flex items-center justify-center text-white"
-                                  style={{ backgroundColor: '#B90F45' }}>+</button>
-                              </div>
-                            ) : (
-                              <button type="button" onClick={() => addToCart(item)}
-                                className="text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-colors"
-                                style={{ backgroundColor: '#B90F45' }}>
-                                + Agregar
-                              </button>
-                            )
-                          )}
-                        </div>
-                      </div>
+                        )
+                      })}
                     </div>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* Categorías */}
+            {categories.map(category => {
+              const catItems = grouped[category]
+              const isOpen = openCategory === category
+              return (
+                <div key={category}>
+                  <button type="button" onClick={() => toggleCategory(category)}
+                    className="w-full flex items-center justify-between px-3 py-3 text-white font-bold text-base"
+                    style={{ backgroundColor: isOpen ? '#B90F45' : '#000000', borderTop: '1px solid #1a1a1a' }}>
+                    <span>{category}</span>
+                    <span style={{ fontSize: '18px' }}>{isOpen ? '∧' : '∨'}</span>
+                  </button>
+                  {isOpen && (
+                    <div style={{ backgroundColor: '#0d0d0d' }}>
+                      {catItems.map(item => {
+                        const isItemOpen = openItem === item.id
+                        return (
+                          <div key={item.id} style={{ opacity: item.available ? 1 : 0.5 }}>
+                            <button type="button"
+                              onClick={() => item.available && toggleItem(item.id)}
+                              className="w-full flex items-center justify-center relative py-3 text-white"
+                              style={{
+                                backgroundColor: isItemOpen ? '#B90F45' : '#0d0d0d',
+                                borderTop: '1px solid #1a1a1a',
+                                cursor: item.available ? 'pointer' : 'not-allowed',
+                              }}>
+                              <span style={{ width: '200px', textAlign: 'left' }}>
+                                {item.name}
+                                {!item.available && <span className="ml-1 text-xs text-red-400">(Agotado)</span>}
+                              </span>
+                              <span className="absolute right-4" style={{ fontSize: '18px' }}>{isItemOpen ? '∧' : '∨'}</span>
+                            </button>
+                            {isItemOpen && <ItemDetail item={item} />}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            <div style={{ borderBottom: '1px solid #1a1a1a' }} />
           </>
         )}
       </div>
 
-      {/* Cart bar */}
-      {cartCount > 0 && !showOrder && (
-        <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-1">
-          <button type="button" onClick={() => setShowOrder(true)}
-            className="w-full max-w-2xl mx-auto flex items-center justify-between text-white font-bold py-4 px-5 rounded-2xl shadow-2xl"
-            style={{ backgroundColor: '#B90F45' }}>
-            <span className="flex items-center gap-2">
-              <span className="bg-white font-black text-xs w-6 h-6 rounded-full flex items-center justify-center" style={{ color: '#B90F45' }}>{cartCount}</span>
-              Ver pedido
+      {/* Botón flotante del carrito */}
+      <div className="fixed z-40" style={{ bottom: '72px', right: '20px' }}>
+        <button type="button" onClick={() => cartCount > 0 && setShowOrder(true)}
+          className="relative flex items-center justify-center rounded-full shadow-2xl transition-transform active:scale-95"
+          style={{ width: '60px', height: '60px', backgroundColor: '#DC5E86', opacity: cartCount > 0 ? 1 : 0.45 }}>
+          <img src="/logo.png" alt="" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+          {cartCount > 0 && (
+            <span className="absolute flex items-center justify-center text-white font-black rounded-full"
+              style={{ top: '-4px', right: '-4px', width: '22px', height: '22px', backgroundColor: '#B02350', fontSize: '11px' }}>
+              {cartCount}
             </span>
-            <span className="font-black">${cartTotal.toFixed(2)}</span>
-          </button>
-        </div>
-      )}
+          )}
+        </button>
+      </div>
 
-      {/* Order modal */}
+      {/* Modal del pedido */}
       {showOrder && (
         <div className="fixed inset-0 z-[60] bg-black/80 flex items-end backdrop-blur-sm">
-          <div className="w-full rounded-t-3xl p-6 pb-10 space-y-4 max-h-[92vh] overflow-y-auto" style={{ backgroundColor: '#0d0d0d' }}>
+          <div className="w-full rounded-t-3xl p-6 pb-10 space-y-4 max-h-[92vh] overflow-y-auto"
+            style={{ backgroundColor: '#0d0d0d' }}>
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-black text-white">Tu pedido</h2>
               <button type="button" onClick={() => setShowOrder(false)}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-lg"
                 style={{ backgroundColor: '#1a1a1a' }}>×</button>
             </div>
-
             <div className="space-y-2">
               {cart.map(c => (
-                <div key={c.item.id} className="flex items-center gap-3 py-1 border-b border-[#1a1a1a]">
+                <div key={c.item.id} className="flex items-center gap-3 py-2"
+                  style={{ borderBottom: '1px solid #1a1a1a' }}>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-white text-sm">{c.item.name}</p>
                     <p className="text-xs text-gray-400">${c.item.price.toFixed(2)} c/u</p>
@@ -394,16 +366,16 @@ export default function MenuPage() {
                       className="w-8 h-8 rounded-full font-bold text-lg flex items-center justify-center text-white"
                       style={{ backgroundColor: '#B90F45' }}>+</button>
                   </div>
-                  <span className="text-sm font-black text-white w-14 text-right shrink-0">${(c.item.price * c.qty).toFixed(2)}</span>
+                  <span className="text-sm font-black text-white w-14 text-right shrink-0">
+                    ${(c.item.price * c.qty).toFixed(2)}
+                  </span>
                 </div>
               ))}
             </div>
-
-            <div className="rounded-2xl px-4 py-3 flex justify-between font-black text-white text-lg" style={{ backgroundColor: '#1a1a1a' }}>
-              <span>Total</span>
-              <span>${cartTotal.toFixed(2)}</span>
+            <div className="rounded-2xl px-4 py-3 flex justify-between font-black text-white text-lg"
+              style={{ backgroundColor: '#1a1a1a' }}>
+              <span>Total</span><span>${cartTotal.toFixed(2)}</span>
             </div>
-
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Tu nombre *</label>
