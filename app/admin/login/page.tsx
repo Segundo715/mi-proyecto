@@ -29,48 +29,63 @@ export default function LoginPage() {
     }
   }
 
-  const INPUT = 'w-full border border-[#B90F45]/40 rounded-2xl px-4 py-3.5 text-white bg-[#1a1a1a] placeholder-gray-500 focus:outline-none focus:border-[#B90F45] text-sm transition-colors'
+  const INPUT = 'w-full rounded-2xl px-4 py-3.5 text-white text-sm transition-colors focus:outline-none'
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center p-5" style={{ backgroundColor: '#000000' }}>
+    <div className="fixed inset-0 flex flex-col items-center justify-center p-5" style={{ backgroundColor: '#060911' }}>
 
       {/* Brand */}
       <div className="text-center mb-8">
         <div className="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl overflow-hidden"
-          style={{ backgroundColor: '#0d0d0d', border: '2px solid #B90F45' }}>
+          style={{ background: 'linear-gradient(135deg,#00e676,#06b6d4)' }}>
           <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-2" />
         </div>
-        <p className="text-sm mt-1 font-medium" style={{ color: '#B90F45' }}>Panel de empleados</p>
+        <div className="font-extrabold text-xl tracking-wide" style={{ color: '#eef2f7' }}>NICHO</div>
+        <p className="text-sm mt-1 font-medium" style={{ color: '#00e676' }}>Panel de administración</p>
       </div>
 
-      <div className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden" style={{ backgroundColor: '#0d0d0d', border: '1px solid #1a1a1a' }}>
-        <p className="text-center text-xs font-bold uppercase tracking-widest pt-5 pb-1" style={{ color: '#B90F45' }}>Iniciar sesión</p>
+      <div className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden"
+        style={{ backgroundColor: '#0e1225', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <p className="text-center text-xs font-bold uppercase tracking-widest pt-5 pb-1" style={{ color: '#00e676' }}>
+          Iniciar sesión
+        </p>
 
         <form onSubmit={handleSubmit} className="px-5 pb-5 pt-3 space-y-3">
           <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Nombre</label>
+            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#6b7a94' }}>Nombre</label>
             <input type="text" value={name} onChange={e => setName(e.target.value)}
-              placeholder="Ej. Carlos" autoComplete="username" autoFocus className={INPUT} />
+              placeholder="Ej. Carlos" autoComplete="username" autoFocus
+              className={INPUT}
+              style={{ backgroundColor: '#0a0e1c', border: '1px solid rgba(0,230,118,0.3)' }}
+              onFocus={e => e.currentTarget.style.borderColor = '#00e676'}
+              onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,230,118,0.3)'} />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Contraseña</label>
+            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#6b7a94' }}>Contraseña</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••" autoComplete="current-password" className={INPUT} />
+              placeholder="••••••••" autoComplete="current-password"
+              className={INPUT}
+              style={{ backgroundColor: '#0a0e1c', border: '1px solid rgba(0,230,118,0.3)' }}
+              onFocus={e => e.currentTarget.style.borderColor = '#00e676'}
+              onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,230,118,0.3)'} />
           </div>
 
           {error && (
-            <div className="border rounded-2xl px-4 py-3 text-sm font-medium text-red-300" style={{ backgroundColor: '#2d0a0a', borderColor: '#7f1d1d' }}>{error}</div>
+            <div className="border rounded-2xl px-4 py-3 text-sm font-medium text-red-300"
+              style={{ backgroundColor: '#2d0a0a', borderColor: '#7f1d1d' }}>
+              {error}
+            </div>
           )}
 
           <button type="submit" disabled={loading}
-            className="w-full text-white font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors mt-1"
-            style={{ backgroundColor: '#B90F45' }}>
+            className="w-full font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors mt-1"
+            style={{ backgroundColor: '#00e676', color: '#000' }}>
             {loading ? 'Cargando...' : '→ Entrar'}
           </button>
         </form>
       </div>
 
-      <p className="text-xs mt-6" style={{ color: '#B90F45' }}>Solo para uso del personal</p>
+      <p className="text-xs mt-6" style={{ color: '#6b7a94' }}>Solo para uso del personal</p>
     </div>
   )
 }

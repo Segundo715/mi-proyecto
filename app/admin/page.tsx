@@ -12,14 +12,21 @@ interface LoyaltyCard {
   registeredAt: string; stamps: { timestamp: string }[]
 }
 
-const AVATAR_COLORS = ['bg-amber-500','bg-rose-500','bg-violet-500','bg-sky-500','bg-emerald-500','bg-orange-500']
-function avatarColor(name: string) { return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length] }
 function initial(name: string) { return name.trim().charAt(0).toUpperCase() }
 
 type ScanMode = 'idle' | 'camera' | 'phone'
 type ScanState = 'idle' | 'scanning' | 'found' | 'stamping' | 'done'
 
 const STAMPS = 5
+
+const S = {
+  bg:     '#080b16',
+  card:   '#0e1225',
+  accent: '#00e676',
+  text:   '#eef2f7',
+  sub:    '#6b7a94',
+  border: 'rgba(255,255,255,0.07)',
+}
 
 export default function AdminPage() {
   const [origin, setOrigin] = useState('')
@@ -94,43 +101,48 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <AdminNav />
       <div className="max-w-lg mx-auto p-4 space-y-4">
 
         {/* Business QR */}
-        <div className="bg-white rounded-2xl shadow p-5 text-center">
-          <h2 className="font-black text-amber-900 text-base mb-1">QR del negocio</h2>
-          <p className="text-xs text-gray-400 mb-4">Los clientes escanean este para registrarse</p>
+        <div className="rounded-2xl p-5 text-center" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <h2 className="font-black text-base mb-1" style={{ color: S.accent }}>QR del negocio</h2>
+          <p className="text-xs mb-4" style={{ color: S.sub }}>Los clientes escanean este para registrarse</p>
           <div className="flex justify-center mb-3">
-            <div className="p-3 border-2 border-amber-100 rounded-2xl bg-white inline-flex items-center justify-center min-h-[172px] min-w-[172px]">
-              {origin ? <QRCode value={`${origin}/loyalty`} size={160} /> : <span className="text-gray-300 text-sm">Cargando…</span>}
+            <div className="p-3 rounded-2xl bg-white inline-flex items-center justify-center min-h-[172px] min-w-[172px]">
+              {origin ? <QRCode value={`${origin}/loyalty`} size={160} /> : <span className="text-gray-400 text-sm">Cargando…</span>}
             </div>
           </div>
-          {origin && <p className="text-xs text-gray-400 break-all">{origin}/loyalty</p>}
+          {origin && <p className="text-xs break-all" style={{ color: S.sub }}>{origin}/loyalty</p>}
         </div>
 
         {/* Stamp visit */}
-        <div className="bg-white rounded-2xl shadow overflow-hidden">
-          <div className="bg-amber-900 px-5 py-3">
-            <h2 className="font-black text-white text-base">Sellar visita</h2>
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-3" style={{ backgroundColor: 'rgba(0,230,118,0.08)', borderBottom: `1px solid ${S.border}` }}>
+            <h2 className="font-black text-base" style={{ color: S.accent }}>Sellar visita</h2>
           </div>
 
           <div className="p-5 space-y-3">
             {scanError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">{scanError}</div>
+              <div className="border rounded-xl px-4 py-3 text-sm"
+                style={{ backgroundColor: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.3)', color: '#fca5a5' }}>
+                {scanError}
+              </div>
             )}
 
             {scanMode === 'idle' && scanState === 'idle' && (
               <div className="space-y-3">
                 <button type="button"
                   onClick={() => { setScanError(''); setScanMode('camera'); setScanState('scanning') }}
-                  className="w-full bg-amber-700 active:bg-amber-900 text-white font-black py-4 rounded-2xl text-base transition-colors">
+                  className="w-full font-black py-4 rounded-2xl text-base transition-colors"
+                  style={{ backgroundColor: S.accent, color: '#000' }}>
                   📷 Escanear QR del cliente
                 </button>
                 <button type="button"
                   onClick={() => { setScanError(''); setScanMode('phone') }}
-                  className="w-full bg-white border-2 border-amber-200 text-amber-800 font-bold py-4 rounded-2xl text-base active:bg-amber-50 transition-colors">
+                  className="w-full font-bold py-4 rounded-2xl text-base transition-colors"
+                  style={{ backgroundColor: 'rgba(0,230,118,0.1)', color: S.accent, border: '1px solid rgba(0,230,118,0.3)' }}>
                   🔍 Buscar por teléfono
                 </button>
               </div>
@@ -140,7 +152,9 @@ export default function AdminPage() {
               <div>
                 <QRScanner key={scanKey.current} onScan={id => loadCard(id)}
                   onCameraError={() => { setScanError('Cámara no disponible. Usa búsqueda por teléfono.'); setScanMode('idle') }} />
-                <button type="button" onClick={resetScan} className="w-full mt-3 text-sm text-gray-400 underline py-1">Cancelar</button>
+                <button type="button" onClick={resetScan} className="w-full mt-3 text-sm underline py-1" style={{ color: S.sub }}>
+                  Cancelar
+                </button>
               </div>
             )}
 
@@ -150,59 +164,66 @@ export default function AdminPage() {
                   onChange={e => setPhoneSearch(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && searchByPhone()}
                   placeholder="Número de teléfono"
-                  className="w-full border-2 border-amber-200 rounded-2xl px-4 py-3 text-gray-800 bg-white focus:outline-none focus:border-amber-500 text-lg"
+                  className="w-full rounded-2xl px-4 py-3 text-lg focus:outline-none"
+                  style={{ backgroundColor: '#0a0e1c', color: S.text, border: '1px solid rgba(0,230,118,0.3)' }}
                   autoFocus />
                 <button type="button" onClick={searchByPhone} disabled={searching}
-                  className="w-full bg-amber-700 active:bg-amber-900 text-white font-black py-4 rounded-2xl text-base disabled:opacity-60">
+                  className="w-full font-black py-4 rounded-2xl text-base disabled:opacity-60"
+                  style={{ backgroundColor: S.accent, color: '#000' }}>
                   {searching ? 'Buscando...' : '🔍 Buscar'}
                 </button>
-                <button type="button" onClick={resetScan} className="w-full text-sm text-gray-400 underline py-1">Cancelar</button>
+                <button type="button" onClick={resetScan} className="w-full text-sm underline py-1" style={{ color: S.sub }}>
+                  Cancelar
+                </button>
               </div>
             )}
 
             {scanState !== 'idle' && scanState !== 'scanning' && scanned && (
               <div className="space-y-4">
                 {/* Customer card */}
-                <div className="bg-amber-900 rounded-2xl p-5 text-white">
+                <div className="rounded-2xl p-5" style={{ background: 'linear-gradient(135deg,#071a10,#0a1f14)', border: '1px solid rgba(0,230,118,0.2)' }}>
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <p className="font-black text-2xl leading-tight">{scanned.name}</p>
-                      <p className="text-amber-300 text-sm">{scanned.phone}</p>
+                      <p className="font-black text-2xl leading-tight" style={{ color: S.text }}>{scanned.name}</p>
+                      <p className="text-sm" style={{ color: S.sub }}>{scanned.phone}</p>
                     </div>
-                    <span className={`text-3xl font-black ${scanned.visits >= STAMPS ? 'text-yellow-400' : 'text-amber-300'}`}>
+                    <span className="text-3xl font-black" style={{ color: scanned.visits >= STAMPS ? S.accent : S.sub }}>
                       {scanned.visits}/{STAMPS}
                     </span>
                   </div>
                   <div className="grid grid-cols-5 gap-2">
                     {Array.from({ length: STAMPS }).map((_, i) => (
-                      <div key={i} className={`aspect-square rounded-full flex items-center justify-center text-xl border-2 transition-all ${
-                        i < scanned.visits
-                          ? 'bg-amber-500 border-amber-400'
-                          : 'bg-amber-800 border-amber-700'
-                      }`}>
-                        {i < scanned.visits ? '☕' : '○'}
+                      <div key={i} className="aspect-square rounded-full flex items-center justify-center text-xl border-2 transition-all"
+                        style={{
+                          backgroundColor: i < scanned.visits ? 'rgba(0,230,118,0.2)' : 'rgba(255,255,255,0.05)',
+                          borderColor: i < scanned.visits ? S.accent : 'rgba(255,255,255,0.1)',
+                        }}>
+                        {i < scanned.visits ? '☕' : <span style={{ color: 'rgba(255,255,255,0.2)' }}>○</span>}
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {scanState === 'done' ? (
-                  <div className="bg-green-50 border-2 border-green-300 text-green-800 rounded-2xl p-4 text-center font-black text-base">
+                  <div className="rounded-2xl p-4 text-center font-black text-base"
+                    style={{ backgroundColor: 'rgba(0,230,118,0.1)', border: '2px solid rgba(0,230,118,0.4)', color: S.accent }}>
                     ✅ ¡Visita sellada! — {scanned.visits}/{STAMPS} sellos
                   </div>
                 ) : scanned.visits >= STAMPS ? (
                   <button type="button" onClick={redeemCoffee} disabled={scanState === 'stamping'}
-                    className="w-full bg-yellow-400 active:bg-yellow-500 text-amber-900 font-black py-4 rounded-2xl text-base disabled:opacity-60">
+                    className="w-full font-black py-4 rounded-2xl text-base disabled:opacity-60"
+                    style={{ backgroundColor: '#fbbf24', color: '#000' }}>
                     {scanState === 'stamping' ? 'Canjeando...' : '🎉 Canjear café gratis'}
                   </button>
                 ) : (
                   <button type="button" onClick={stampVisit} disabled={scanState === 'stamping'}
-                    className="w-full bg-amber-700 active:bg-amber-900 text-white font-black py-4 rounded-2xl text-base disabled:opacity-60">
+                    className="w-full font-black py-4 rounded-2xl text-base disabled:opacity-60"
+                    style={{ backgroundColor: S.accent, color: '#000' }}>
                     {scanState === 'stamping' ? 'Sellando...' : '☕ Sellar visita'}
                   </button>
                 )}
 
-                <button type="button" onClick={resetScan} className="w-full text-sm text-gray-400 underline py-1">
+                <button type="button" onClick={resetScan} className="w-full text-sm underline py-1" style={{ color: S.sub }}>
                   Buscar otro cliente
                 </button>
               </div>
@@ -211,10 +232,10 @@ export default function AdminPage() {
         </div>
 
         {/* Active loyalty cards */}
-        <div className="bg-white rounded-2xl shadow overflow-hidden">
-          <div className="bg-amber-800 px-5 py-3 flex items-center justify-between">
-            <h2 className="font-black text-white text-base">☕ Tarjetas activas</h2>
-            <span className="text-amber-300 text-xs font-bold">{loyaltyCards.length}</span>
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <h2 className="font-black text-base" style={{ color: S.text }}>☕ Tarjetas activas</h2>
+            <span className="text-xs font-bold" style={{ color: S.accent }}>{loyaltyCards.length}</span>
           </div>
           <div className="p-3 space-y-2">
             <input
@@ -222,7 +243,8 @@ export default function AdminPage() {
               value={cardSearch}
               onChange={e => setCardSearch(e.target.value)}
               placeholder="Buscar cliente..."
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 bg-gray-50 focus:outline-none focus:border-amber-400"
+              className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none"
+              style={{ backgroundColor: '#0a0e1c', color: S.text, border: `1px solid ${S.border}` }}
             />
             {loyaltyCards
               .filter(c => !cardSearch.trim() || c.name.toLowerCase().includes(cardSearch.toLowerCase()) || c.phone.includes(cardSearch))
@@ -230,30 +252,34 @@ export default function AdminPage() {
               .map(c => (
                 <button key={c.id} type="button"
                   onClick={() => { loadCard(c.id); setScanMode('camera') }}
-                  className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-colors active:scale-[0.98] ${
-                    c.visits >= STAMPS ? 'bg-yellow-50 border-2 border-yellow-300' : 'bg-gray-50 hover:bg-amber-50'
-                  }`}>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-base shrink-0 ${avatarColor(c.name)}`}>
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-colors active:scale-[0.98]"
+                  style={{
+                    backgroundColor: c.visits >= STAMPS ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.03)',
+                    border: c.visits >= STAMPS ? '2px solid rgba(251,191,36,0.35)' : `1px solid ${S.border}`,
+                  }}>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-base shrink-0"
+                    style={{ background: 'linear-gradient(135deg,#7c3aed,#4f6ef7)' }}>
                     {initial(c.name)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 text-sm truncate">{c.name}</p>
+                    <p className="font-bold text-sm truncate" style={{ color: S.text }}>{c.name}</p>
                     <div className="flex gap-1 mt-1">
                       {Array.from({ length: STAMPS }).map((_, i) => (
-                        <div key={i} className={`w-4 h-1.5 rounded-full ${i < c.visits ? 'bg-amber-500' : 'bg-gray-200'}`} />
+                        <div key={i} className="w-4 h-1.5 rounded-full"
+                          style={{ backgroundColor: i < c.visits ? S.accent : 'rgba(255,255,255,0.1)' }} />
                       ))}
                     </div>
                   </div>
                   <div className="text-right shrink-0">
                     {c.visits >= STAMPS
                       ? <span className="text-lg">🎉</span>
-                      : <span className="text-sm font-black text-amber-700">{c.visits}/{STAMPS}</span>
+                      : <span className="text-sm font-black" style={{ color: S.accent }}>{c.visits}/{STAMPS}</span>
                     }
                   </div>
                 </button>
               ))}
             {loyaltyCards.length === 0 && (
-              <p className="text-center text-gray-400 text-sm py-4">Aún no hay tarjetas registradas</p>
+              <p className="text-center text-sm py-4" style={{ color: S.sub }}>Aún no hay tarjetas registradas</p>
             )}
           </div>
         </div>

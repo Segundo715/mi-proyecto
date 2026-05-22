@@ -31,7 +31,17 @@ const EMPTY_FORM = {
   available: true,
 }
 
-const INPUT = 'w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-amber-500'
+const S = {
+  bg:     '#080b16',
+  card:   '#0e1225',
+  accent: '#00e676',
+  text:   '#eef2f7',
+  sub:    '#6b7a94',
+  border: 'rgba(255,255,255,0.07)',
+  input:  '#0a0e1c',
+}
+
+const INPUT_CLS = 'w-full rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors'
 
 async function uploadImage(file: File, path: 'menu'): Promise<string | null> {
   const fd = new FormData()
@@ -64,14 +74,18 @@ function ImagePicker({ value, onChange }: { value: string; onChange: (url: strin
         type="file"
         accept="image/*"
         onChange={handleFile}
-        className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-amber-500 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-800"
+        className={INPUT_CLS + ' file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold'}
+        style={{
+          backgroundColor: S.input, color: S.text, border: `1px solid ${S.border}`,
+          ['--tw-file-color' as string]: S.accent,
+        }}
       />
-      {uploading && <p className="text-xs text-amber-600 mt-1">Subiendo imagen...</p>}
+      {uploading && <p className="text-xs mt-1" style={{ color: S.accent }}>Subiendo imagen...</p>}
       {value && (
         <div className="mt-2 flex items-center gap-2">
           <img src={value} alt="preview" className="h-16 rounded-xl object-cover" />
           <button type="button" onClick={() => onChange('')}
-            className="text-xs text-red-500 underline">Quitar</button>
+            className="text-xs underline" style={{ color: '#f87171' }}>Quitar</button>
         </div>
       )}
     </div>
@@ -187,122 +201,131 @@ export default function AdminMenuPage() {
     grouped[item.category].push(item)
   }
 
+  const inputStyle = { backgroundColor: S.input, color: S.text, border: `1px solid rgba(0,230,118,0.25)` }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <AdminNav />
 
       <div className="max-w-3xl mx-auto p-4 space-y-6">
-        <h1 className="text-2xl font-bold text-amber-900">Gestión del Menú</h1>
+        <h1 className="text-2xl font-black" style={{ color: S.text }}>Gestión del Menú</h1>
 
         {/* Add item form */}
-        <div className="bg-white rounded-2xl shadow p-5 space-y-4">
-          <h2 className="font-bold text-amber-900 text-lg">Añadir producto</h2>
+        <div className="rounded-2xl p-5 space-y-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <h2 className="font-bold text-lg" style={{ color: S.accent }}>Añadir producto</h2>
 
           {formError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+            <div className="border rounded-xl px-4 py-3 text-sm"
+              style={{ backgroundColor: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.4)', color: '#fca5a5' }}>
               {formError}
             </div>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-amber-900 mb-1">Nombre *</label>
+              <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Nombre *</label>
               <input type="text" value={form.name}
                 onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                placeholder="Ej. Café Americano" className={INPUT} />
+                placeholder="Ej. Café Americano" className={INPUT_CLS} style={inputStyle} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-amber-900 mb-1">Categoría *</label>
+              <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Categoría *</label>
               <input type="text" value={form.category}
                 onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
-                placeholder="Ej. Bebidas calientes" className={INPUT} />
+                placeholder="Ej. Bebidas calientes" className={INPUT_CLS} style={inputStyle} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-amber-900 mb-1">Precio *</label>
+              <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Precio *</label>
               <input type="number" value={form.price}
                 onChange={e => setForm(p => ({ ...p, price: e.target.value }))}
-                placeholder="0.00" min="0" step="0.01" className={INPUT} />
+                placeholder="0.00" min="0" step="0.01" className={INPUT_CLS} style={inputStyle} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-amber-900 mb-1">Imagen (opcional)</label>
+              <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Imagen (opcional)</label>
               <ImagePicker value={form.imageUrl} onChange={url => setForm(p => ({ ...p, imageUrl: url }))} />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-amber-900 mb-1">Descripción</label>
+            <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Descripción</label>
             <textarea value={form.description}
               onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
               placeholder="Descripción del producto..." rows={2}
-              className={INPUT + ' resize-none'} />
+              className={INPUT_CLS + ' resize-none'} style={inputStyle} />
           </div>
 
           <div className="flex items-center gap-2">
             <input type="checkbox" id="available" checked={form.available}
               onChange={e => setForm(p => ({ ...p, available: e.target.checked }))}
-              className="w-4 h-4 accent-amber-600" />
-            <label htmlFor="available" className="text-sm font-medium text-amber-900">Disponible</label>
+              className="w-4 h-4" style={{ accentColor: S.accent }} />
+            <label htmlFor="available" className="text-sm font-medium" style={{ color: S.text }}>Disponible</label>
           </div>
 
           <button onClick={createItem} disabled={saving}
-            className="w-full bg-amber-700 active:bg-amber-900 text-white font-bold py-3 rounded-xl disabled:opacity-60">
+            className="w-full font-bold py-3 rounded-xl disabled:opacity-60 transition-colors"
+            style={{ backgroundColor: S.accent, color: '#000' }}>
             {saving ? 'Guardando...' : '+ Añadir producto'}
           </button>
         </div>
 
         {/* Items list */}
         {loading ? (
-          <div className="text-center py-10 text-amber-700">Cargando...</div>
+          <div className="text-center py-10" style={{ color: S.accent }}>Cargando...</div>
         ) : items.length === 0 ? (
-          <div className="text-center py-10 text-gray-400">
+          <div className="text-center py-10" style={{ color: S.sub }}>
             <p className="text-4xl mb-2">🍽</p>
             <p>No hay productos en el menú aún</p>
           </div>
         ) : (
           Object.entries(grouped).map(([category, categoryItems]) => (
             <div key={category} className="space-y-3">
-              <h2 className="font-bold text-amber-900 text-lg border-b border-amber-200 pb-1">{category}</h2>
+              <h2 className="font-bold text-lg pb-1" style={{ color: S.accent, borderBottom: `1px solid rgba(0,230,118,0.2)` }}>
+                {category}
+              </h2>
               {categoryItems.map(item => (
-                <div key={item.id} className="bg-white rounded-2xl shadow p-4">
+                <div key={item.id} className="rounded-2xl p-4"
+                  style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
                   {editingId === item.id ? (
                     <div className="space-y-3">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-semibold text-amber-900 mb-1">Nombre</label>
+                          <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Nombre</label>
                           <input type="text" value={editState.name}
                             onChange={e => setEditState(p => ({ ...p, name: e.target.value }))}
-                            className={INPUT} />
+                            className={INPUT_CLS} style={inputStyle} />
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-amber-900 mb-1">Categoría</label>
+                          <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Categoría</label>
                           <input type="text" value={editState.category}
                             onChange={e => setEditState(p => ({ ...p, category: e.target.value }))}
-                            className={INPUT} />
+                            className={INPUT_CLS} style={inputStyle} />
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-amber-900 mb-1">Precio</label>
+                          <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Precio</label>
                           <input type="number" value={editState.price}
                             onChange={e => setEditState(p => ({ ...p, price: e.target.value }))}
-                            min="0" step="0.01" className={INPUT} />
+                            min="0" step="0.01" className={INPUT_CLS} style={inputStyle} />
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-amber-900 mb-1">Imagen</label>
+                          <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Imagen</label>
                           <ImagePicker value={editState.imageUrl} onChange={url => setEditState(p => ({ ...p, imageUrl: url }))} />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-amber-900 mb-1">Descripción</label>
+                        <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Descripción</label>
                         <textarea value={editState.description}
                           onChange={e => setEditState(p => ({ ...p, description: e.target.value }))}
-                          rows={2} className={INPUT + ' resize-none'} />
+                          rows={2} className={INPUT_CLS + ' resize-none'} style={inputStyle} />
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => saveEdit(item.id)} disabled={saving}
-                          className="flex-1 bg-amber-700 text-white font-bold py-2 rounded-xl text-sm disabled:opacity-60">
+                          className="flex-1 font-bold py-2 rounded-xl text-sm disabled:opacity-60"
+                          style={{ backgroundColor: S.accent, color: '#000' }}>
                           {saving ? 'Guardando...' : 'Guardar'}
                         </button>
                         <button onClick={() => setEditingId(null)}
-                          className="flex-1 border-2 border-gray-200 text-gray-600 font-bold py-2 rounded-xl text-sm">
+                          className="flex-1 font-bold py-2 rounded-xl text-sm"
+                          style={{ border: `1px solid ${S.border}`, color: S.sub, backgroundColor: 'transparent' }}>
                           Cancelar
                         </button>
                       </div>
@@ -315,34 +338,39 @@ export default function AdminMenuPage() {
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-bold text-gray-900">{item.name}</h3>
-                            <span className="text-sm font-bold text-green-600">${item.price.toFixed(2)}</span>
+                            <h3 className="font-bold" style={{ color: S.text }}>{item.name}</h3>
+                            <span className="text-sm font-bold" style={{ color: S.accent }}>${item.price.toFixed(2)}</span>
                             {item.available ? (
-                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Disponible</span>
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>Disponible</span>
                             ) : (
-                              <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">No disponible</span>
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                style={{ backgroundColor: 'rgba(239,68,68,0.15)', color: '#f87171' }}>No disponible</span>
                             )}
                           </div>
                           {item.description && (
-                            <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">{item.description}</p>
+                            <p className="text-sm mt-0.5 line-clamp-2" style={{ color: S.sub }}>{item.description}</p>
                           )}
                         </div>
                       </div>
                       <div className="flex gap-2 mt-3">
                         <button onClick={() => toggleAvailable(item)}
-                          className={`flex-1 py-1.5 rounded-xl text-sm font-medium border-2 ${
-                            item.available
-                              ? 'border-orange-200 text-orange-600 hover:bg-orange-50'
-                              : 'border-green-200 text-green-600 hover:bg-green-50'
-                          }`}>
+                          className="flex-1 py-1.5 rounded-xl text-sm font-medium"
+                          style={{
+                            border: item.available ? '1px solid rgba(251,146,60,0.4)' : '1px solid rgba(34,197,94,0.4)',
+                            color: item.available ? '#fb923c' : '#4ade80',
+                            backgroundColor: 'transparent',
+                          }}>
                           {item.available ? 'Desactivar' : 'Activar'}
                         </button>
                         <button onClick={() => startEdit(item)}
-                          className="flex-1 py-1.5 rounded-xl text-sm font-medium border-2 border-amber-200 text-amber-700 hover:bg-amber-50">
+                          className="flex-1 py-1.5 rounded-xl text-sm font-medium"
+                          style={{ border: `1px solid rgba(0,230,118,0.3)`, color: S.accent, backgroundColor: 'transparent' }}>
                           Editar
                         </button>
                         <button onClick={() => deleteItem(item.id)}
-                          className="flex-1 py-1.5 rounded-xl text-sm font-medium border-2 border-red-200 text-red-500 hover:bg-red-50">
+                          className="flex-1 py-1.5 rounded-xl text-sm font-medium"
+                          style={{ border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', backgroundColor: 'transparent' }}>
                           Eliminar
                         </button>
                       </div>

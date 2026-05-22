@@ -11,8 +11,15 @@ interface Customer {
 
 const STAMPS = 5
 
-const AVATAR_COLORS = ['bg-amber-500','bg-rose-500','bg-violet-500','bg-sky-500','bg-emerald-500','bg-orange-500']
-function avatarColor(name: string) { return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length] }
+const S = {
+  bg:     '#080b16',
+  card:   '#0e1225',
+  accent: '#00e676',
+  text:   '#eef2f7',
+  sub:    '#6b7a94',
+  border: 'rgba(255,255,255,0.07)',
+}
+
 function initial(name: string) { return name.trim().charAt(0).toUpperCase() }
 
 function fmt(iso: string) {
@@ -87,18 +94,19 @@ export default function CustomersPage() {
   const readyForCoffee = confirmed.filter(c => c.visits >= STAMPS).length
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <AdminNav />
 
       <div className="max-w-2xl mx-auto p-4 space-y-4">
 
         {/* Check-in alerts */}
         {checkIns.map(c => (
-          <div key={c.id} className="bg-green-500 text-white rounded-2xl p-4 flex items-center gap-3 shadow-lg">
+          <div key={c.id} className="rounded-2xl p-4 flex items-center gap-3"
+            style={{ backgroundColor: 'rgba(0,230,118,0.15)', border: '1px solid rgba(0,230,118,0.4)' }}>
             <span className="text-3xl animate-bounce">🔔</span>
             <div className="flex-1">
-              <p className="font-black text-base">{c.name} está en el mostrador</p>
-              <p className="text-xs text-green-100">{c.phone} · {c.visits}/{STAMPS} sellos · {timeAgo(c.requestedAt!)}</p>
+              <p className="font-black text-base" style={{ color: S.accent }}>{c.name} está en el mostrador</p>
+              <p className="text-xs" style={{ color: S.sub }}>{c.phone} · {c.visits}/{STAMPS} sellos · {timeAgo(c.requestedAt!)}</p>
             </div>
           </div>
         ))}
@@ -106,47 +114,51 @@ export default function CustomersPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Clientes', value: confirmed.length, emoji: '👥', color: 'text-amber-700' },
-            { label: 'Sellos totales', value: totalStamps, emoji: '☕', color: 'text-amber-700' },
-            { label: 'Premio listo', value: readyForCoffee, emoji: '🎉', color: 'text-green-700' },
+            { label: 'Clientes', value: confirmed.length, emoji: '👥', color: S.accent },
+            { label: 'Sellos totales', value: totalStamps, emoji: '☕', color: S.accent },
+            { label: 'Premio listo', value: readyForCoffee, emoji: '🎉', color: '#fbbf24' },
           ].map(s => (
-            <div key={s.label} className="bg-white rounded-2xl shadow-sm p-3 text-center">
+            <div key={s.label} className="rounded-2xl p-3 text-center" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
               <p className="text-2xl">{s.emoji}</p>
-              <p className={`font-black text-xl ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-gray-400 font-medium">{s.label}</p>
+              <p className="font-black text-xl" style={{ color: s.color }}>{s.value}</p>
+              <p className="text-xs font-medium" style={{ color: S.sub }}>{s.label}</p>
             </div>
           ))}
         </div>
 
         {/* Pending activation */}
         {pending.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-            <div className="bg-red-500 px-4 py-3 flex items-center gap-2">
-              <span className="text-white text-lg">⏳</span>
-              <p className="text-white font-black text-sm">Pendientes de activación ({pending.length})</p>
+          <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            <div className="px-4 py-3 flex items-center gap-2" style={{ backgroundColor: 'rgba(239,68,68,0.15)', borderBottom: `1px solid ${S.border}` }}>
+              <span className="text-lg">⏳</span>
+              <p className="font-black text-sm" style={{ color: '#f87171' }}>Pendientes de activación ({pending.length})</p>
             </div>
             <div className="p-3 space-y-3">
               {pending.map(c => (
-                <div key={c.id} className="bg-red-50 border border-red-100 rounded-2xl p-4">
+                <div key={c.id} className="rounded-2xl p-4" style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
                   <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-black shrink-0 ${avatarColor(c.name)}`}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black shrink-0"
+                      style={{ background: 'linear-gradient(135deg,#7c3aed,#4f6ef7)' }}>
                       {initial(c.name)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900">{c.name}</p>
-                      <p className="text-sm text-gray-500">{c.phone}</p>
-                      <p className="text-xs text-gray-400">{timeAgo(c.registeredAt)}</p>
+                      <p className="font-bold" style={{ color: S.text }}>{c.name}</p>
+                      <p className="text-sm" style={{ color: S.sub }}>{c.phone}</p>
+                      <p className="text-xs" style={{ color: S.sub }}>{timeAgo(c.registeredAt)}</p>
                     </div>
-                    <span className="text-xs bg-red-100 text-red-600 font-bold px-2 py-1 rounded-full shrink-0">Pendiente</span>
+                    <span className="text-xs font-bold px-2 py-1 rounded-full shrink-0"
+                      style={{ backgroundColor: 'rgba(239,68,68,0.2)', color: '#f87171' }}>Pendiente</span>
                   </div>
                   <div className="flex gap-2">
                     <button type="button" onClick={() => activate(c.id)}
-                      className="flex-1 bg-amber-700 active:bg-amber-900 text-white font-bold py-2.5 rounded-xl text-sm">
+                      className="flex-1 font-bold py-2.5 rounded-xl text-sm"
+                      style={{ backgroundColor: S.accent, color: '#000' }}>
                       ✅ Activar
                     </button>
                     {c.phone && (
                       <a href={waLink(c)} target="_blank" rel="noopener noreferrer"
-                        className="flex-1 bg-green-500 active:bg-green-700 text-white font-bold py-2.5 rounded-xl text-sm text-center">
+                        className="flex-1 font-bold py-2.5 rounded-xl text-sm text-center"
+                        style={{ backgroundColor: '#22c55e', color: '#000' }}>
                         💬 WhatsApp
                       </a>
                     )}
@@ -157,10 +169,12 @@ export default function CustomersPage() {
           </div>
         )}
 
-        {/* Active customers */}
+        {/* Active customers header */}
         <div className="flex items-center justify-between">
-          <h2 className="font-black text-gray-800 text-base">Clientes activos</h2>
-          <button type="button" onClick={load} className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full font-semibold">
+          <h2 className="font-black text-base" style={{ color: S.text }}>Clientes activos</h2>
+          <button type="button" onClick={load}
+            className="text-xs px-3 py-1.5 rounded-full font-semibold"
+            style={{ backgroundColor: 'rgba(0,230,118,0.1)', color: S.accent, border: '1px solid rgba(0,230,118,0.3)' }}>
             ↻ Actualizar
           </button>
         </div>
@@ -168,61 +182,73 @@ export default function CustomersPage() {
         {/* Search */}
         <input type="text" value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Buscar por nombre o teléfono..."
-          className="w-full border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-800 bg-white focus:outline-none focus:border-amber-500 transition-colors" />
+          className="w-full rounded-2xl px-4 py-3 text-sm focus:outline-none transition-colors"
+          style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }} />
 
         {loading ? (
           <div className="space-y-3">
-            {[1,2,3].map(i => (
-              <div key={i} className="bg-white rounded-2xl p-4 animate-pulse flex gap-3">
-                <div className="w-12 h-12 bg-gray-200 rounded-full shrink-0" />
+            {[1, 2, 3].map(i => (
+              <div key={i} className="rounded-2xl p-4 animate-pulse flex gap-3" style={{ backgroundColor: S.card }}>
+                <div className="w-12 h-12 rounded-full shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
                 <div className="flex-1 space-y-2 py-1">
-                  <div className="h-4 bg-gray-200 rounded-full w-1/2" />
-                  <div className="h-3 bg-gray-100 rounded-full w-1/3" />
-                  <div className="h-2 bg-gray-100 rounded-full w-full" />
+                  <div className="h-4 rounded-full w-1/2" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
+                  <div className="h-3 rounded-full w-1/3" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
+                  <div className="h-2 rounded-full w-full" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
                 </div>
               </div>
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-14 text-gray-400">
+          <div className="text-center py-14" style={{ color: S.sub }}>
             <p className="text-5xl mb-3">{search ? '🔍' : '☕'}</p>
-            <p className="font-semibold">{search ? 'Sin resultados' : 'Aún no hay clientes activos'}</p>
+            <p className="font-semibold" style={{ color: S.text }}>{search ? 'Sin resultados' : 'Aún no hay clientes activos'}</p>
           </div>
         ) : (
           <div className="space-y-3">
             {filtered.map(c => (
-              <div key={c.id} className={`bg-white rounded-2xl shadow-sm p-4 ${c.visits >= STAMPS ? 'ring-2 ring-yellow-400 ring-offset-1' : ''}`}>
+              <div key={c.id} className="rounded-2xl p-4"
+                style={{
+                  backgroundColor: S.card,
+                  border: c.visits >= STAMPS ? '2px solid rgba(251,191,36,0.5)' : `1px solid ${S.border}`,
+                  boxShadow: c.visits >= STAMPS ? '0 0 0 1px rgba(251,191,36,0.2)' : 'none',
+                }}>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-lg shrink-0 shadow-sm ${avatarColor(c.name)}`}>
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-lg shrink-0"
+                    style={{ background: 'linear-gradient(135deg,#7c3aed,#4f6ef7)' }}>
                     {initial(c.name)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="font-bold text-gray-900 truncate">{c.name}</p>
-                      {c.visits >= STAMPS && <span className="text-xs bg-yellow-100 text-yellow-700 font-bold px-2 py-0.5 rounded-full shrink-0">🎉 Premio</span>}
+                      <p className="font-bold truncate" style={{ color: S.text }}>{c.name}</p>
+                      {c.visits >= STAMPS && (
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
+                          style={{ backgroundColor: 'rgba(251,191,36,0.2)', color: '#fbbf24' }}>🎉 Premio</span>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-500">{c.phone}</p>
+                    <p className="text-sm" style={{ color: S.sub }}>{c.phone}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="font-black text-amber-700 text-lg leading-none">{c.visits}/{STAMPS}</p>
-                    <p className="text-xs text-gray-400">sellos</p>
+                    <p className="font-black text-lg leading-none" style={{ color: S.accent }}>{c.visits}/{STAMPS}</p>
+                    <p className="text-xs" style={{ color: S.sub }}>sellos</p>
                   </div>
                 </div>
 
                 {/* Progress dots */}
                 <div className="flex gap-2 mb-3">
                   {Array.from({ length: STAMPS }).map((_, i) => (
-                    <div key={i} className={`flex-1 h-2 rounded-full transition-all ${i < c.visits ? 'bg-amber-500' : 'bg-gray-100'}`} />
+                    <div key={i} className="flex-1 h-2 rounded-full transition-all"
+                      style={{ backgroundColor: i < c.visits ? S.accent : 'rgba(255,255,255,0.1)' }} />
                   ))}
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
+                <div className="flex items-center justify-between text-xs mb-3" style={{ color: S.sub }}>
                   <span>Registrado {timeAgo(c.registeredAt)}</span>
                   {c.stamps.at(-1) && <span>Último sello {timeAgo(c.stamps.at(-1)!.timestamp)}</span>}
                 </div>
 
                 <button type="button" onClick={() => remove(c.id)}
-                  className="w-full text-red-500 border border-red-100 bg-red-50 rounded-xl py-2 text-sm font-semibold active:bg-red-100 transition-colors">
+                  className="w-full rounded-xl py-2 text-sm font-semibold transition-colors"
+                  style={{ color: '#f87171', border: '1px solid rgba(239,68,68,0.25)', backgroundColor: 'rgba(239,68,68,0.08)' }}>
                   🗑 Eliminar cliente
                 </button>
               </div>

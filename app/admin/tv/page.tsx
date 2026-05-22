@@ -24,6 +24,19 @@ const EMPTY_FORM = {
   active: true,
 }
 
+const S = {
+  bg:     '#080b16',
+  card:   '#0e1225',
+  accent: '#00e676',
+  text:   '#eef2f7',
+  sub:    '#6b7a94',
+  border: 'rgba(255,255,255,0.07)',
+  input:  '#0a0e1c',
+}
+
+const inputStyle = { backgroundColor: S.input, color: S.text, border: `1px solid rgba(0,230,118,0.25)` }
+const INPUT_CLS = 'w-full rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors'
+
 export default function AdminTVPage() {
   const [slides, setSlides] = useState<TVSlide[]>([])
   const [loading, setLoading] = useState(true)
@@ -137,188 +150,157 @@ export default function AdminTVPage() {
   const sortedSlides = [...slides].sort((a, b) => a.order - b.order)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <AdminNav />
 
       <div className="max-w-4xl mx-auto p-4 space-y-6">
-        <h1 className="text-2xl font-bold text-amber-900">Pantalla de TV</h1>
+        <h1 className="text-2xl font-black" style={{ color: S.text }}>Pantalla de TV</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left: list + form */}
           <div className="space-y-4">
             {/* Add slide form */}
-            <div className="bg-white rounded-2xl shadow p-5 space-y-3">
-              <h2 className="font-bold text-amber-900 text-lg">Añadir slide</h2>
+            <div className="rounded-2xl p-5 space-y-3" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+              <h2 className="font-bold text-lg" style={{ color: S.accent }}>Añadir slide</h2>
 
               {formError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-2 text-sm">
+                <div className="border rounded-xl px-4 py-2 text-sm"
+                  style={{ backgroundColor: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.4)', color: '#fca5a5' }}>
                   {formError}
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-amber-900 mb-1">Título *</label>
-                <input
-                  type="text"
-                  value={form.title}
+                <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Título *</label>
+                <input type="text" value={form.title}
                   onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
                   placeholder="Ej. Café del día"
-                  className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-amber-500"
-                />
+                  className={INPUT_CLS} style={inputStyle} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-amber-900 mb-1">Subtítulo (opcional)</label>
-                <input
-                  type="text"
-                  value={form.subtitle}
+                <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Subtítulo (opcional)</label>
+                <input type="text" value={form.subtitle}
                   onChange={e => setForm(p => ({ ...p, subtitle: e.target.value }))}
                   placeholder="Ej. Recién tostado"
-                  className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-amber-500"
-                />
+                  className={INPUT_CLS} style={inputStyle} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-amber-900 mb-1">Precio (opcional)</label>
-                <input
-                  type="text"
-                  value={form.price}
+                <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Precio (opcional)</label>
+                <input type="text" value={form.price}
                   onChange={e => setForm(p => ({ ...p, price: e.target.value }))}
                   placeholder="Ej. $50"
-                  className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:border-amber-500"
-                />
+                  className={INPUT_CLS} style={inputStyle} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-amber-900 mb-1">Imagen (opcional)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="w-full border-2 border-amber-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-800"
-                />
-                {uploading && <p className="text-xs text-amber-600 mt-1">Subiendo imagen...</p>}
+                <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Imagen (opcional)</label>
+                <input type="file" accept="image/*" onChange={handleImageUpload}
+                  className={INPUT_CLS + ' file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold'}
+                  style={inputStyle} />
+                {uploading && <p className="text-xs mt-1" style={{ color: S.accent }}>Subiendo imagen...</p>}
                 {form.imageUrl && (
                   <div className="mt-2 relative inline-block">
                     <img src={form.imageUrl} alt="preview" className="h-20 rounded-xl object-cover" />
                     <button type="button" onClick={() => setForm(p => ({ ...p, imageUrl: '' }))}
-                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center leading-none">×</button>
+                      className="absolute -top-1 -right-1 w-5 h-5 text-xs flex items-center justify-center leading-none rounded-full"
+                      style={{ backgroundColor: '#ef4444', color: '#fff' }}>×</button>
                   </div>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="slideOffer"
-                  checked={form.isOffer}
+                <input type="checkbox" id="slideOffer" checked={form.isOffer}
                   onChange={e => setForm(p => ({ ...p, isOffer: e.target.checked }))}
-                  className="w-4 h-4 accent-amber-600"
-                />
-                <label htmlFor="slideOffer" className="text-sm font-medium text-amber-900">Es oferta / promoción (2x1, descuento…)</label>
+                  className="w-4 h-4" style={{ accentColor: S.accent }} />
+                <label htmlFor="slideOffer" className="text-sm font-medium" style={{ color: S.text }}>
+                  Es oferta / promoción (2x1, descuento…)
+                </label>
               </div>
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="slideActive"
-                  checked={form.active}
+                <input type="checkbox" id="slideActive" checked={form.active}
                   onChange={e => setForm(p => ({ ...p, active: e.target.checked }))}
-                  className="w-4 h-4 accent-amber-600"
-                />
-                <label htmlFor="slideActive" className="text-sm font-medium text-amber-900">Activo</label>
+                  className="w-4 h-4" style={{ accentColor: S.accent }} />
+                <label htmlFor="slideActive" className="text-sm font-medium" style={{ color: S.text }}>Activo</label>
               </div>
 
-              <button
-                onClick={createSlide}
-                disabled={saving}
-                className="w-full bg-amber-700 active:bg-amber-900 text-white font-bold py-3 rounded-xl disabled:opacity-60"
-              >
+              <button onClick={createSlide} disabled={saving}
+                className="w-full font-bold py-3 rounded-xl disabled:opacity-60 transition-colors"
+                style={{ backgroundColor: S.accent, color: '#000' }}>
                 {saving ? 'Guardando...' : '+ Añadir slide'}
               </button>
             </div>
 
             {/* Slides list */}
             {loading ? (
-              <div className="text-center py-10 text-amber-700">Cargando...</div>
+              <div className="text-center py-10" style={{ color: S.accent }}>Cargando...</div>
             ) : sortedSlides.length === 0 ? (
-              <div className="text-center py-10 text-gray-400">
+              <div className="text-center py-10" style={{ color: S.sub }}>
                 <p className="text-4xl mb-2">📺</p>
                 <p>No hay slides aún</p>
               </div>
             ) : (
               sortedSlides.map((slide, idx) => (
-                <div
-                  key={slide.id}
-                  className={`bg-white rounded-2xl shadow p-4 cursor-pointer border-2 transition-colors ${
-                    previewSlide?.id === slide.id ? 'border-amber-400' : 'border-transparent'
-                  }`}
-                  onClick={() => setPreviewSlide(slide)}
-                >
+                <div key={slide.id}
+                  className="rounded-2xl p-4 cursor-pointer transition-colors"
+                  style={{
+                    backgroundColor: S.card,
+                    border: previewSlide?.id === slide.id
+                      ? `2px solid ${S.accent}`
+                      : `1px solid ${S.border}`,
+                  }}
+                  onClick={() => setPreviewSlide(slide)}>
                   <div className="flex items-start gap-3">
                     {slide.imageUrl && (
-                      <img
-                        src={slide.imageUrl}
-                        alt={slide.title}
-                        className="w-14 h-14 object-cover rounded-xl shrink-0"
-                      />
+                      <img src={slide.imageUrl} alt={slide.title}
+                        className="w-14 h-14 object-cover rounded-xl shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">
+                        <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+                          style={{ backgroundColor: 'rgba(0,230,118,0.15)', color: S.accent }}>
                           #{idx + 1}
                         </span>
-                        <p className="font-bold text-gray-900 truncate">{slide.title}</p>
+                        <p className="font-bold truncate" style={{ color: S.text }}>{slide.title}</p>
                       </div>
                       {slide.subtitle && (
-                        <p className="text-sm text-gray-500 truncate">{slide.subtitle}</p>
+                        <p className="text-sm truncate" style={{ color: S.sub }}>{slide.subtitle}</p>
                       )}
                       {slide.price && (
-                        <p className="text-sm font-bold text-green-600">{slide.price}</p>
+                        <p className="text-sm font-bold" style={{ color: S.accent }}>{slide.price}</p>
                       )}
                       <div className="flex gap-1 mt-1 flex-wrap">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          slide.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                        }`}>
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                          style={slide.active
+                            ? { backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80' }
+                            : { backgroundColor: 'rgba(255,255,255,0.08)', color: S.sub }}>
                           {slide.active ? 'Activo' : 'Inactivo'}
                         </span>
-                        {slide.isOffer && (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-orange-100 text-orange-700">
-                            🏷 Oferta · 30s
-                          </span>
-                        )}
-                        {!slide.isOffer && (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-600">
-                            🖼 Imagen · 15s
-                          </span>
-                        )}
+                        {slide.isOffer
+                          ? <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                              style={{ backgroundColor: 'rgba(251,146,60,0.15)', color: '#fb923c' }}>🏷 Oferta · 30s</span>
+                          : <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                              style={{ backgroundColor: 'rgba(99,102,241,0.15)', color: '#a5b4fc' }}>🖼 Imagen · 15s</span>
+                        }
                       </div>
                     </div>
                   </div>
                   <div className="flex gap-2 mt-3">
-                    <button
-                      onClick={e => { e.stopPropagation(); moveSlide(slide, 'up') }}
+                    <button onClick={e => { e.stopPropagation(); moveSlide(slide, 'up') }}
                       disabled={idx === 0}
-                      className="px-3 py-1.5 rounded-xl text-sm border-2 border-gray-200 text-gray-600 disabled:opacity-30"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      onClick={e => { e.stopPropagation(); moveSlide(slide, 'down') }}
+                      className="px-3 py-1.5 rounded-xl text-sm disabled:opacity-30"
+                      style={{ border: `1px solid ${S.border}`, color: S.sub, backgroundColor: 'transparent' }}>↑</button>
+                    <button onClick={e => { e.stopPropagation(); moveSlide(slide, 'down') }}
                       disabled={idx === sortedSlides.length - 1}
-                      className="px-3 py-1.5 rounded-xl text-sm border-2 border-gray-200 text-gray-600 disabled:opacity-30"
-                    >
-                      ↓
-                    </button>
-                    <button
-                      onClick={e => { e.stopPropagation(); toggleActive(slide) }}
-                      className={`flex-1 py-1.5 rounded-xl text-sm font-medium border-2 ${
-                        slide.active
-                          ? 'border-orange-200 text-orange-600'
-                          : 'border-green-200 text-green-600'
-                      }`}
-                    >
+                      className="px-3 py-1.5 rounded-xl text-sm disabled:opacity-30"
+                      style={{ border: `1px solid ${S.border}`, color: S.sub, backgroundColor: 'transparent' }}>↓</button>
+                    <button onClick={e => { e.stopPropagation(); toggleActive(slide) }}
+                      className="flex-1 py-1.5 rounded-xl text-sm font-medium"
+                      style={slide.active
+                        ? { border: '1px solid rgba(251,146,60,0.4)', color: '#fb923c', backgroundColor: 'transparent' }
+                        : { border: '1px solid rgba(34,197,94,0.4)', color: '#4ade80', backgroundColor: 'transparent' }}>
                       {slide.active ? 'Desactivar' : 'Activar'}
                     </button>
-                    <button
-                      onClick={e => { e.stopPropagation(); deleteSlide(slide.id) }}
-                      className="flex-1 py-1.5 rounded-xl text-sm font-medium border-2 border-red-200 text-red-500"
-                    >
+                    <button onClick={e => { e.stopPropagation(); deleteSlide(slide.id) }}
+                      className="flex-1 py-1.5 rounded-xl text-sm font-medium"
+                      style={{ border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', backgroundColor: 'transparent' }}>
                       Eliminar
                     </button>
                   </div>
@@ -329,30 +311,28 @@ export default function AdminTVPage() {
 
           {/* Right: preview */}
           <div className="space-y-4">
-            <h2 className="font-bold text-amber-900 text-lg">Vista previa</h2>
-            <div className="bg-gray-900 rounded-2xl overflow-hidden aspect-video relative flex items-end">
+            <h2 className="font-bold text-lg" style={{ color: S.text }}>Vista previa</h2>
+            <div className="rounded-2xl overflow-hidden aspect-video relative flex items-end"
+              style={{ backgroundColor: '#000' }}>
               {previewSlide ? (
                 <>
                   {previewSlide.imageUrl && (
-                    <img
-                      src={previewSlide.imageUrl}
-                      alt={previewSlide.title}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
+                    <img src={previewSlide.imageUrl} alt={previewSlide.title}
+                      className="absolute inset-0 w-full h-full object-cover" />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                   <div className="relative z-10 p-4 w-full">
                     {previewSlide.subtitle && (
-                      <p className="text-amber-400 text-sm font-medium">{previewSlide.subtitle}</p>
+                      <p className="text-sm font-medium" style={{ color: S.accent }}>{previewSlide.subtitle}</p>
                     )}
                     <p className="text-white text-xl font-bold">{previewSlide.title}</p>
                     {previewSlide.price && (
-                      <p className="text-green-400 text-2xl font-black">{previewSlide.price}</p>
+                      <p className="text-2xl font-black" style={{ color: S.accent }}>{previewSlide.price}</p>
                     )}
                   </div>
                 </>
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-500">
+                <div className="w-full h-full flex items-center justify-center" style={{ color: S.sub }}>
                   <div className="text-center">
                     <p className="text-4xl">☕</p>
                     <p className="text-sm mt-2">Selecciona un slide para previsualizar</p>
@@ -360,12 +340,9 @@ export default function AdminTVPage() {
                 </div>
               )}
             </div>
-            <a
-              href="/tv"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full text-center bg-amber-700 text-white font-bold py-3 rounded-xl hover:bg-amber-800 transition-colors"
-            >
+            <a href="/tv" target="_blank" rel="noopener noreferrer"
+              className="block w-full text-center font-bold py-3 rounded-xl transition-colors"
+              style={{ backgroundColor: S.accent, color: '#000' }}>
               Ver pantalla de TV →
             </a>
           </div>

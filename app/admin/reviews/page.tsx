@@ -8,8 +8,15 @@ interface Review {
   createdAt: string; published: boolean; bad: boolean
 }
 
-const AVATAR_COLORS = ['bg-amber-500','bg-rose-500','bg-violet-500','bg-sky-500','bg-emerald-500','bg-orange-500']
-function avatarColor(name: string) { return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length] }
+const S = {
+  bg:     '#080b16',
+  card:   '#0e1225',
+  accent: '#00e676',
+  text:   '#eef2f7',
+  sub:    '#6b7a94',
+  border: 'rgba(255,255,255,0.07)',
+}
+
 function initial(name: string) { return name.trim().charAt(0).toUpperCase() }
 
 function fmtDate(iso: string) {
@@ -20,7 +27,7 @@ function StarDisplay({ rating }: { rating: number }) {
   return (
     <span>
       <span className="text-yellow-400">{'★'.repeat(rating)}</span>
-      <span className="text-gray-200">{'★'.repeat(5 - rating)}</span>
+      <span style={{ color: 'rgba(255,255,255,0.15)' }}>{'★'.repeat(5 - rating)}</span>
     </span>
   )
 }
@@ -66,7 +73,7 @@ export default function AdminReviewsPage() {
     : null
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <AdminNav />
 
       <div className="max-w-3xl mx-auto p-4 space-y-4">
@@ -74,35 +81,43 @@ export default function AdminReviewsPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Publicadas', value: goodReviews.filter(r => r.published).length, emoji: '✅', color: 'text-green-700' },
-            { label: 'Promedio', value: avgGood ? `${avgGood}★` : '—', emoji: '⭐', color: 'text-amber-700' },
-            { label: 'Negativas', value: badReviews.length, emoji: '📧', color: 'text-red-600' },
+            { label: 'Publicadas', value: goodReviews.filter(r => r.published).length, emoji: '✅', color: '#4ade80' },
+            { label: 'Promedio', value: avgGood ? `${avgGood}★` : '—', emoji: '⭐', color: '#fbbf24' },
+            { label: 'Negativas', value: badReviews.length, emoji: '📧', color: '#f87171' },
           ].map(s => (
-            <div key={s.label} className="bg-white rounded-2xl shadow-sm p-3 text-center">
+            <div key={s.label} className="rounded-2xl p-3 text-center" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
               <p className="text-2xl">{s.emoji}</p>
-              <p className={`font-black text-xl ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-gray-400 font-medium">{s.label}</p>
+              <p className="font-black text-xl" style={{ color: s.color }}>{s.value}</p>
+              <p className="text-xs font-medium" style={{ color: S.sub }}>{s.label}</p>
             </div>
           ))}
         </div>
 
         {/* Tabs */}
-        <div className="flex p-1.5 gap-1.5 bg-white rounded-2xl shadow-sm">
+        <div className="flex p-1.5 gap-1.5 rounded-2xl" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
           <button type="button" onClick={() => setTab('good')}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-              tab === 'good' ? 'bg-green-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'
-            }`}>
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2"
+            style={tab === 'good'
+              ? { backgroundColor: '#22c55e', color: '#000' }
+              : { color: S.sub, backgroundColor: 'transparent' }}>
             ✅ Buenas
-            <span className={`text-xs px-1.5 py-0.5 rounded-full font-black ${tab === 'good' ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700'}`}>
+            <span className="text-xs px-1.5 py-0.5 rounded-full font-black"
+              style={tab === 'good'
+                ? { backgroundColor: 'rgba(0,0,0,0.2)', color: '#000' }
+                : { backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>
               {goodReviews.length}
             </span>
           </button>
           <button type="button" onClick={() => setTab('bad')}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-              tab === 'bad' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'
-            }`}>
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2"
+            style={tab === 'bad'
+              ? { backgroundColor: '#ef4444', color: '#fff' }
+              : { color: S.sub, backgroundColor: 'transparent' }}>
             📧 Negativas
-            <span className={`text-xs px-1.5 py-0.5 rounded-full font-black ${tab === 'bad' ? 'bg-white/20 text-white' : 'bg-red-100 text-red-600'}`}>
+            <span className="text-xs px-1.5 py-0.5 rounded-full font-black"
+              style={tab === 'bad'
+                ? { backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff' }
+                : { backgroundColor: 'rgba(239,68,68,0.15)', color: '#f87171' }}>
               {badReviews.length}
             </span>
           </button>
@@ -111,71 +126,82 @@ export default function AdminReviewsPage() {
         {/* Content */}
         {loading ? (
           <div className="space-y-3">
-            {[1,2,3].map(i => (
-              <div key={i} className="bg-white rounded-2xl p-4 animate-pulse flex gap-3">
-                <div className="w-10 h-10 bg-gray-200 rounded-full shrink-0" />
+            {[1, 2, 3].map(i => (
+              <div key={i} className="rounded-2xl p-4 animate-pulse flex gap-3" style={{ backgroundColor: S.card }}>
+                <div className="w-10 h-10 rounded-full shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-200 rounded-full w-1/3" />
-                  <div className="h-3 bg-gray-100 rounded-full w-full" />
-                  <div className="h-3 bg-gray-100 rounded-full w-2/3" />
+                  <div className="h-4 rounded-full w-1/3" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
+                  <div className="h-3 rounded-full w-full" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
+                  <div className="h-3 rounded-full w-2/3" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
                 </div>
               </div>
             ))}
           </div>
         ) : displayed.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16" style={{ color: S.sub }}>
             <p className="text-5xl mb-3">{tab === 'good' ? '😊' : '😌'}</p>
-            <p className="font-semibold text-lg">{tab === 'good' ? 'No hay reseñas buenas aún' : '¡Sin reseñas negativas!'}</p>
+            <p className="font-semibold text-lg" style={{ color: S.text }}>
+              {tab === 'good' ? 'No hay reseñas buenas aún' : '¡Sin reseñas negativas!'}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
             {displayed.map(review => (
               <div key={review.id}
-                className={`bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 ${
-                  review.bad ? 'border-red-400' : review.published ? 'border-green-400' : 'border-amber-300'
-                }`}>
+                className="rounded-2xl overflow-hidden"
+                style={{
+                  backgroundColor: S.card,
+                  border: `1px solid ${S.border}`,
+                  borderLeft: `4px solid ${review.bad ? '#ef4444' : review.published ? '#22c55e' : '#f59e0b'}`,
+                }}>
                 <div className="p-4">
                   <div className="flex items-start gap-3 mb-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-black shrink-0 ${avatarColor(review.customerName)}`}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black shrink-0"
+                      style={{ background: 'linear-gradient(135deg,#7c3aed,#4f6ef7)' }}>
                       {initial(review.customerName)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-bold text-gray-900">{review.customerName}</p>
-                        <p className="text-xs text-gray-400 shrink-0">{fmtDate(review.createdAt)}</p>
+                        <p className="font-bold" style={{ color: S.text }}>{review.customerName}</p>
+                        <p className="text-xs shrink-0" style={{ color: S.sub }}>{fmtDate(review.createdAt)}</p>
                       </div>
                       <StarDisplay rating={review.rating} />
                     </div>
                   </div>
 
-                  <p className="text-sm text-gray-700 mb-3 leading-relaxed">{review.comment}</p>
+                  <p className="text-sm mb-3 leading-relaxed" style={{ color: '#cbd5e1' }}>{review.comment}</p>
 
                   <div className="flex items-center gap-2 flex-wrap">
                     {review.bad && (
-                      <span className="text-xs bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full font-bold">📧 Enviado por email</span>
+                      <span className="text-xs px-2.5 py-1 rounded-full font-bold"
+                        style={{ backgroundColor: 'rgba(251,146,60,0.15)', color: '#fb923c' }}>📧 Enviado por email</span>
                     )}
                     {review.published && (
-                      <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-bold">✅ Publicada</span>
+                      <span className="text-xs px-2.5 py-1 rounded-full font-bold"
+                        style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>✅ Publicada</span>
                     )}
                     {!review.bad && !review.published && (
-                      <span className="text-xs bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full font-bold">Oculta</span>
+                      <span className="text-xs px-2.5 py-1 rounded-full font-bold"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: S.sub }}>Oculta</span>
                     )}
                   </div>
                 </div>
 
-                <div className="border-t border-gray-100 flex">
+                <div className="flex" style={{ borderTop: `1px solid ${S.border}` }}>
                   {!review.bad && (
                     <button type="button" onClick={() => togglePublish(review)}
-                      className={`flex-1 py-3 text-sm font-bold transition-colors border-r border-gray-100 ${
-                        review.published
-                          ? 'text-orange-600 hover:bg-orange-50 active:bg-orange-100'
-                          : 'text-green-700 hover:bg-green-50 active:bg-green-100'
-                      }`}>
+                      className="flex-1 py-3 text-sm font-bold transition-colors"
+                      style={{
+                        borderRight: `1px solid ${S.border}`,
+                        color: review.published ? '#fb923c' : '#4ade80',
+                        backgroundColor: 'transparent',
+                      }}>
                       {review.published ? 'Despublicar' : 'Publicar'}
                     </button>
                   )}
                   <button type="button" onClick={() => deleteReview(review.id)}
-                    className="flex-1 py-3 text-sm font-bold text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors">
+                    className="flex-1 py-3 text-sm font-bold transition-colors"
+                    style={{ color: '#f87171', backgroundColor: 'transparent' }}>
                     Eliminar
                   </button>
                 </div>
