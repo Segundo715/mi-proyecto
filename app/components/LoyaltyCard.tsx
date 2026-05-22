@@ -157,19 +157,43 @@ export default function LoyaltyCard() {
 
   // ── TARJETA DE FIDELIZACIÓN ──────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-stone-100 pb-24">
+    <div className="min-h-screen bg-stone-100 pb-24 relative">
+      {/* Background: menu images collage */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="grid grid-cols-3 grid-rows-3 w-full h-full">
+          {[
+            '/uploads/menu/SalmonBowl.jpeg',
+            '/uploads/menu/PolloEnSalsa.jpeg',
+            '/uploads/menu/FusionCampestre.jpeg',
+            '/uploads/menu/FrappeOreo.jpeg',
+            '/uploads/menu/PescadoImperial.jpeg',
+            '/uploads/menu/SmoothieTropical.jpeg',
+            '/uploads/menu/EnsaCesar.jpeg',
+            '/uploads/menu/3Marias.jpeg',
+            '/uploads/menu/ArrozVerde.jpeg',
+          ].map((src, i) => (
+            <div key={i} className="w-full h-full overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src} alt="" className="w-full h-full object-cover" style={{ opacity: 0.18 }} />
+            </div>
+          ))}
+        </div>
+        {/* Amber overlay to maintain brand feel */}
+        <div className="absolute inset-0" style={{ backgroundColor: 'rgba(120,53,15,0.55)' }} />
+      </div>
+
       {/* Header */}
-      <div className="bg-amber-900 text-white shadow-lg">
+      <div className="bg-amber-900 text-white shadow-lg relative z-10">
         <div className="max-w-sm mx-auto px-4 py-3.5 flex items-center justify-between">
           <span className="font-black text-base tracking-tight">☕ Chubis</span>
           <button type="button" onClick={handleLogout}
             className="text-xs text-amber-300 bg-amber-800 px-3 py-1.5 rounded-full font-semibold active:bg-amber-700">
-            Salir
+            Cerrar sesión
           </button>
         </div>
       </div>
 
-      <div className="max-w-sm mx-auto p-4 space-y-4">
+      <div className="max-w-sm mx-auto p-4 space-y-4 relative z-10">
 
         {/* Physical card */}
         <div className="rounded-3xl overflow-hidden shadow-2xl"
@@ -178,7 +202,6 @@ export default function LoyaltyCard() {
           {/* Card top */}
           <div className="px-6 pt-6 pb-4 flex justify-between items-start">
             <div>
-              <p className="text-amber-300 text-xs font-bold uppercase tracking-widest mb-0.5">Tarjeta Chubis</p>
               <p className="text-white text-xl font-black leading-tight">¡Hola, {customer?.name?.split(' ')[0]}!</p>
               {customer?.phone && <p className="text-amber-400 text-xs mt-0.5">{customer.phone}</p>}
             </div>

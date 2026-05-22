@@ -11,6 +11,24 @@ interface MenuItem {
   category: string
   imageUrl?: string
   available: boolean
+  createdAt: string
+}
+
+interface EditState {
+  name: string
+  description: string
+  price: string
+  category: string
+  imageUrl: string
+}
+
+const EMPTY_FORM = {
+  name: '',
+  description: '',
+  price: '',
+  category: '',
+  imageUrl: '',
+  available: true,
 }
 
 const S = {
@@ -20,20 +38,138 @@ const S = {
   text:   '#eef2f7',
   sub:    '#6b7a94',
   border: 'rgba(255,255,255,0.07)',
+  input:  '#0a0e1c',
+}
+
+const INPUT_CLS = 'w-full rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors'
+
+async function uploadImage(file: File): Promise<string | null> {
+  const fd = new FormData()
+  fd.append('file', file)
+  const res = await fetch('/api/menu/upload', { method: 'POST', body: fd })
+  if (!res.ok) return null
+  const { url } = await res.json()
+  return url
+}
+
+function ImagePicker({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const [uploading, setUploading] = useState(false)
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const url = await uploadImage(file)
+      if (url) onChange(url)
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  return (
+    <div>
+      <input type="file" accept="image/*" onChange={handleFile}
+        className={INPUT_CLS + ' file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold'}
+        style={{ backgroundColor: S.input, color: S.text, border: `1px solid ${S.border}` }} />
+      {uploading && <p className="text-xs mt-1" style={{ color: S.accent }}>Subiendo imagen...</p>}
+      {value && (
+        <div className="mt-2 flex items-center gap-2">
+          <img src={value} alt="preview" className="h-16 rounded-xl object-cover" />
+          <button type="button" onClick={() => onChange('')} className="text-xs underline" style={{ color: '#f87171' }}>Quitar</button>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function EmployeeMenuPage() {
   const [items, setItems] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [openCategory, setOpenCategory] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editState, setEditState] = useState<EditState>({ name: '', description: '', price: '', category: '', imageUrl: '' })
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
 
-  useEffect(() => {
-    fetch('/api/menu')
-      .then(r => r.ok ? r.json() : [])
-      .then((data: MenuItem[]) => { setItems(data); setLoading(false) })
-      .catch(() => setLoading(false))
-  }, [])
+  useEffect(() => { fetchItems() }, [])
+
+  async function fetchItems() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/menu')
+      if (res.ok) setItems(await res.json())
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function createItem() {
+    if (!form.name.trim() || !form.category.trim() || !form.price) {
+      setFormError('Nombre, categoría y precio son obligatorios.')
+      return
+    }
+    setFormError('')
+    setSaving(true)
+    try {
+      const res = await fetch('/api/menu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          description: form.description.trim(),
+          price: parseFloat(form.price),
+          category: form.category.trim(),
+          imageUrl: form.imageUrl || undefined,
+          available: form.available,
+        }),
+      })
+      if (res.ok) { setForm(EMPTY_FORM); fetchItems() }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function startEdit(item: MenuItem) {
+    setEditingId(item.id)
+    setEditState({ name: item.name, description: item.description, price: String(item.price), category: item.category, imageUrl: item.imageUrl ?? '' })
+  }
+
+  async function saveEdit(id: string) {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/menu/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editState.name.trim(),
+          description: editState.description.trim(),
+          price: parseFloat(editState.price),
+          category: editState.category.trim(),
+          imageUrl: editState.imageUrl || undefined,
+        }),
+      })
+      if (res.ok) { setEditingId(null); fetchItems() }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function toggleAvailable(item: MenuItem) {
+    await fetch(`/api/menu/${item.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ available: !item.available }),
+    })
+    fetchItems()
+  }
+
+  async function deleteItem(id: string) {
+    if (!confirm('¿Eliminar este producto? Esta acción no se puede deshacer.')) return
+    await fetch(`/api/menu/${id}`, { method: 'DELETE' })
+    fetchItems()
+  }
 
   const grouped: Record<string, MenuItem[]> = {}
   for (const item of items) {
@@ -41,128 +177,181 @@ export default function EmployeeMenuPage() {
     grouped[item.category].push(item)
   }
 
-  const filteredItems = search.trim()
-    ? items.filter(i =>
-        i.name.toLowerCase().includes(search.toLowerCase()) ||
-        i.category.toLowerCase().includes(search.toLowerCase())
-      )
-    : null
+  const inputStyle = { backgroundColor: S.input, color: S.text, border: `1px solid rgba(0,230,118,0.25)` }
 
   return (
     <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <EmployeeNav />
 
-      <div className="max-w-2xl mx-auto p-4 space-y-4">
-        <div className="flex items-center justify-between pt-1">
-          <h1 className="text-xl font-black" style={{ color: S.text }}>Menú</h1>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
-            style={{ backgroundColor: 'rgba(0,230,118,0.1)', color: S.accent }}>
-            Solo lectura
-          </span>
+      <div className="max-w-3xl mx-auto p-4 space-y-6">
+        <h1 className="text-2xl font-black" style={{ color: S.text }}>Menú</h1>
+
+        {/* Add item form */}
+        <div className="rounded-2xl p-5 space-y-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <h2 className="font-bold text-lg" style={{ color: S.accent }}>Añadir producto</h2>
+
+          {formError && (
+            <div className="border rounded-xl px-4 py-3 text-sm"
+              style={{ backgroundColor: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.4)', color: '#fca5a5' }}>
+              {formError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Nombre *</label>
+              <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                placeholder="Ej. Café Americano" className={INPUT_CLS} style={inputStyle} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Categoría *</label>
+              <input type="text" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+                placeholder="Ej. Bebidas calientes" className={INPUT_CLS} style={inputStyle} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Precio *</label>
+              <input type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))}
+                placeholder="0.00" min="0" step="0.01" className={INPUT_CLS} style={inputStyle} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Imagen (opcional)</label>
+              <ImagePicker value={form.imageUrl} onChange={url => setForm(p => ({ ...p, imageUrl: url }))} />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Descripción</label>
+            <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+              placeholder="Descripción del producto..." rows={2}
+              className={INPUT_CLS + ' resize-none'} style={inputStyle} />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="available" checked={form.available}
+              onChange={e => setForm(p => ({ ...p, available: e.target.checked }))}
+              className="w-4 h-4" style={{ accentColor: S.accent }} />
+            <label htmlFor="available" className="text-sm font-medium" style={{ color: S.text }}>Disponible</label>
+          </div>
+
+          <button onClick={createItem} disabled={saving}
+            className="w-full font-bold py-3 rounded-xl disabled:opacity-60 transition-colors"
+            style={{ backgroundColor: S.accent, color: '#000' }}>
+            {saving ? 'Guardando...' : '+ Añadir producto'}
+          </button>
         </div>
 
-        {/* Search */}
-        <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar producto..."
-          className="w-full rounded-2xl px-4 py-3 text-sm focus:outline-none"
-          style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }} />
-
+        {/* Items list */}
         {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-14 rounded-2xl animate-pulse" style={{ backgroundColor: S.card }} />
-            ))}
-          </div>
+          <div className="text-center py-10" style={{ color: S.accent }}>Cargando...</div>
         ) : items.length === 0 ? (
-          <div className="text-center py-16" style={{ color: S.sub }}>
-            <p className="text-5xl mb-3">🍽</p>
-            <p className="font-semibold" style={{ color: S.text }}>No hay productos en el menú</p>
-          </div>
-        ) : filteredItems ? (
-          /* Search results — flat list */
-          <div className="space-y-2">
-            {filteredItems.length === 0 ? (
-              <p className="text-center py-8" style={{ color: S.sub }}>Sin resultados</p>
-            ) : filteredItems.map(item => (
-              <div key={item.id} className="flex items-center gap-3 p-3 rounded-2xl"
-                style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-                {item.imageUrl && (
-                  <img src={item.imageUrl} alt={item.name} className="w-14 h-14 object-cover rounded-xl shrink-0" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-bold text-sm" style={{ color: S.text }}>{item.name}</p>
-                    <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
-                      style={item.available
-                        ? { backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80' }
-                        : { backgroundColor: 'rgba(239,68,68,0.15)', color: '#f87171' }}>
-                      {item.available ? 'Disponible' : 'No disponible'}
-                    </span>
-                  </div>
-                  <p className="text-xs" style={{ color: S.sub }}>{item.category}</p>
-                  {item.description && <p className="text-xs truncate" style={{ color: S.sub }}>{item.description}</p>}
-                </div>
-                <span className="font-black text-sm shrink-0" style={{ color: S.accent }}>${item.price.toFixed(2)}</span>
-              </div>
-            ))}
+          <div className="text-center py-10" style={{ color: S.sub }}>
+            <p className="text-4xl mb-2">🍽</p>
+            <p>No hay productos en el menú aún</p>
           </div>
         ) : (
-          /* Accordion by category */
-          <div className="space-y-2">
-            {Object.entries(grouped).map(([category, categoryItems]) => {
-              const isOpen = openCategory === category
-              const available = categoryItems.filter(i => i.available).length
-              return (
-                <div key={category} className="rounded-2xl overflow-hidden"
+          Object.entries(grouped).map(([category, categoryItems]) => (
+            <div key={category} className="space-y-3">
+              <h2 className="font-bold text-lg pb-1" style={{ color: S.accent, borderBottom: `1px solid rgba(0,230,118,0.2)` }}>
+                {category}
+              </h2>
+              {categoryItems.map(item => (
+                <div key={item.id} className="rounded-2xl p-4"
                   style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-                  <button type="button" onClick={() => setOpenCategory(isOpen ? null : category)}
-                    className="w-full flex items-center justify-between px-4 py-3.5 text-left"
-                    style={{ borderBottom: isOpen ? `1px solid ${S.border}` : 'none' }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: isOpen ? S.accent : '#6b7a94' }} />
-                      <span className="font-bold text-sm" style={{ color: isOpen ? S.accent : S.text }}>{category}</span>
+                  {editingId === item.id ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Nombre</label>
+                          <input type="text" value={editState.name}
+                            onChange={e => setEditState(p => ({ ...p, name: e.target.value }))}
+                            className={INPUT_CLS} style={inputStyle} />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Categoría</label>
+                          <input type="text" value={editState.category}
+                            onChange={e => setEditState(p => ({ ...p, category: e.target.value }))}
+                            className={INPUT_CLS} style={inputStyle} />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Precio</label>
+                          <input type="number" value={editState.price}
+                            onChange={e => setEditState(p => ({ ...p, price: e.target.value }))}
+                            min="0" step="0.01" className={INPUT_CLS} style={inputStyle} />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Imagen</label>
+                          <ImagePicker value={editState.imageUrl} onChange={url => setEditState(p => ({ ...p, imageUrl: url }))} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Descripción</label>
+                        <textarea value={editState.description}
+                          onChange={e => setEditState(p => ({ ...p, description: e.target.value }))}
+                          rows={2} className={INPUT_CLS + ' resize-none'} style={inputStyle} />
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => saveEdit(item.id)} disabled={saving}
+                          className="flex-1 font-bold py-2 rounded-xl text-sm disabled:opacity-60"
+                          style={{ backgroundColor: S.accent, color: '#000' }}>
+                          {saving ? 'Guardando...' : 'Guardar'}
+                        </button>
+                        <button onClick={() => setEditingId(null)}
+                          className="flex-1 font-bold py-2 rounded-xl text-sm"
+                          style={{ border: `1px solid ${S.border}`, color: S.sub, backgroundColor: 'transparent' }}>
+                          Cancelar
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium" style={{ color: S.sub }}>
-                        {available}/{categoryItems.length}
-                      </span>
-                      <span className="text-xs transition-transform" style={{
-                        color: S.sub,
-                        transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                        display: 'inline-block',
-                      }}>▾</span>
-                    </div>
-                  </button>
-
-                  {isOpen && (
-                    <div className="divide-y" style={{ borderColor: S.border }}>
-                      {categoryItems.map(item => (
-                        <div key={item.id} className="flex items-center gap-3 px-4 py-3"
-                          style={{ opacity: item.available ? 1 : 0.5 }}>
-                          {item.imageUrl && (
-                            <img src={item.imageUrl} alt={item.name}
-                              className="w-12 h-12 object-cover rounded-xl shrink-0" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm" style={{ color: S.text }}>{item.name}</p>
-                            {item.description && (
-                              <p className="text-xs truncate" style={{ color: S.sub }}>{item.description}</p>
-                            )}
-                            {!item.available && (
-                              <span className="text-[10px] font-bold" style={{ color: '#f87171' }}>No disponible</span>
+                  ) : (
+                    <div>
+                      <div className="flex items-start gap-3">
+                        {item.imageUrl && (
+                          <img src={item.imageUrl} alt={item.name} className="w-16 h-16 object-cover rounded-xl shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-bold" style={{ color: S.text }}>{item.name}</h3>
+                            <span className="text-sm font-bold" style={{ color: S.accent }}>${item.price.toFixed(2)}</span>
+                            {item.available ? (
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>Disponible</span>
+                            ) : (
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                style={{ backgroundColor: 'rgba(239,68,68,0.15)', color: '#f87171' }}>No disponible</span>
                             )}
                           </div>
-                          <span className="font-black text-sm shrink-0" style={{ color: S.accent }}>
-                            ${item.price.toFixed(2)}
-                          </span>
+                          {item.description && (
+                            <p className="text-sm mt-0.5 line-clamp-2" style={{ color: S.sub }}>{item.description}</p>
+                          )}
                         </div>
-                      ))}
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        <button onClick={() => toggleAvailable(item)}
+                          className="flex-1 py-1.5 rounded-xl text-sm font-medium"
+                          style={{
+                            border: item.available ? '1px solid rgba(251,146,60,0.4)' : '1px solid rgba(34,197,94,0.4)',
+                            color: item.available ? '#fb923c' : '#4ade80',
+                            backgroundColor: 'transparent',
+                          }}>
+                          {item.available ? 'Desactivar' : 'Activar'}
+                        </button>
+                        <button onClick={() => startEdit(item)}
+                          className="flex-1 py-1.5 rounded-xl text-sm font-medium"
+                          style={{ border: `1px solid rgba(0,230,118,0.3)`, color: S.accent, backgroundColor: 'transparent' }}>
+                          Editar
+                        </button>
+                        <button onClick={() => deleteItem(item.id)}
+                          className="flex-1 py-1.5 rounded-xl text-sm font-medium"
+                          style={{ border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', backgroundColor: 'transparent' }}>
+                          Eliminar
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
-              )
-            })}
-          </div>
+              ))}
+            </div>
+          ))
         )}
       </div>
     </div>
