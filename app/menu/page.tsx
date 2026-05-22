@@ -221,9 +221,16 @@ export default function MenuPage() {
         </div>
       )}
 
-      {/* Logo */}
-      <div className="text-center py-5">
-        <img src="/logo.png" alt="Logo" className="mx-auto" style={{ maxWidth: '90px' }} />
+      {/* Logo + Cerrar sesión */}
+      <div className="py-5 flex items-center justify-center relative" style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <img src="/logo.png" alt="Logo" className="mx-auto block" style={{ maxWidth: '90px' }} />
+        <button
+          type="button"
+          onClick={() => { localStorage.removeItem('loyalty_id'); window.location.href = '/loyalty' }}
+          className="absolute right-4 text-xs font-semibold px-3 py-1.5 rounded-full"
+          style={{ backgroundColor: '#1a1a1a', color: '#B90F45', border: '1px solid #B90F45' }}>
+          Cerrar sesión
+        </button>
       </div>
 
       {/* Menú acordeón */}
