@@ -136,9 +136,9 @@ export default function CardPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/uploads/menu/SalmonBowl.jpeg" alt=""
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ opacity: 0.35 }} />
-          {/* Overlay de color de la tarjeta */}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(26,0,16,0.85) 0%, rgba(185,15,69,0.80) 60%, rgba(220,94,134,0.80) 100%)' }} />
+            style={{ opacity: 0.6 }} />
+          {/* Overlay semitransparente para que se lean los textos */}
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(26,0,16,0.55) 0%, rgba(185,15,69,0.50) 60%, rgba(220,94,134,0.45) 100%)' }} />
 
           {/* Contenido de la tarjeta */}
           <div className="relative z-10">
