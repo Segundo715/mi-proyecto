@@ -5,7 +5,7 @@ import { FEATURES } from '@/lib/features'
 const TABS = [
   { href: '/menu',   label: 'Menú',    emoji: '🍽', key: 'menu',   feature: undefined },
   { href: '/review', label: 'Reseñas', emoji: '⭐', key: 'review', feature: undefined },
-  { href: '/loyalty', label: 'Tarjeta', emoji: '☕', key: 'card',   feature: 'loyaltyCard' as const },
+  { href: '/card',    label: 'Tarjeta', emoji: '☕', key: 'card',   feature: 'loyaltyCard' as const },
 ] as const
 
 export default function CustomerNav({ active }: { active: 'menu' | 'review' | 'card' }) {
