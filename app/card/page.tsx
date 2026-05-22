@@ -17,6 +17,14 @@ type Step = 'form' | 'card'
 
 const INPUT = 'w-full border border-[#B90F45]/40 rounded-2xl px-4 py-3.5 text-white bg-[#1a1a1a] placeholder-gray-500 focus:outline-none focus:border-[#B90F45] text-sm transition-colors'
 
+const BG = (
+  <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img src="/uploads/menu/SalmonBowl.jpeg" alt="" className="w-full h-full object-cover" style={{ opacity: 0.20 }} />
+    <div className="absolute inset-0" style={{ backgroundColor: 'rgba(26,0,16,0.72)' }} />
+  </div>
+)
+
 export default function CardPage() {
   const [step, setStep] = useState<Step>('form')
   const [customer, setCustomer] = useState<Customer | null>(null)
@@ -70,37 +78,40 @@ export default function CardPage() {
 
   if (step === 'form') {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center p-5" style={{ backgroundColor: '#000000' }}>
-        <div className="text-center mb-8">
-          <img src="/logo.png" alt="Logo" className="h-20 w-auto mx-auto mb-3" />
-          <p className="text-sm font-medium" style={{ color: '#B90F45' }}>{STAMPS} visitas = 1 café gratis</p>
-        </div>
-
-        <div className="w-full max-w-sm rounded-3xl shadow-2xl p-5 space-y-3" style={{ backgroundColor: '#0d0d0d', border: '1px solid #1a1a1a' }}>
-          <p className="text-center text-xs font-bold uppercase tracking-widest pb-1" style={{ color: '#B90F45' }}>Accede a tu tarjeta</p>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Nombre</label>
-            <input type="text" value={name} onChange={e => { setName(e.target.value); setError('') }}
-              placeholder="Ej. María González" autoFocus className={INPUT} />
+      <div className="fixed inset-0 flex flex-col items-center justify-center p-5">
+        {BG}
+        <div className="relative z-10 w-full flex flex-col items-center">
+          <div className="text-center mb-8">
+            <img src="/logo.png" alt="Logo" className="h-20 w-auto mx-auto mb-3" />
+            <p className="text-sm font-medium" style={{ color: '#B90F45' }}>{STAMPS} visitas = 1 café gratis</p>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Teléfono</label>
-            <input type="tel" value={phone} onChange={e => { setPhone(e.target.value); setError('') }}
-              placeholder="Ej. 55 1234 5678" className={INPUT} />
+          <div className="w-full max-w-sm rounded-3xl shadow-2xl p-5 space-y-3" style={{ backgroundColor: '#0d0d0d', border: '1px solid #1a1a1a' }}>
+            <p className="text-center text-xs font-bold uppercase tracking-widest pb-1" style={{ color: '#B90F45' }}>Accede a tu tarjeta</p>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Nombre</label>
+              <input type="text" value={name} onChange={e => { setName(e.target.value); setError('') }}
+                placeholder="Ej. María González" autoFocus className={INPUT} />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Teléfono</label>
+              <input type="tel" value={phone} onChange={e => { setPhone(e.target.value); setError('') }}
+                placeholder="Ej. 55 1234 5678" className={INPUT} />
+            </div>
+
+            {error && (
+              <div className="rounded-2xl px-4 py-3 text-sm font-medium text-red-300"
+                style={{ backgroundColor: '#2d0a0a', border: '1px solid #7f1d1d' }}>{error}</div>
+            )}
+
+            <button type="button" onClick={handleSubmit} disabled={submitting}
+              className="w-full text-white font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors"
+              style={{ backgroundColor: '#B90F45' }}>
+              {submitting ? 'Cargando...' : 'Ver mi tarjeta'}
+            </button>
           </div>
-
-          {error && (
-            <div className="rounded-2xl px-4 py-3 text-sm font-medium text-red-300"
-              style={{ backgroundColor: '#2d0a0a', border: '1px solid #7f1d1d' }}>{error}</div>
-          )}
-
-          <button type="button" onClick={handleSubmit} disabled={submitting}
-            className="w-full text-white font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors"
-            style={{ backgroundColor: '#B90F45' }}>
-            {submitting ? 'Cargando...' : 'Ver mi tarjeta'}
-          </button>
         </div>
 
         <CustomerNav active="card" />
@@ -113,9 +124,11 @@ export default function CardPage() {
   const progress = Math.min((visits / STAMPS) * 100, 100)
 
   return (
-    <div className="min-h-screen pb-24" style={{ backgroundColor: '#000000' }}>
+    <div className="min-h-screen pb-24 relative">
+      {BG}
+
       {/* Header */}
-      <div className="sticky top-0 z-20 shadow-lg" style={{ backgroundColor: '#000000', borderBottom: '1px solid #B90F45' }}>
+      <div className="sticky top-0 z-20 shadow-lg" style={{ backgroundColor: 'rgba(0,0,0,0.85)', borderBottom: '1px solid #B90F45' }}>
         <div className="max-w-sm mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
@@ -129,7 +142,7 @@ export default function CardPage() {
         </div>
       </div>
 
-      <div className="flex flex-col items-center px-4 pt-4">
+      <div className="relative z-10 flex flex-col items-center px-4 pt-4">
         {/* Tarjeta */}
         <div className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl mb-4"
           style={{ background: 'linear-gradient(135deg, #1a0010 0%, #B90F45 60%, #DC5E86 100%)' }}>
@@ -146,7 +159,7 @@ export default function CardPage() {
               {Array.from({ length: STAMPS }).map((_, i) => {
                 const filled = i < visits
                 return (
-                  <div key={i} className="flex-1 aspect-square rounded-full flex items-center justify-center text-xl border-2 transition-all"
+                  <div key={i} className="flex-1 aspect-square rounded-full flex items-center justify-center border-2 transition-all"
                     style={{
                       backgroundColor: filled ? 'white' : 'rgba(255,255,255,0.1)',
                       borderColor: filled ? 'white' : 'rgba(255,255,255,0.2)',
