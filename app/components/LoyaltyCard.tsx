@@ -158,28 +158,11 @@ export default function LoyaltyCard() {
   // ── TARJETA DE FIDELIZACIÓN ──────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-stone-100 pb-24 relative">
-      {/* Background: menu images collage */}
+      {/* Background: single hero image */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="grid grid-cols-3 grid-rows-3 w-full h-full">
-          {[
-            '/uploads/menu/SalmonBowl.jpeg',
-            '/uploads/menu/PolloEnSalsa.jpeg',
-            '/uploads/menu/FusionCampestre.jpeg',
-            '/uploads/menu/FrappeOreo.jpeg',
-            '/uploads/menu/PescadoImperial.jpeg',
-            '/uploads/menu/SmoothieTropical.jpeg',
-            '/uploads/menu/EnsaCesar.jpeg',
-            '/uploads/menu/3Marias.jpeg',
-            '/uploads/menu/ArrozVerde.jpeg',
-          ].map((src, i) => (
-            <div key={i} className="w-full h-full overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt="" className="w-full h-full object-cover" style={{ opacity: 0.18 }} />
-            </div>
-          ))}
-        </div>
-        {/* Amber overlay to maintain brand feel */}
-        <div className="absolute inset-0" style={{ backgroundColor: 'rgba(120,53,15,0.55)' }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/uploads/menu/SalmonBowl.jpeg" alt="" className="w-full h-full object-cover" style={{ opacity: 0.22 }} />
+        <div className="absolute inset-0" style={{ backgroundColor: 'rgba(120,53,15,0.60)' }} />
       </div>
 
       {/* Header */}
