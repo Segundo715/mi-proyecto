@@ -20,8 +20,8 @@ const INPUT = 'w-full border border-[#B90F45]/40 rounded-2xl px-4 py-3.5 text-wh
 const BG = (
   <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
     {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img src="/uploads/menu/SalmonBowl.jpeg" alt="" className="w-full h-full object-cover" style={{ opacity: 0.20 }} />
-    <div className="absolute inset-0" style={{ backgroundColor: 'rgba(26,0,16,0.72)' }} />
+    <img src="/uploads/menu/SalmonBowl.jpeg" alt="" className="w-full h-full object-cover" style={{ opacity: 0.55 }} />
+    <div className="absolute inset-0" style={{ backgroundColor: 'rgba(26,0,16,0.50)' }} />
   </div>
 )
 
