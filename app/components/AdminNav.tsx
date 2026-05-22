@@ -109,7 +109,7 @@ export default function AdminNav() {
         </button>
         <button type="button" onClick={logout} className="text-xs px-3 py-1.5 rounded-lg font-medium"
           style={{ backgroundColor: '#0e1225', color: '#6b7a94', border: '1px solid rgba(255,255,255,0.07)' }}>
-          Salir
+          Cerrar sesión
         </button>
       </div>
 

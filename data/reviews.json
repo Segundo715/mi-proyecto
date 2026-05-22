@@ -1,28 +1,10 @@
 [
   {
-    "customerName": "Eder",
-    "rating": 3,
-    "comment": "skjkjwsjksj",
-    "id": "d9816c9a-03cd-4684-841c-fb7b478f8036",
-    "createdAt": "2026-05-19T02:09:59.303Z",
-    "bad": true,
-    "published": false
-  },
-  {
-    "customerName": "eder",
-    "rating": 5,
-    "comment": "good",
-    "id": "0e5fa1c6-30e2-4313-8d80-6d4613eb583c",
-    "createdAt": "2026-05-19T02:32:08.649Z",
-    "bad": false,
-    "published": true
-  },
-  {
     "customerName": "Yhh",
     "rating": 3,
     "comment": "Fjrjru",
     "id": "c1237e85-412c-420a-bb5e-4c752293de3c",
-    "createdAt": "2026-05-19T16:09:39.365Z",
+    "createdAt": "2026-05-19T16:09:39.563Z",
     "bad": true,
     "published": false
   }
