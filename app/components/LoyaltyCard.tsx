@@ -105,7 +105,7 @@ export default function LoyaltyCard() {
         {/* Brand above card */}
         <div className="text-center mb-6">
           <div className="text-6xl mb-2">☕</div>
-          <h1 className="text-white text-3xl font-black tracking-tight">Chubis</h1>
+          <h1 className="text-white text-3xl font-black tracking-tight">NICHO</h1>
           <p className="text-amber-300 text-sm mt-1 font-medium">5 visitas = 1 café gratis</p>
         </div>
 
@@ -168,7 +168,7 @@ export default function LoyaltyCard() {
       {/* Header */}
       <div className="bg-amber-900 text-white shadow-lg relative z-10">
         <div className="max-w-sm mx-auto px-4 py-3.5 flex items-center justify-between">
-          <span className="font-black text-base tracking-tight">☕ Chubis</span>
+          <span className="font-black text-base tracking-tight">☕ NICHO</span>
           <button type="button" onClick={handleLogout}
             className="text-xs text-amber-300 bg-amber-800 px-3 py-1.5 rounded-full font-semibold active:bg-amber-700">
             Cerrar sesión
