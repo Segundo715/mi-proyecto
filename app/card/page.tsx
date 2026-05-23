@@ -170,7 +170,7 @@ export default function CardPage() {
             <div className="flex-1 min-w-0">
               <p className="text-xs font-black uppercase tracking-widest" style={{ color: '#f9c6d5' }}>Oferta de recompensa</p>
               <p className="text-white text-sm font-semibold mt-0.5">
-                Cada {STAMPS} visitas, 1 gratis 💛
+                Cada {STAMPS} visitas, 1 gratis ☕
               </p>
             </div>
             <div className="text-right shrink-0">
