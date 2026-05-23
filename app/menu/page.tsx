@@ -8,7 +8,7 @@ const FAVORITES_KEY = 'favorites'
 
 interface MenuItem {
   id: string; name: string; description: string; price: number
-  category: string; imageUrl?: string; available: boolean
+  category: string; imageUrl?: string; available: boolean; likes: number
 }
 
 interface CartItem { item: MenuItem; qty: number }
@@ -26,6 +26,7 @@ const STATUS_MSG: Record<Order['status'], { text: string; sub: string; emoji: st
 }
 
 const MY_ORDERS_KEY = 'my_order_ids'
+const INPUT = 'w-full border border-[#B90F45]/40 rounded-2xl px-4 py-3 text-white bg-[#1a1a1a] placeholder-gray-500 focus:outline-none focus:border-[#B90F45] transition-colors'
 
 export default function MenuPage() {
   const [items, setItems] = useState<MenuItem[]>([])
@@ -77,10 +78,12 @@ export default function MenuPage() {
     } catch {}
   }
 
-  function toggleFavorite(id: string) {
+  function toggleFavorite(item: MenuItem) {
     setFavorites(prev => {
-      const next = prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
+      const alreadyLiked = prev.includes(item.id)
+      const next = alreadyLiked ? prev.filter(f => f !== item.id) : [...prev, item.id]
       localStorage.setItem(FAVORITES_KEY, JSON.stringify(next))
+      if (!alreadyLiked) fetch(`/api/menu/${item.id}/like`, { method: 'POST' }).catch(() => {})
       return next
     })
   }
@@ -145,31 +148,21 @@ export default function MenuPage() {
   }
   const categories = Object.keys(grouped)
 
-  const INPUT = 'w-full border border-[#B90F45]/40 rounded-2xl px-4 py-3 text-white bg-[#1a1a1a] placeholder-gray-500 focus:outline-none focus:border-[#B90F45] transition-colors'
-
   function ItemDetail({ item }: { item: MenuItem }) {
     const inCart = cart.find(c => c.item.id === item.id)
     return (
-      <div className="text-center" style={{ backgroundColor: '#0d0d0d', padding: '15px 0' }}>
+      <div style={{ backgroundColor: '#0d0d0d' }}>
         {item.imageUrl && (
           <img src={item.imageUrl} alt={item.name}
-            className="mx-auto block rounded-lg object-cover"
-            style={{ maxWidth: '300px', height: '200px', width: '90%' }} />
+            className="w-full object-cover block"
+            style={{ height: '220px' }} />
         )}
-        <div className="flex justify-center items-center gap-4 mt-3 mb-2">
+        <div className="flex justify-between items-center px-4 py-3">
           <span className="text-gray-400 text-sm">C/U</span>
           <span className="text-white font-bold text-xl">${item.price.toFixed(2)}</span>
-          {FEATURES.favorites.enabled && (
-            <button type="button" onClick={() => toggleFavorite(item.id)}
-              className="text-lg transition-transform active:scale-125"
-              style={{ color: favorites.includes(item.id) ? '#B90F45' : '#555' }}>
-              {favorites.includes(item.id) ? '❤️' : '🤍'}
-            </button>
-          )}
         </div>
         {inCart ? (
-          <div className="flex items-center justify-center gap-3 mt-2">
-            <span className="text-gray-300 text-sm">Cantidad:</span>
+          <div className="flex items-center justify-center gap-3 pb-3">
             <button type="button" onClick={() => changeQty(item.id, -1)}
               className="text-white font-black text-lg w-8 h-8 rounded flex items-center justify-center"
               style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>−</button>
@@ -180,8 +173,8 @@ export default function MenuPage() {
           </div>
         ) : (
           <button type="button" onClick={() => addToCart(item)}
-            className="text-white font-bold mt-3 py-2.5 transition-colors"
-            style={{ backgroundColor: '#B90F45', width: '90%', maxWidth: '300px', display: 'block', margin: '12px auto 0' }}>
+            className="w-full text-white font-bold py-3 transition-colors"
+            style={{ backgroundColor: '#B90F45' }}>
             Agregar al Pedido
           </button>
         )}
@@ -248,46 +241,12 @@ export default function MenuPage() {
           </div>
         ) : (
           <>
-            {/* Favoritos */}
-            {FEATURES.favorites.enabled && (() => {
-              const favItems = items.filter(i => favorites.includes(i.id))
-              if (!favItems.length) return null
-              const catKey = '__favoritos__'
-              const isOpen = openCategory === catKey
-              return (
-                <div key={catKey}>
-                  <button type="button" onClick={() => toggleCategory(catKey)}
-                    className="w-full flex items-center justify-between px-3 py-3 text-white font-bold text-base"
-                    style={{ backgroundColor: isOpen ? '#B90F45' : '#000000', borderTop: '1px solid #1a1a1a' }}>
-                    <span>❤️ Mis favoritos</span>
-                    <span style={{ fontSize: '18px' }}>{isOpen ? '∧' : '∨'}</span>
-                  </button>
-                  {isOpen && (
-                    <div style={{ backgroundColor: '#0d0d0d' }}>
-                      {favItems.map(item => {
-                        const isItemOpen = openItem === item.id
-                        return (
-                          <div key={item.id}>
-                            <button type="button" onClick={() => toggleItem(item.id)}
-                              className="w-full flex items-center justify-center relative py-3 text-white"
-                              style={{ backgroundColor: isItemOpen ? '#B90F45' : '#0d0d0d', borderTop: '1px solid #1a1a1a' }}>
-                              <span style={{ width: '200px', textAlign: 'left' }}>{item.name}</span>
-                              <span className="absolute right-4" style={{ fontSize: '18px' }}>{isItemOpen ? '∧' : '∨'}</span>
-                            </button>
-                            {isItemOpen && <ItemDetail item={item} />}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              )
-            })()}
-
-            {/* Categorías */}
             {categories.map(category => {
               const catItems = grouped[category]
               const isOpen = openCategory === category
+              // Cuando otra categoría está abierta, ocultar esta
+              if (openCategory !== null && !isOpen) return null
+
               return (
                 <div key={category}>
                   <button type="button" onClick={() => toggleCategory(category)}
@@ -296,25 +255,38 @@ export default function MenuPage() {
                     <span>{category}</span>
                     <span style={{ fontSize: '18px' }}>{isOpen ? '∧' : '∨'}</span>
                   </button>
+
                   {isOpen && (
                     <div style={{ backgroundColor: '#0d0d0d' }}>
                       {catItems.map(item => {
                         const isItemOpen = openItem === item.id
+                        const isFav = favorites.includes(item.id)
                         return (
                           <div key={item.id} style={{ opacity: item.available ? 1 : 0.5 }}>
                             <button type="button"
                               onClick={() => item.available && toggleItem(item.id)}
-                              className="w-full flex items-center justify-center relative py-3 text-white"
+                              className="w-full flex items-center py-3 px-4 text-white"
                               style={{
                                 backgroundColor: isItemOpen ? '#B90F45' : '#0d0d0d',
                                 borderTop: '1px solid #1a1a1a',
                                 cursor: item.available ? 'pointer' : 'not-allowed',
                               }}>
-                              <span style={{ width: '200px', textAlign: 'left' }}>
+                              {/* Nombre */}
+                              <span className="flex-1 text-left">
                                 {item.name}
-                                {!item.available && <span className="ml-1 text-xs text-red-400">(Agotado)</span>}
+                                {!item.available && <span className="ml-1 text-xs text-red-300">(Agotado)</span>}
                               </span>
-                              <span className="absolute right-4" style={{ fontSize: '18px' }}>{isItemOpen ? '∧' : '∨'}</span>
+                              {/* Corazón al lado del nombre */}
+                              {FEATURES.favorites.enabled && (
+                                <span
+                                  role="button"
+                                  onClick={e => { e.stopPropagation(); toggleFavorite(item) }}
+                                  className="text-lg mx-3 shrink-0"
+                                  style={{ color: isFav ? '#fff' : 'rgba(255,255,255,0.35)' }}>
+                                  {isFav ? '❤️' : '🤍'}
+                                </span>
+                              )}
+                              <span className="shrink-0" style={{ fontSize: '18px' }}>{isItemOpen ? '∧' : '∨'}</span>
                             </button>
                             {isItemOpen && <ItemDetail item={item} />}
                           </div>

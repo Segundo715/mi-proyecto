@@ -10,6 +10,7 @@ export interface MenuItem {
   category: string
   imageUrl?: string
   available: boolean
+  likes: number
   createdAt: string
 }
 
@@ -36,7 +37,7 @@ export const getAllMenuItems = () => load()
 
 export function createMenuItem(data: Omit<MenuItem, 'id' | 'createdAt'>): MenuItem {
   const rows = load()
-  const item: MenuItem = { ...data, id: randomUUID(), createdAt: new Date().toISOString() }
+  const item: MenuItem = { ...data, likes: data.likes ?? 0, id: randomUUID(), createdAt: new Date().toISOString() }
   rows.push(item)
   save(rows)
   return item

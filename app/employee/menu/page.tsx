@@ -11,6 +11,7 @@ interface MenuItem {
   category: string
   imageUrl?: string
   available: boolean
+  likes: number
   createdAt: string
 }
 
@@ -312,6 +313,12 @@ export default function EmployeeMenuPage() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-bold" style={{ color: S.text }}>{item.name}</h3>
                             <span className="text-sm font-bold" style={{ color: S.accent }}>${item.price.toFixed(2)}</span>
+                            {(item.likes ?? 0) > 0 && (
+                              <span className="text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1"
+                                style={{ backgroundColor: 'rgba(185,15,69,0.15)', color: '#f472b6' }}>
+                                ❤️ {item.likes}
+                              </span>
+                            )}
                             {item.available ? (
                               <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                                 style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>Disponible</span>
