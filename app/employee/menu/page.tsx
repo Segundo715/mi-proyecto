@@ -241,6 +241,41 @@ export default function EmployeeMenuPage() {
           </button>
         </div>
 
+        {/* Ranking de más gustados */}
+        {!loading && items.some(i => (i.likes ?? 0) > 0) && (
+          <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+              <span className="font-bold text-sm" style={{ color: S.text }}>❤️ Ranking — Platillos más gustados</span>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              {[...items]
+                .filter(i => (i.likes ?? 0) > 0)
+                .sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0))
+                .slice(0, 5)
+                .map((item, idx) => {
+                  const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣']
+                  const maxLikes = Math.max(...items.map(i => i.likes ?? 0))
+                  const pct = maxLikes > 0 ? ((item.likes ?? 0) / maxLikes) * 100 : 0
+                  return (
+                    <div key={item.id} className="flex items-center gap-3">
+                      <span className="text-xl shrink-0">{medals[idx]}</span>
+                      {item.imageUrl && (
+                        <img src={item.imageUrl} alt={item.name} className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate" style={{ color: S.text }}>{item.name}</p>
+                        <div className="h-1.5 rounded-full mt-1 overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}>
+                          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: '#f472b6' }} />
+                        </div>
+                      </div>
+                      <span className="text-sm font-black shrink-0" style={{ color: '#f472b6' }}>❤️ {item.likes}</span>
+                    </div>
+                  )
+                })}
+            </div>
+          </div>
+        )}
+
         {/* Items list */}
         {loading ? (
           <div className="text-center py-10" style={{ color: S.accent }}>Cargando...</div>
