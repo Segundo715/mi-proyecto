@@ -110,7 +110,6 @@ export default function CardPage() {
 
   const visits = customer?.visits ?? 0
   const earned = visits >= STAMPS
-  const progress = Math.min((visits / STAMPS) * 100, 100)
 
   return (
     <div className="min-h-screen pb-24" style={{ backgroundColor: '#000' }}>
@@ -129,57 +128,65 @@ export default function CardPage() {
         </div>
       </div>
 
-      <div className="flex flex-col items-center px-4 pt-4">
-        {/* Tarjeta con imagen de fondo interna */}
-        <div className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl mb-4 relative">
-          {/* Imagen de fondo dentro de la tarjeta */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/uploads/menu/SalmonBowl.jpeg" alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ opacity: 0.6 }} />
-          {/* Overlay semitransparente para que se lean los textos */}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(26,0,16,0.55) 0%, rgba(185,15,69,0.50) 60%, rgba(220,94,134,0.45) 100%)' }} />
+      <div className="flex flex-col items-center px-4 pt-6">
+        {/* ── TARJETA ── */}
+        <div className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl mb-4"
+          style={{ background: 'linear-gradient(135deg, #1a0010 0%, #B90F45 60%, #DC5E86 100%)' }}>
 
-          {/* Contenido de la tarjeta */}
-          <div className="relative z-10">
-            <div className="px-6 pt-6 pb-4">
-              <p className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: '#f9c6d5' }}>Tarjeta de Lealtad</p>
-              <p className="text-white text-xl font-black">¡Hola, {customer?.name?.split(' ')[0]}!</p>
-              {customer?.phone && <p className="text-xs mt-0.5" style={{ color: '#f9c6d5' }}>{customer.phone}</p>}
+          {/* Logo + nombre restaurante */}
+          <div className="flex items-center justify-between px-5 pt-5 pb-3">
+            <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
+            <span className="text-white font-black text-base tracking-wide">Chubis</span>
+          </div>
+
+          {/* Imagen con sellos superpuestos */}
+          <div className="relative" style={{ height: '170px' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/uploads/menu/SalmonBowl.jpeg" alt=""
+              className="w-full h-full object-cover" />
+            {/* Sellos encima de la imagen */}
+            <div className="absolute inset-0 flex items-center justify-center gap-3 px-6">
+              {Array.from({ length: STAMPS }).map((_, i) => {
+                const filled = i < visits
+                return (
+                  <div key={i}
+                    className="flex-1 aspect-square rounded-full flex items-center justify-center border-2 transition-all"
+                    style={{
+                      backgroundColor: filled ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.18)',
+                      borderColor: filled ? 'white' : 'rgba(255,255,255,0.45)',
+                      backdropFilter: 'blur(3px)',
+                      boxShadow: filled ? '0 0 14px rgba(255,255,255,0.5)' : 'none',
+                    }}>
+                    {filled && <img src="/logo.png" alt="" className="w-3/4 h-3/4 object-contain" />}
+                  </div>
+                )
+              })}
             </div>
+          </div>
 
-            {/* Sellos */}
-            <div className="px-6 pb-2">
-              <div className="flex gap-2.5 mb-2">
-                {Array.from({ length: STAMPS }).map((_, i) => {
-                  const filled = i < visits
-                  return (
-                    <div key={i} className="flex-1 aspect-square rounded-full flex items-center justify-center border-2 transition-all"
-                      style={{
-                        backgroundColor: filled ? 'white' : 'rgba(255,255,255,0.1)',
-                        borderColor: filled ? 'white' : 'rgba(255,255,255,0.2)',
-                        boxShadow: filled ? '0 0 12px rgba(255,255,255,0.3)' : 'none',
-                      }}>
-                      {filled
-                        ? <img src="/logo.png" alt="" className="w-4/5 h-4/5 object-contain" />
-                        : <span className="w-2 h-2 rounded-full block" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />}
-                    </div>
-                  )
-                })}
-              </div>
-              <div className="h-1.5 rounded-full overflow-hidden mb-1" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progress}%`, backgroundColor: 'white' }} />
-              </div>
-              <p className="text-xs text-right font-medium mb-4" style={{ color: '#f9c6d5' }}>{visits} / {STAMPS} visitas</p>
-            </div>
-
-            {/* QR */}
-            <div className="mx-5 mb-5 bg-white rounded-2xl p-4 flex flex-col items-center">
-              <QRCode value={customer!.id} size={150} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
-              <p className="text-xs mt-2.5 font-semibold text-center" style={{ color: '#B90F45' }}>
-                {earned ? '🎉 ¡Café gratis! Muéstraselo al cajero' : 'Muestra este QR al empleado para sellar tu visita'}
+          {/* Oferta + contador sellos */}
+          <div className="flex items-start gap-3 px-5 py-4"
+            style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-black uppercase tracking-widest" style={{ color: '#f9c6d5' }}>Oferta de recompensa</p>
+              <p className="text-white text-sm font-semibold mt-0.5">
+                Cada {STAMPS} visitas, 1 gratis 💛
               </p>
             </div>
+            <div className="text-right shrink-0">
+              <p className="text-xs font-black uppercase tracking-widest" style={{ color: '#f9c6d5' }}>Sellos · Premios</p>
+              <p className="text-white text-sm font-black mt-0.5">
+                {visits}/{STAMPS} · {earned ? '1' : '0'}
+              </p>
+            </div>
+          </div>
+
+          {/* QR */}
+          <div className="mx-5 mb-5 bg-white rounded-2xl p-4 flex flex-col items-center">
+            <QRCode value={customer!.id} size={160} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
+            <p className="text-xs mt-2.5 font-semibold text-center" style={{ color: '#B90F45' }}>
+              {earned ? '🎉 ¡Café gratis! Muéstraselo al cajero' : 'Muestra este QR al empleado'}
+            </p>
           </div>
         </div>
       </div>
