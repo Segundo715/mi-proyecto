@@ -42,10 +42,11 @@ export default function LoyaltyPage() {
 
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center p-5" style={{ backgroundColor: '#000000' }}>
-      {/* Logo */}
+      {/* Logo + nombre */}
       <div className="text-center mb-8">
         <img src="/logo.png" alt="Logo" className="h-20 w-auto mx-auto mb-3" />
-        <p className="text-sm font-medium" style={{ color: '#B90F45' }}>5 visitas = 1 café gratis</p>
+        <h1 className="text-white text-2xl font-black tracking-widest">NICHO</h1>
+        <p className="text-sm font-medium mt-1" style={{ color: '#B90F45' }}>5 visitas = 1 café gratis</p>
       </div>
 
       {/* Card */}
@@ -87,7 +88,7 @@ export default function LoyaltyPage() {
           <button type="button" onClick={handleSubmit} disabled={submitting}
             className="w-full text-white font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors mt-1"
             style={{ backgroundColor: '#B90F45' }}>
-            {submitting ? 'Cargando...' : tab === 'login' ? 'Entrar' : 'Crear cuenta'}
+            {submitting ? 'Cargando...' : tab === 'login' ? '☕ Entrar a NICHO' : '☕ Unirme a NICHO'}
           </button>
         </div>
       </div>

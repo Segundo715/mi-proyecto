@@ -136,7 +136,7 @@ export default function CardPage() {
           {/* Logo + nombre restaurante */}
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
             <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
-            <span className="text-white font-black text-base tracking-wide">Chubis</span>
+            <span className="text-white font-black text-base tracking-wide">NICHO</span>
           </div>
 
           {/* Imagen con sellos superpuestos */}
