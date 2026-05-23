@@ -8,7 +8,7 @@
     "available": true,
     "id": "a1000001-0000-0000-0000-000000000001",
     "createdAt": "2026-05-21T01:00:00.000Z",
-    "likes": 1
+    "likes": 3
   },
   {
     "name": "Pescado Imperial",
@@ -68,7 +68,8 @@
     "imageUrl": "/uploads/menu/FrappeOreo.jpeg",
     "available": true,
     "id": "a1000001-0000-0000-0000-000000000007",
-    "createdAt": "2026-05-21T01:00:00.000Z"
+    "createdAt": "2026-05-21T01:00:00.000Z",
+    "likes": 2
   },
   {
     "name": "Smoothie Tropical",
