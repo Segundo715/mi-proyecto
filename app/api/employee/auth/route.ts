@@ -1,0 +1,36 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createSession } from '@/lib/auth'
+import { createEmployee, authenticateEmployee } from '@/lib/employeeDb'
+
+export async function POST(req: NextRequest) {
+  const { action, name, password } = await req.json()
+
+  if (!name?.trim() || !password)
+    return NextResponse.json({ error: 'Nombre y contraseña requeridos' }, { status: 400 })
+
+  if (action === 'register') {
+    const employee = createEmployee(name.trim(), password)
+    if (!employee)
+      return NextResponse.json({ error: 'Ese nombre ya está en uso' }, { status: 409 })
+    const res = NextResponse.json({ ok: true, name: employee.name })
+    res.cookies.set('employee_session', createSession(employee.id), { path: '/', httpOnly: true, sameSite: 'lax', maxAge: 86400 })
+    res.cookies.set('employee_name', employee.name, { path: '/', sameSite: 'lax', maxAge: 86400 })
+    return res
+  }
+
+  const employee = authenticateEmployee(name.trim(), password)
+  if (!employee)
+    return NextResponse.json({ error: 'Nombre o contraseña incorrectos' }, { status: 401 })
+
+  const res = NextResponse.json({ ok: true, name: employee.name })
+  res.cookies.set('employee_session', createSession(employee.id), { path: '/', httpOnly: true, sameSite: 'lax', maxAge: 86400 })
+  res.cookies.set('employee_name', employee.name, { path: '/', sameSite: 'lax', maxAge: 86400 })
+  return res
+}
+
+export async function DELETE() {
+  const res = NextResponse.json({ ok: true })
+  res.cookies.set('employee_session', '', { path: '/', maxAge: 0 })
+  res.cookies.set('employee_name', '', { path: '/', maxAge: 0 })
+  return res
+}

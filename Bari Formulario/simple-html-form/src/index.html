@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Information Form</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <script src="scripts/norion.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div class="logo-container">
+            <img src="/Img/logo.svg" alt="Logo Restaurante" class="logo">
+        </div>
+
+                <p>Únete a nuestra comunidad</p>
+            </div>
+        </div>
+
+        <!-- Formulario -->
+        <div class="form-container">
+            <div id="form-section">
+                <div class="welcome-message">
+                    <h2>¡Bienvenido!</h2>
+                    <p>Completa tus datos para registrarte. La información será guardada de forma segura.</p>
+                </div>
+
+                <form id="registration-form">
+                    <div class="form-group" id="nombre-group">
+                        <label>
+                            <span class="icon">👤</span>
+                            Nombre Completo *
+                        </label>
+                        <input 
+                            type="text" 
+                            id="nombre" 
+                            name="nombre" 
+                            placeholder="Ej: Juan Pérez García"
+                            required
+                        >
+                        <div class="error-message hidden" id="nombre-error">
+                            ⚠️ <span></span>
+                        </div>
+                        <div class="success-message hidden" id="nombre-success">
+                            ✅ <span>Nombre válido</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="whatsapp-group">
+                        <label>
+                            <span class="icon">📱</span>
+                            Número de WhatsApp *
+                        </label>
+                        <input 
+                            type="tel" 
+                            id="whatsapp" 
+                            name="whatsapp" 
+                            placeholder="Ej: 443 123 4567"
+                            required
+                        >
+                        <div class="error-message hidden" id="whatsapp-error">
+                            ⚠️ <span></span>
+                        </div>
+                        <div class="success-message hidden" id="whatsapp-success">
+                            ✅ <span>Número válido</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="fecha-group">
+                        <label>
+                            <span class="icon">🎂</span>
+                            Fecha de Nacimiento *
+                        </label>
+                        <input 
+                            type="date" 
+                            id="fecha" 
+                            name="fecha" 
+                            required
+                            max=""
+                        >
+                        <div class="error-message hidden" id="fecha-error">
+                            ⚠️ <span></span>
+                        </div>
+                        <div class="success-message hidden" id="fecha-success">
+                            ✅ <span>Fecha válida</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="terminos-group">
+                        <div class="checkbox-container">
+                            <input 
+                                type="checkbox" 
+                                id="terminos" 
+                                name="terminos" 
+                                required
+                                class="checkbox-input"
+                            >
+                            <label for="terminos" class="checkbox-label">
+                                <span class="checkmark"></span>
+                                <span class="checkbox-text">
+                                    He leído y acepto los 
+                                    <a href="#" id="terminos-link" class="terms-link">términos y condiciones</a> 
+                                    y la 
+                                    <a href="#" id="privacidad-link" class="terms-link">política de privacidad</a> *
+                                </span>
+                            </label>
+                        </div>
+                        <div class="error-message hidden" id="terminos-error">
+                            ⚠️ <span></span>
+                        </div>
+                        <div class="success-message hidden" id="terminos-success">
+                            ✅ <span>Términos aceptados</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="submit-btn">
+                        <span class="loading">
+                            <span class="spinner"></span>
+                        </span>
+                        <span class="text">
+                            📤 Registrarse
+                        </span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Mensaje de éxito -->
+            <div id="success-section" class="success-card hidden">
+                <div class="icon">🎉</div>
+                <h2>¡Registro Exitoso!</h2>
+                <p>Tus datos han sido guardados correctamente en nuestra base de datos.</p>
+                <button id="new-register-btn" class="new-register-btn">
+                    Registrar Otra Persona
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Términos y Condiciones -->
+    <div id="modal-terminos" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📋 Términos y Condiciones</h2>
+                <button class="close-btn" onclick="cerrarModal('modal-terminos')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Última actualización:</strong> <span id="fecha-actualizacion"></span></p>
+                
+                <h3>1. Aceptación de los términos</h3>
+                <p>Al registrarte en nuestro formulario, aceptas cumplir con estos términos y condiciones de uso.</p>
+                
+                <h3>2. Uso de la información</h3>
+                <p>La información proporcionada será utilizada para:</p>
+                <ul>
+                    <li>Contactarte para promociones y ofertas especiales</li>
+                    <li>Enviarte comunicaciones relevantes</li>
+                    <li>Mejorar nuestros servicios</li>
+                    <li>Cumplir con obligaciones legales</li>
+                </ul>
+                
+                <h3>3. Protección de datos</h3>
+                <p>Nos comprometemos a proteger tu información personal y no compartirla con terceros sin tu consentimiento, excepto cuando sea requerido por ley.</p>
+                
+                <h3>4. Derechos del usuario</h3>
+                <p>Tienes derecho a:</p>
+                <ul>
+                    <li>Acceder a tu información personal</li>
+                    <li>Rectificar datos incorrectos</li>
+                    <li>Solicitar la eliminación de tus datos</li>
+                    <li>Oponerte al tratamiento de tus datos</li>
+                </ul>
+                
+                <h3>5. Modificaciones</h3>
+                <p>Nos reservamos el derecho de modificar estos términos en cualquier momento. Las modificaciones entrarán en vigor inmediatamente después de su publicación.</p>
+                
+                <h3>6. Contacto</h3>
+                <p>Para cualquier duda o solicitud relacionada con estos términos, puedes contactarnos a través de nuestros canales oficiales.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Política de Privacidad -->
+    <div id="modal-privacidad" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔒 Política de Privacidad</h2>
+                <button class="close-btn" onclick="cerrarModal('modal-privacidad')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Última actualización:</strong> <span id="fecha-actualizacion-privacidad"></span></p>
+                
+                <h3>1. Información que recopilamos</h3>
+                <p>Recopilamos la siguiente información:</p>
+                <ul>
+                    <li><strong>Información personal:</strong> Nombre completo, número de WhatsApp, fecha de nacimiento</li>
+                    <li><strong>Información técnica:</strong> Dirección IP, tipo de dispositivo, navegador utilizado</li>
+                    <li><strong>Información de uso:</strong> Fecha y hora de registro</li>
+                </ul>
+                
+                <h3>2. Cómo utilizamos tu información</h3>
+                <p>Utilizamos tu información para:</p>
+                <ul>
+                    <li>Procesar tu registro</li>
+                    <li>Contactarte con promociones y ofertas</li>
+                    <li>Enviarte comunicaciones de marketing</li>
+                    <li>Mejorar nuestros servicios</li>
+                    <li>Cumplir con obligaciones legales</li>
+                </ul>
+                
+                <h3>3. Almacenamiento y seguridad</h3>
+                <p>Tu información se almacena de forma segura utilizando:</p>
+                <ul>
+                    <li>Cifrado de datos en tránsito y en reposo</li>
+                    <li>Acceso restringido solo a personal autorizado</li>
+                    <li>Sistemas de respaldo seguros</li>
+                    <li>Monitoreo continuo de seguridad</li>
+                </ul>
+                
+                <h3>4. Compartir información</h3>
+                <p>No vendemos, alquilamos ni compartimos tu información personal con terceros, excepto:</p>
+                <ul>
+                    <li>Cuando tengas tu consentimiento expreso</li>
+                    <li>Para cumplir con la ley o procesos legales</li>
+                    <li>Para proteger nuestros derechos o seguridad</li>
+                </ul>
+                
+                <h3>5. Tus derechos</h3>
+                <p>Tienes los siguientes derechos sobre tus datos:</p>
+                <ul>
+                    <li><strong>Acceso:</strong> Solicitar una copia de tus datos</li>
+                    <li><strong>Rectificación:</strong> Corregir información incorrecta</li>
+                    <li><strong>Eliminación:</strong> Solicitar la eliminación de tus datos</li>
+                    <li><strong>Portabilidad:</strong> Obtener tus datos en formato transferible</li>
+                    <li><strong>Oposición:</strong> Oponerte al procesamiento de tus datos</li>
+                </ul>
+                
+                <h3>6. Retención de datos</h3>
+                <p>Conservaremos tu información personal solo durante el tiempo necesario para los fines descritos en esta política o según lo requiera la ley.</p>
+                
+                <h3>7. Contacto</h3>
+                <p>Para ejercer tus derechos o realizar consultas sobre esta política, contáctanos a través de nuestros canales oficiales.</p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

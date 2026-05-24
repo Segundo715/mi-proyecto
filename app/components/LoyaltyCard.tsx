@@ -28,7 +28,6 @@ export default function LoyaltyCard() {
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [tab, setTab] = useState<'login' | 'register'>('login')
   const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [formError, setFormError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -50,12 +49,10 @@ export default function LoyaltyCard() {
 
   async function handleAuth() {
     if (!name.trim() || !password) { setFormError('Completa todos los campos'); return }
-    if (tab === 'register' && !phone.trim()) { setFormError('El teléfono es obligatorio'); return }
     setFormError('')
     setSubmitting(true)
     try {
       const body: Record<string, string> = { action: tab, name: name.trim(), password }
-      if (tab === 'register') body.phone = phone.trim()
       const res = await fetch('/api/customer-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -92,7 +89,7 @@ export default function LoyaltyCard() {
 
   function handleLogout() {
     localStorage.removeItem('loyalty_id')
-    setCustomer(null); setName(''); setPhone(''); setPassword(''); setStep('form')
+    setCustomer(null); setName(''); setPassword(''); setStep('form')
   }
 
   const earned = (customer?.visits ?? 0) >= STAMPS
@@ -108,7 +105,7 @@ export default function LoyaltyCard() {
         {/* Brand above card */}
         <div className="text-center mb-6">
           <div className="text-6xl mb-2">☕</div>
-          <h1 className="text-white text-3xl font-black tracking-tight">Chubis</h1>
+          <h1 className="text-white text-3xl font-black tracking-tight">NICHO</h1>
           <p className="text-amber-300 text-sm mt-1 font-medium">5 visitas = 1 café gratis</p>
         </div>
 
@@ -135,14 +132,6 @@ export default function LoyaltyCard() {
                 placeholder="Ej. María González" autoComplete="username" className={INPUT} />
             </div>
 
-            {tab === 'register' && (
-              <div>
-                <label className="block text-xs font-bold text-amber-900 mb-1.5 uppercase tracking-wide">Teléfono</label>
-                <input type="tel" value={phone} onChange={e => { setPhone(e.target.value); setFormError('') }}
-                  placeholder="Ej. 55 1234 5678" autoComplete="tel" className={INPUT} />
-              </div>
-            )}
-
             <div>
               <label className="block text-xs font-bold text-amber-900 mb-1.5 uppercase tracking-wide">Contraseña</label>
               <input type="password" value={password} onChange={e => { setPassword(e.target.value); setFormError('') }}
@@ -168,19 +157,26 @@ export default function LoyaltyCard() {
 
   // ── TARJETA DE FIDELIZACIÓN ──────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-stone-100 pb-24">
+    <div className="min-h-screen bg-stone-100 pb-24 relative">
+      {/* Background: single hero image */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/uploads/menu/SalmonBowl.jpeg" alt="" className="w-full h-full object-cover" style={{ opacity: 0.22 }} />
+        <div className="absolute inset-0" style={{ backgroundColor: 'rgba(120,53,15,0.60)' }} />
+      </div>
+
       {/* Header */}
-      <div className="bg-amber-900 text-white shadow-lg">
+      <div className="bg-amber-900 text-white shadow-lg relative z-10">
         <div className="max-w-sm mx-auto px-4 py-3.5 flex items-center justify-between">
-          <span className="font-black text-base tracking-tight">☕ Chubis</span>
+          <span className="font-black text-base tracking-tight">☕ NICHO</span>
           <button type="button" onClick={handleLogout}
             className="text-xs text-amber-300 bg-amber-800 px-3 py-1.5 rounded-full font-semibold active:bg-amber-700">
-            Salir
+            Cerrar sesión
           </button>
         </div>
       </div>
 
-      <div className="max-w-sm mx-auto p-4 space-y-4">
+      <div className="max-w-sm mx-auto p-4 space-y-4 relative z-10">
 
         {/* Physical card */}
         <div className="rounded-3xl overflow-hidden shadow-2xl"
@@ -189,7 +185,6 @@ export default function LoyaltyCard() {
           {/* Card top */}
           <div className="px-6 pt-6 pb-4 flex justify-between items-start">
             <div>
-              <p className="text-amber-300 text-xs font-bold uppercase tracking-widest mb-0.5">Tarjeta Chubis</p>
               <p className="text-white text-xl font-black leading-tight">¡Hola, {customer?.name?.split(' ')[0]}!</p>
               {customer?.phone && <p className="text-amber-400 text-xs mt-0.5">{customer.phone}</p>}
             </div>

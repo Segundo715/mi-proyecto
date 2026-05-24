@@ -140,3 +140,28 @@ export function authenticateCustomer(name: string, password: string): Customer |
   const hash = hashPassword(name, password)
   return rows.find(c => c.name.toLowerCase() === name.toLowerCase() && c.passwordHash === hash) ?? null
 }
+
+export function findOrCreateSimple(name: string, phone: string): Customer {
+  const rows = load()
+  const clean = phone.replace(/\D/g, '')
+  const existing = rows.find(c =>
+    c.name.toLowerCase() === name.toLowerCase() &&
+    c.phone.replace(/\D/g, '') === clean
+  )
+  if (existing) {
+    if (!existing.confirmed) { existing.confirmed = true; save(rows) }
+    return existing
+  }
+  const customer: Customer = {
+    id: randomUUID(),
+    name: name.trim(),
+    phone: phone.trim(),
+    visits: 0,
+    confirmed: true,
+    registeredAt: new Date().toISOString(),
+    stamps: [],
+  }
+  rows.push(customer)
+  save(rows)
+  return customer
+}

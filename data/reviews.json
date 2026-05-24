@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "customerName": "Yhh",
+    "rating": 3,
+    "comment": "Fjrjru",
+    "id": "c1237e85-412c-420a-bb5e-4c752293de3c",
+    "createdAt": "2026-05-19T16:09:39.563Z",
+    "bad": true,
+    "published": false
+  }
+]

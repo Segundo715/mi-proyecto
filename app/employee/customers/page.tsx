@@ -1,0 +1,164 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import EmployeeNav from '@/app/components/EmployeeNav'
+
+interface LoyaltyCard {
+  id: string; name: string; phone: string; visits: number
+  registeredAt: string; stamps: { timestamp: string }[]
+}
+
+const STAMPS = 5
+
+const S = {
+  bg:     '#080b16',
+  card:   '#0e1225',
+  accent: '#00e676',
+  text:   '#eef2f7',
+  sub:    '#6b7a94',
+  border: 'rgba(255,255,255,0.07)',
+}
+
+function initial(name: string) { return name.trim().charAt(0).toUpperCase() }
+
+function timeAgo(iso: string) {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  if (s < 90) return 'hace un momento'
+  if (s < 3600) return `hace ${Math.floor(s / 60)} min`
+  if (s < 86400) return `hace ${Math.floor(s / 3600)} h`
+  return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' })
+}
+
+export default function EmployeeCustomersPage() {
+  const [cards, setCards] = useState<LoyaltyCard[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    load()
+    const interval = setInterval(load, 15000)
+    return () => clearInterval(interval)
+  }, [])
+
+  async function load() {
+    const res = await fetch('/api/loyalty')
+    if (res.ok) setCards(await res.json())
+    setLoading(false)
+  }
+
+  const sorted = [...cards].sort((a, b) => {
+    const aT = a.stamps.at(-1)?.timestamp ?? a.registeredAt
+    const bT = b.stamps.at(-1)?.timestamp ?? b.registeredAt
+    return bT.localeCompare(aT)
+  })
+
+  const filtered = search.trim()
+    ? sorted.filter(c =>
+        c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)
+      )
+    : sorted
+
+  const readyForCoffee = cards.filter(c => c.visits >= STAMPS).length
+
+  return (
+    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
+      <EmployeeNav />
+
+      <div className="max-w-2xl mx-auto p-4 space-y-4">
+        <div className="flex items-center justify-between pt-1">
+          <h1 className="text-xl font-black" style={{ color: S.text }}>Clientes</h1>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+            style={{ backgroundColor: 'rgba(0,230,118,0.1)', color: S.accent }}>
+            Solo lectura
+          </span>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Total', value: cards.length, emoji: '👥', color: S.accent },
+            { label: 'Sellos', value: cards.reduce((s, c) => s + c.visits, 0), emoji: '☕', color: S.accent },
+            { label: 'Premio listo', value: readyForCoffee, emoji: '🎉', color: '#fbbf24' },
+          ].map(s => (
+            <div key={s.label} className="rounded-2xl p-3 text-center" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+              <p className="text-xl">{s.emoji}</p>
+              <p className="font-black text-xl" style={{ color: s.color }}>{s.value}</p>
+              <p className="text-xs font-medium" style={{ color: S.sub }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Search */}
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Buscar por nombre o teléfono..."
+          className="w-full rounded-2xl px-4 py-3 text-sm focus:outline-none"
+          style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }} />
+
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="rounded-2xl p-4 animate-pulse flex gap-3" style={{ backgroundColor: S.card }}>
+                <div className="w-12 h-12 rounded-full shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
+                <div className="flex-1 space-y-2 py-1">
+                  <div className="h-4 rounded-full w-1/2" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
+                  <div className="h-2 rounded-full w-full" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-14" style={{ color: S.sub }}>
+            <p className="text-5xl mb-3">{search ? '🔍' : '☕'}</p>
+            <p className="font-semibold" style={{ color: S.text }}>
+              {search ? 'Sin resultados' : 'Aún no hay clientes registrados'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map(c => (
+              <div key={c.id} className="rounded-2xl p-4"
+                style={{
+                  backgroundColor: S.card,
+                  border: c.visits >= STAMPS ? '2px solid rgba(251,191,36,0.5)' : `1px solid ${S.border}`,
+                }}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-black text-lg shrink-0"
+                    style={{ background: 'linear-gradient(135deg,#7c3aed,#4f6ef7)' }}>
+                    {initial(c.name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold truncate" style={{ color: S.text }}>{c.name}</p>
+                      {c.visits >= STAMPS && (
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
+                          style={{ backgroundColor: 'rgba(251,191,36,0.2)', color: '#fbbf24' }}>🎉 Premio</span>
+                      )}
+                    </div>
+                    <p className="text-sm" style={{ color: S.sub }}>{c.phone}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-black text-lg leading-none" style={{ color: S.accent }}>{c.visits}/{STAMPS}</p>
+                    <p className="text-xs" style={{ color: S.sub }}>sellos</p>
+                  </div>
+                </div>
+
+                {/* Progress */}
+                <div className="flex gap-2 mb-2">
+                  {Array.from({ length: STAMPS }).map((_, i) => (
+                    <div key={i} className="flex-1 h-2 rounded-full transition-all"
+                      style={{ backgroundColor: i < c.visits ? S.accent : 'rgba(255,255,255,0.1)' }} />
+                  ))}
+                </div>
+
+                <p className="text-xs" style={{ color: S.sub }}>
+                  Registrado {timeAgo(c.registeredAt)}
+                  {c.stamps.at(-1) && <> · Último sello {timeAgo(c.stamps.at(-1)!.timestamp)}</>}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

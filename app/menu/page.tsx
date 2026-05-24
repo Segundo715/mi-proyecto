@@ -2,10 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import CustomerNav from '../components/CustomerNav'
+import { FEATURES } from '@/lib/features'
+
+const FAVORITES_KEY = 'favorites'
 
 interface MenuItem {
   id: string; name: string; description: string; price: number
-  category: string; imageUrl?: string; available: boolean
+  category: string; imageUrl?: string; available: boolean; likes: number
 }
 
 interface CartItem { item: MenuItem; qty: number }
@@ -15,22 +18,25 @@ interface Order {
   items: { name: string; quantity: number; price: number }[]; total: number
 }
 
-const STATUS_MSG: Record<Order['status'], { text: string; sub: string; color: string; emoji: string }> = {
-  pending:   { text: 'Pedido recibido',           sub: 'En espera de preparación',       color: 'bg-yellow-50 border-yellow-300 text-yellow-800', emoji: '🕐' },
-  preparing: { text: '¡Lo están preparando!',     sub: 'Tu pedido está en cocina',        color: 'bg-blue-50 border-blue-300 text-blue-800',       emoji: '🍳' },
-  ready:     { text: '¡Tu pedido está listo!',    sub: 'Pasa a recogerlo',                color: 'bg-green-50 border-green-400 text-green-800',    emoji: '✅' },
-  delivered: { text: 'Pedido entregado',          sub: '¡Buen provecho!',                 color: 'bg-gray-50 border-gray-300 text-gray-600',       emoji: '🎉' },
+const STATUS_MSG: Record<Order['status'], { text: string; sub: string; emoji: string }> = {
+  pending:   { text: 'Pedido recibido',        sub: 'En espera de preparación', emoji: '🕐' },
+  preparing: { text: '¡Lo están preparando!',  sub: 'Tu pedido está en cocina', emoji: '🍳' },
+  ready:     { text: '¡Tu pedido está listo!', sub: 'Pasa a recogerlo',         emoji: '✅' },
+  delivered: { text: 'Pedido entregado',        sub: '¡Buen provecho!',         emoji: '🎉' },
 }
 
 const MY_ORDERS_KEY = 'my_order_ids'
+const INPUT = 'w-full border border-[#B90F45]/40 rounded-2xl px-4 py-3 text-white bg-[#1a1a1a] placeholder-gray-500 focus:outline-none focus:border-[#B90F45] transition-colors'
 
 export default function MenuPage() {
   const [items, setItems] = useState<MenuItem[]>([])
   const [loadingMenu, setLoadingMenu] = useState(true)
   const [myOrders, setMyOrders] = useState<Order[]>([])
-  const [activeCategory, setActiveCategory] = useState<string>('')
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
+  const [favorites, setFavorites] = useState<string[]>([])
+  const [openCategory, setOpenCategory] = useState<string | null>(null)
+  const [openItem, setOpenItem] = useState<string | null>(null)
 
   const [cart, setCart] = useState<CartItem[]>([])
   const [showOrder, setShowOrder] = useState(false)
@@ -41,10 +47,13 @@ export default function MenuPage() {
   const [orderSuccess, setOrderSuccess] = useState(false)
 
   useEffect(() => {
+    if (FEATURES.favorites.enabled) {
+      setFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? '[]'))
+    }
     fetch('/api/menu').then(r => r.ok ? r.json() : []).then((d: MenuItem[]) => {
       setItems(d)
       setLoadingMenu(false)
-      if (d.length > 0) setActiveCategory(d[0].category)
+      if (d.length > 0) setOpenCategory(d[0].category)
     }).catch(() => setLoadingMenu(false))
     pollMyOrders()
     pollRef.current = setInterval(pollMyOrders, 10000)
@@ -67,6 +76,25 @@ export default function MenuPage() {
       }
       setMyOrders(mine)
     } catch {}
+  }
+
+  function toggleFavorite(item: MenuItem) {
+    setFavorites(prev => {
+      const alreadyLiked = prev.includes(item.id)
+      const next = alreadyLiked ? prev.filter(f => f !== item.id) : [...prev, item.id]
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(next))
+      if (!alreadyLiked) fetch(`/api/menu/${item.id}/like`, { method: 'POST' }).catch(() => {})
+      return next
+    })
+  }
+
+  function toggleCategory(cat: string) {
+    setOpenCategory(prev => prev === cat ? null : cat)
+    setOpenItem(null)
+  }
+
+  function toggleItem(id: string) {
+    setOpenItem(prev => prev === id ? null : id)
   }
 
   function addToCart(item: MenuItem) {
@@ -113,11 +141,6 @@ export default function MenuPage() {
     }
   }
 
-  function scrollToCategory(cat: string) {
-    setActiveCategory(cat)
-    categoryRefs.current[cat]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
   const grouped: Record<string, MenuItem[]> = {}
   for (const item of items) {
     if (!grouped[item.category]) grouped[item.category] = []
@@ -125,37 +148,65 @@ export default function MenuPage() {
   }
   const categories = Object.keys(grouped)
 
-  const INPUT = 'w-full border-2 border-gray-200 rounded-2xl px-4 py-3 text-gray-800 bg-white focus:outline-none focus:border-amber-500 transition-colors'
+  function ItemDetail({ item }: { item: MenuItem }) {
+    const inCart = cart.find(c => c.item.id === item.id)
+    return (
+      <div style={{ backgroundColor: '#0d0d0d' }}>
+        {item.imageUrl && (
+          <img src={item.imageUrl} alt={item.name}
+            className="w-full object-cover block"
+            style={{ height: '220px' }} />
+        )}
+        <div className="flex justify-between items-center px-4 py-3">
+          <span className="text-gray-400 text-sm">C/U</span>
+          <span className="text-white font-bold text-xl">${item.price.toFixed(2)}</span>
+        </div>
+        {inCart ? (
+          <div className="flex items-center justify-center gap-3 pb-3">
+            <button type="button" onClick={() => changeQty(item.id, -1)}
+              className="text-white font-black text-lg w-8 h-8 rounded flex items-center justify-center"
+              style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>−</button>
+            <span className="text-white font-bold w-6 text-center">{inCart.qty}</span>
+            <button type="button" onClick={() => changeQty(item.id, 1)}
+              className="text-white font-black text-lg w-8 h-8 rounded flex items-center justify-center"
+              style={{ backgroundColor: '#B90F45' }}>+</button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => addToCart(item)}
+            className="w-full text-white font-bold py-3 transition-colors"
+            style={{ backgroundColor: '#B90F45' }}>
+            Agregar al Pedido
+          </button>
+        )}
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-stone-100 pb-32">
-      {/* Header */}
-      <div className="bg-amber-900 text-white sticky top-0 z-20 shadow-lg">
-        <div className="max-w-2xl mx-auto px-4 py-3.5">
-          <h1 className="font-black text-base tracking-tight">☕ Chubis — Menú</h1>
-        </div>
-      </div>
+    <div className="min-h-screen pb-20" style={{ backgroundColor: '#000000' }}>
 
-      {/* Order success toast */}
+      {/* Toast pedido enviado */}
       {orderSuccess && (
-        <div className="fixed top-16 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-          <div className="bg-green-600 text-white font-bold px-6 py-3.5 rounded-2xl shadow-xl flex items-center gap-2">
-            <span>✅</span> ¡Pedido enviado! Lo prepararemos pronto.
+        <div className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
+          <div className="text-white font-bold px-6 py-3.5 rounded-2xl shadow-xl flex items-center gap-2"
+            style={{ backgroundColor: '#B90F45' }}>
+            ✅ ¡Pedido enviado! Lo prepararemos pronto.
           </div>
         </div>
       )}
 
-      {/* My order status banners */}
+      {/* Banners de estado de pedidos */}
       {myOrders.length > 0 && (
-        <div className="max-w-2xl mx-auto px-4 pt-3 space-y-2">
+        <div className="px-4 pt-3 space-y-2" style={{ maxWidth: '800px', margin: '0 auto' }}>
           {myOrders.map(order => {
             const s = STATUS_MSG[order.status]
             return (
-              <div key={order.id} className={`border-2 rounded-2xl px-4 py-3 flex items-center gap-3 ${s.color}`}>
+              <div key={order.id} className="border rounded-xl px-4 py-3 flex items-center gap-3"
+                style={{ backgroundColor: '#0d0d0d', borderColor: '#B90F45' }}>
                 <span className="text-2xl shrink-0">{s.emoji}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm">{s.text}</p>
-                  <p className="text-xs opacity-70">{s.sub} · {order.items.map(i => `${i.quantity}× ${i.name}`).join(', ')}</p>
+                  <p className="font-bold text-sm text-white">{s.text}</p>
+                  <p className="text-xs text-gray-400">{s.sub} · {order.items.map(i => `${i.quantity}× ${i.name}`).join(', ')}</p>
                 </div>
               </div>
             )
@@ -163,170 +214,166 @@ export default function MenuPage() {
         </div>
       )}
 
-      {/* Category scroll nav */}
-      {categories.length > 1 && (
-        <div className="sticky top-[52px] z-10 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm">
-          <div className="max-w-2xl mx-auto px-4 flex gap-2 overflow-x-auto py-2.5 scrollbar-hide">
-            {categories.map(cat => (
-              <button key={cat} type="button"
-                onClick={() => scrollToCategory(cat)}
-                className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold transition-all shrink-0 ${
-                  activeCategory === cat
-                    ? 'bg-amber-800 text-white shadow-sm'
-                    : 'bg-gray-100 text-gray-600 active:bg-gray-200'
-                }`}>
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Logo + Cerrar sesión */}
+      <div className="py-5 flex items-center justify-center relative" style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <img src="/logo.png" alt="Logo" className="mx-auto block" style={{ maxWidth: '90px' }} />
+        <button
+          type="button"
+          onClick={() => { localStorage.removeItem('loyalty_id'); localStorage.removeItem('loyalty_pending_id'); localStorage.removeItem('loyalty_card_id'); window.location.href = '/loyalty' }}
+          className="absolute right-4 text-xs font-semibold px-3 py-1.5 rounded-full"
+          style={{ backgroundColor: '#1a1a1a', color: '#B90F45', border: '1px solid #B90F45' }}>
+          Cerrar sesión
+        </button>
+      </div>
 
-      <div className="max-w-2xl mx-auto p-4 space-y-8">
+      {/* Menú acordeón */}
+      <div className="mx-auto" style={{ maxWidth: '800px' }}>
         {loadingMenu ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-2xl p-4 flex gap-3 animate-pulse">
-                <div className="w-20 h-20 bg-gray-200 rounded-2xl shrink-0" />
-                <div className="flex-1 space-y-2 py-1">
-                  <div className="h-4 bg-gray-200 rounded-full w-2/3" />
-                  <div className="h-3 bg-gray-100 rounded-full w-full" />
-                  <div className="h-3 bg-gray-100 rounded-full w-1/3" />
-                </div>
-              </div>
+          <div className="space-y-px">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-11 animate-pulse" style={{ backgroundColor: '#0d0d0d' }} />
             ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-gray-500">
             <p className="text-5xl mb-3">🍽</p>
-            <p className="font-semibold text-lg">El menú aún no está disponible</p>
+            <p className="font-semibold text-lg text-white">El menú aún no está disponible</p>
           </div>
         ) : (
-          Object.entries(grouped).map(([category, catItems]) => (
-            <div key={category} ref={el => { categoryRefs.current[category] = el }}>
-              <h2 className="font-black text-amber-900 text-lg mb-3 flex items-center gap-2">
-                <span className="flex-1">{category}</span>
-                <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{catItems.length}</span>
-              </h2>
-              <div className="space-y-2">
-                {catItems.map(item => {
-                  const inCart = cart.find(c => c.item.id === item.id)
-                  return (
-                    <div key={item.id}
-                      className={`bg-white rounded-2xl shadow-sm flex overflow-hidden transition-all ${!item.available ? 'opacity-50' : ''}`}>
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.name}
-                          className="w-24 h-24 object-cover shrink-0" />
-                      ) : (
-                        <div className="w-24 h-24 bg-amber-50 shrink-0 flex items-center justify-center text-3xl">☕</div>
-                      )}
-                      <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
-                        <div>
-                          <div className="flex items-start gap-1">
-                            <h4 className="font-bold text-gray-900 text-sm leading-tight flex-1">{item.name}</h4>
-                            {!item.available && (
-                              <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-medium shrink-0">Agotado</span>
-                            )}
+          <>
+            {categories.map(category => {
+              const catItems = grouped[category]
+              const isOpen = openCategory === category
+              // Cuando otra categoría está abierta, ocultar esta
+              if (openCategory !== null && !isOpen) return null
+
+              return (
+                <div key={category}>
+                  <button type="button" onClick={() => toggleCategory(category)}
+                    className="w-full flex items-center justify-between px-3 py-3 text-white font-bold text-base"
+                    style={{ backgroundColor: isOpen ? '#B90F45' : '#000000', borderTop: '1px solid #1a1a1a' }}>
+                    <span>{category}</span>
+                    <span style={{ fontSize: '18px' }}>{isOpen ? '∧' : '∨'}</span>
+                  </button>
+
+                  {isOpen && (
+                    <div style={{ backgroundColor: '#0d0d0d' }}>
+                      {catItems.map(item => {
+                        const isItemOpen = openItem === item.id
+                        const isFav = favorites.includes(item.id)
+                        return (
+                          <div key={item.id} style={{ opacity: item.available ? 1 : 0.5 }}>
+                            <button type="button"
+                              onClick={() => item.available && toggleItem(item.id)}
+                              className="w-full flex items-center py-3 px-4 text-white"
+                              style={{
+                                backgroundColor: isItemOpen ? '#B90F45' : '#0d0d0d',
+                                borderTop: '1px solid #1a1a1a',
+                                cursor: item.available ? 'pointer' : 'not-allowed',
+                              }}>
+                              {/* Nombre */}
+                              <span className="flex-1 text-left">
+                                {item.name}
+                                {!item.available && <span className="ml-1 text-xs text-red-300">(Agotado)</span>}
+                              </span>
+                              {/* Corazón al lado del nombre */}
+                              {FEATURES.favorites.enabled && (
+                                <span
+                                  role="button"
+                                  onClick={e => { e.stopPropagation(); toggleFavorite(item) }}
+                                  className="text-lg mx-3 shrink-0"
+                                  style={{ color: isFav ? '#fff' : 'rgba(255,255,255,0.35)' }}>
+                                  {isFav ? '❤️' : '🤍'}
+                                </span>
+                              )}
+                              <span className="shrink-0" style={{ fontSize: '18px' }}>{isItemOpen ? '∧' : '∨'}</span>
+                            </button>
+                            {isItemOpen && <ItemDetail item={item} />}
                           </div>
-                          {item.description && (
-                            <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{item.description}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="font-black text-amber-700 text-sm">${item.price.toFixed(2)}</span>
-                          {item.available && (
-                            inCart ? (
-                              <div className="flex items-center gap-2">
-                                <button type="button" onClick={() => changeQty(item.id, -1)}
-                                  className="w-7 h-7 bg-amber-100 text-amber-800 rounded-full font-black text-base flex items-center justify-center active:bg-amber-200">−</button>
-                                <span className="font-black text-amber-900 text-sm w-4 text-center">{inCart.qty}</span>
-                                <button type="button" onClick={() => changeQty(item.id, 1)}
-                                  className="w-7 h-7 bg-amber-800 text-white rounded-full font-black text-base flex items-center justify-center active:bg-amber-950">+</button>
-                              </div>
-                            ) : (
-                              <button type="button" onClick={() => addToCart(item)}
-                                className="bg-amber-800 active:bg-amber-950 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-colors">
-                                + Agregar
-                              </button>
-                            )
-                          )}
-                        </div>
-                      </div>
+                        )
+                      })}
                     </div>
-                  )
-                })}
-              </div>
-            </div>
-          ))
+                  )}
+                </div>
+              )
+            })}
+            <div style={{ borderBottom: '1px solid #1a1a1a' }} />
+          </>
         )}
       </div>
 
-      {/* Cart bar */}
-      {cartCount > 0 && !showOrder && (
-        <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-1">
-          <button type="button" onClick={() => setShowOrder(true)}
-            className="w-full max-w-2xl mx-auto flex items-center justify-between bg-amber-800 active:bg-amber-950 text-white font-bold py-4 px-5 rounded-2xl shadow-2xl">
-            <span className="flex items-center gap-2">
-              <span className="bg-white text-amber-800 font-black text-xs w-6 h-6 rounded-full flex items-center justify-center">{cartCount}</span>
-              Ver pedido
+      {/* Botón flotante del carrito */}
+      <div className="fixed z-40" style={{ bottom: '72px', right: '20px' }}>
+        <button type="button" onClick={() => cartCount > 0 && setShowOrder(true)}
+          className="relative flex items-center justify-center rounded-full shadow-2xl transition-transform active:scale-95"
+          style={{ width: '60px', height: '60px', backgroundColor: '#DC5E86', opacity: cartCount > 0 ? 1 : 0.45 }}>
+          <img src="/logo.png" alt="" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+          {cartCount > 0 && (
+            <span className="absolute flex items-center justify-center text-white font-black rounded-full"
+              style={{ top: '-4px', right: '-4px', width: '22px', height: '22px', backgroundColor: '#B02350', fontSize: '11px' }}>
+              {cartCount}
             </span>
-            <span className="font-black">${cartTotal.toFixed(2)}</span>
-          </button>
-        </div>
-      )}
+          )}
+        </button>
+      </div>
 
-      {/* Order modal */}
+      {/* Modal del pedido */}
       {showOrder && (
-        <div className="fixed inset-0 z-[60] bg-black/60 flex items-end backdrop-blur-sm">
-          <div className="w-full bg-white rounded-t-3xl p-6 pb-10 space-y-4 max-h-[92vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[60] bg-black/80 flex items-end backdrop-blur-sm">
+          <div className="w-full rounded-t-3xl p-6 pb-10 space-y-4 max-h-[92vh] overflow-y-auto"
+            style={{ backgroundColor: '#0d0d0d' }}>
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-black text-gray-900">Tu pedido</h2>
+              <h2 className="text-lg font-black text-white">Tu pedido</h2>
               <button type="button" onClick={() => setShowOrder(false)}
-                className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold text-lg">×</button>
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-lg"
+                style={{ backgroundColor: '#1a1a1a' }}>×</button>
             </div>
-
             <div className="space-y-2">
               {cart.map(c => (
-                <div key={c.item.id} className="flex items-center gap-3 py-1">
+                <div key={c.item.id} className="flex items-center gap-3 py-2"
+                  style={{ borderBottom: '1px solid #1a1a1a' }}>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-800 text-sm">{c.item.name}</p>
+                    <p className="font-semibold text-white text-sm">{c.item.name}</p>
                     <p className="text-xs text-gray-400">${c.item.price.toFixed(2)} c/u</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <button type="button" onClick={() => changeQty(c.item.id, -1)}
-                      className="w-8 h-8 bg-gray-100 text-gray-700 rounded-full font-bold text-lg flex items-center justify-center active:bg-gray-200">−</button>
-                    <span className="font-black text-gray-900 w-4 text-center text-sm">{c.qty}</span>
+                      className="w-8 h-8 rounded-full font-bold text-lg flex items-center justify-center text-white"
+                      style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>−</button>
+                    <span className="font-black text-white w-4 text-center text-sm">{c.qty}</span>
                     <button type="button" onClick={() => changeQty(c.item.id, 1)}
-                      className="w-8 h-8 bg-amber-800 text-white rounded-full font-bold text-lg flex items-center justify-center active:bg-amber-950">+</button>
+                      className="w-8 h-8 rounded-full font-bold text-lg flex items-center justify-center text-white"
+                      style={{ backgroundColor: '#B90F45' }}>+</button>
                   </div>
-                  <span className="text-sm font-black text-gray-800 w-14 text-right shrink-0">${(c.item.price * c.qty).toFixed(2)}</span>
+                  <span className="text-sm font-black text-white w-14 text-right shrink-0">
+                    ${(c.item.price * c.qty).toFixed(2)}
+                  </span>
                 </div>
               ))}
             </div>
-
-            <div className="bg-gray-50 rounded-2xl px-4 py-3 flex justify-between font-black text-gray-900 text-lg">
-              <span>Total</span>
-              <span>${cartTotal.toFixed(2)}</span>
+            <div className="rounded-2xl px-4 py-3 flex justify-between font-black text-white text-lg"
+              style={{ backgroundColor: '#1a1a1a' }}>
+              <span>Total</span><span>${cartTotal.toFixed(2)}</span>
             </div>
-
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Tu nombre *</label>
+                <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Tu nombre *</label>
                 <input type="text" value={orderName} onChange={e => setOrderName(e.target.value)}
                   placeholder="Ej. María" className={INPUT} />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Mesa (opcional)</label>
+                <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Mesa (opcional)</label>
                 <input type="text" value={orderTable} onChange={e => setOrderTable(e.target.value)}
                   placeholder="Ej. 3" className={INPUT} />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">Notas (opcional)</label>
+                <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Notas (opcional)</label>
                 <input type="text" value={orderNotes} onChange={e => setOrderNotes(e.target.value)}
                   placeholder="Sin cebolla, extra salsa..." className={INPUT} />
               </div>
               <button type="button" onClick={submitOrder} disabled={orderSubmitting || !orderName.trim()}
-                className="w-full bg-amber-800 active:bg-amber-950 text-white font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors">
+                className="w-full text-white font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors"
+                style={{ backgroundColor: '#B90F45' }}>
                 {orderSubmitting ? 'Enviando...' : '✅ Confirmar pedido'}
               </button>
             </div>

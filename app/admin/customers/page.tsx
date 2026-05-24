@@ -11,28 +11,38 @@ interface Customer {
 
 const STAMPS = 5
 
-const AVATAR_COLORS = ['bg-amber-500','bg-rose-500','bg-violet-500','bg-sky-500','bg-emerald-500','bg-orange-500']
-function avatarColor(name: string) { return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length] }
-function initial(name: string) { return name.trim().charAt(0).toUpperCase() }
-
-function fmt(iso: string) {
-  return new Date(iso).toLocaleString('es-MX', {
-    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-  })
+const S = {
+  bg:     '#080b16',
+  card:   '#0e1225',
+  accent: '#00e676',
+  text:   '#eef2f7',
+  sub:    '#6b7a94',
+  border: 'rgba(255,255,255,0.07)',
 }
+
+function initial(name: string) { return name.trim().charAt(0).toUpperCase() }
 
 function timeAgo(iso: string) {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
   if (s < 90) return 'hace un momento'
   if (s < 3600) return `hace ${Math.floor(s / 60)} min`
-  return fmt(iso)
+  if (s < 86400) return `hace ${Math.floor(s / 3600)} h`
+  return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
-export default function CustomersPage() {
+function segment(visits: number) {
+  if (visits >= 20) return { label: 'Platinum', color: '#c084fc', bg: 'rgba(168,85,247,0.12)' }
+  if (visits >= 10) return { label: 'Gold',     color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' }
+  if (visits >= 5)  return { label: 'Silver',   color: '#60a5fa', bg: 'rgba(59,130,246,0.12)'  }
+  return                   { label: 'Bronze',   color: '#94a3b8', bg: 'rgba(100,116,139,0.12)' }
+}
+
+export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [origin, setOrigin] = useState('')
   const [search, setSearch] = useState('')
+  const [tab, setTab] = useState<'activos' | 'pendientes'>('activos')
 
   useEffect(() => {
     setOrigin(window.location.origin)
@@ -50,8 +60,7 @@ export default function CustomersPage() {
 
   async function activate(id: string) {
     await fetch(`/api/customers/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'confirm' }),
     })
     load()
@@ -65,7 +74,7 @@ export default function CustomersPage() {
 
   function waLink(c: Customer) {
     const link = `${origin}/activate?id=${c.id}`
-    const msg = encodeURIComponent(`¡Hola ${c.name}! 🎉 Tu tarjeta Chubis ☕ está lista.\n\nActívala aquí:\n${link}\n\n¡Gracias!`)
+    const msg = encodeURIComponent(`¡Hola ${c.name}! 🎉 Tu tarjeta de lealtad está lista.\n\nActívala aquí:\n${link}\n\n¡Gracias!`)
     return `https://wa.me/${c.phone.replace(/\D/g, '')}?text=${msg}`
   }
 
@@ -85,148 +94,222 @@ export default function CustomersPage() {
 
   const totalStamps = confirmed.reduce((s, c) => s + c.visits, 0)
   const readyForCoffee = confirmed.filter(c => c.visits >= STAMPS).length
+  const avgVisits = confirmed.length ? (totalStamps / confirmed.length).toFixed(1) : '0'
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <AdminNav />
 
-      <div className="max-w-2xl mx-auto p-4 space-y-4">
+      <div className="max-w-4xl mx-auto p-4 space-y-5">
 
-        {/* Check-in alerts */}
-        {checkIns.map(c => (
-          <div key={c.id} className="bg-green-500 text-white rounded-2xl p-4 flex items-center gap-3 shadow-lg">
-            <span className="text-3xl animate-bounce">🔔</span>
-            <div className="flex-1">
-              <p className="font-black text-base">{c.name} está en el mostrador</p>
-              <p className="text-xs text-green-100">{c.phone} · {c.visits}/{STAMPS} sellos · {timeAgo(c.requestedAt!)}</p>
-            </div>
+        {/* Header */}
+        <div className="flex items-center justify-between pt-1">
+          <div>
+            <h1 className="text-xl font-black" style={{ color: S.text }}>Clientes</h1>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Gestión de tarjetas y activaciones</p>
           </div>
-        ))}
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'Clientes', value: confirmed.length, emoji: '👥', color: 'text-amber-700' },
-            { label: 'Sellos totales', value: totalStamps, emoji: '☕', color: 'text-amber-700' },
-            { label: 'Premio listo', value: readyForCoffee, emoji: '🎉', color: 'text-green-700' },
-          ].map(s => (
-            <div key={s.label} className="bg-white rounded-2xl shadow-sm p-3 text-center">
-              <p className="text-2xl">{s.emoji}</p>
-              <p className={`font-black text-xl ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-gray-400 font-medium">{s.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Pending activation */}
-        {pending.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-            <div className="bg-red-500 px-4 py-3 flex items-center gap-2">
-              <span className="text-white text-lg">⏳</span>
-              <p className="text-white font-black text-sm">Pendientes de activación ({pending.length})</p>
-            </div>
-            <div className="p-3 space-y-3">
-              {pending.map(c => (
-                <div key={c.id} className="bg-red-50 border border-red-100 rounded-2xl p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-black shrink-0 ${avatarColor(c.name)}`}>
-                      {initial(c.name)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900">{c.name}</p>
-                      <p className="text-sm text-gray-500">{c.phone}</p>
-                      <p className="text-xs text-gray-400">{timeAgo(c.registeredAt)}</p>
-                    </div>
-                    <span className="text-xs bg-red-100 text-red-600 font-bold px-2 py-1 rounded-full shrink-0">Pendiente</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => activate(c.id)}
-                      className="flex-1 bg-amber-700 active:bg-amber-900 text-white font-bold py-2.5 rounded-xl text-sm">
-                      ✅ Activar
-                    </button>
-                    {c.phone && (
-                      <a href={waLink(c)} target="_blank" rel="noopener noreferrer"
-                        className="flex-1 bg-green-500 active:bg-green-700 text-white font-bold py-2.5 rounded-xl text-sm text-center">
-                        💬 WhatsApp
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Active customers */}
-        <div className="flex items-center justify-between">
-          <h2 className="font-black text-gray-800 text-base">Clientes activos</h2>
-          <button type="button" onClick={load} className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full font-semibold">
+          <button onClick={load} className="text-xs px-3 py-1.5 rounded-full font-semibold"
+            style={{ backgroundColor: 'rgba(0,230,118,0.1)', color: S.accent, border: '1px solid rgba(0,230,118,0.3)' }}>
             ↻ Actualizar
           </button>
         </div>
 
-        {/* Search */}
-        <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar por nombre o teléfono..."
-          className="w-full border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-800 bg-white focus:outline-none focus:border-amber-500 transition-colors" />
+        {/* Check-in alerts */}
+        {checkIns.map(c => (
+          <div key={c.id} className="rounded-2xl p-4 flex items-center gap-3"
+            style={{ backgroundColor: 'rgba(0,230,118,0.1)', border: '1px solid rgba(0,230,118,0.4)' }}>
+            <span className="text-3xl animate-bounce">🔔</span>
+            <div className="flex-1">
+              <p className="font-black text-sm" style={{ color: S.accent }}>{c.name} está en el mostrador</p>
+              <p className="text-xs" style={{ color: S.sub }}>{c.phone} · {c.visits}/{STAMPS} sellos · {timeAgo(c.requestedAt!)}</p>
+            </div>
+          </div>
+        ))}
 
+        {/* KPI strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'Total clientes',   value: confirmed.length,  icon: '👥', color: S.accent  },
+            { label: 'Sellos totales',   value: totalStamps,       icon: '☕', color: S.accent  },
+            { label: 'Visitas promedio', value: avgVisits,         icon: '🔄', color: '#60a5fa' },
+            { label: 'Premio listo',     value: readyForCoffee,    icon: '🎉', color: '#fbbf24' },
+          ].map(s => (
+            <div key={s.label} className="rounded-2xl p-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-medium" style={{ color: S.sub }}>{s.label}</p>
+                <span className="text-lg">{s.icon}</span>
+              </div>
+              <p className="text-2xl font-black" style={{ color: s.color }}>{s.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabs */}
+        <div className="flex rounded-2xl p-1 gap-1" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <button onClick={() => setTab('activos')}
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold"
+            style={tab === 'activos' ? { backgroundColor: S.accent, color: '#000' } : { color: S.sub, backgroundColor: 'transparent' }}>
+            Clientes activos ({confirmed.length})
+          </button>
+          <button onClick={() => setTab('pendientes')}
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold relative"
+            style={tab === 'pendientes' ? { backgroundColor: '#ef4444', color: '#fff' } : { color: S.sub, backgroundColor: 'transparent' }}>
+            Pendientes ({pending.length})
+            {pending.length > 0 && tab !== 'pendientes' && (
+              <span className="absolute top-1.5 right-3 w-2 h-2 rounded-full" style={{ backgroundColor: '#ef4444' }} />
+            )}
+          </button>
+        </div>
+
+        {/* Search (only on activos tab) */}
+        {tab === 'activos' && (
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar por nombre o teléfono..."
+            className="w-full rounded-2xl px-4 py-3 text-sm focus:outline-none"
+            style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }} />
+        )}
+
+        {/* Content */}
         {loading ? (
           <div className="space-y-3">
-            {[1,2,3].map(i => (
-              <div key={i} className="bg-white rounded-2xl p-4 animate-pulse flex gap-3">
-                <div className="w-12 h-12 bg-gray-200 rounded-full shrink-0" />
-                <div className="flex-1 space-y-2 py-1">
-                  <div className="h-4 bg-gray-200 rounded-full w-1/2" />
-                  <div className="h-3 bg-gray-100 rounded-full w-1/3" />
-                  <div className="h-2 bg-gray-100 rounded-full w-full" />
-                </div>
-              </div>
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-20 rounded-2xl animate-pulse" style={{ backgroundColor: S.card }} />
             ))}
           </div>
+        ) : tab === 'pendientes' ? (
+          pending.length === 0 ? (
+            <div className="text-center py-14 rounded-2xl" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+              <p className="text-4xl mb-2">✅</p>
+              <p className="font-semibold" style={{ color: S.text }}>Sin pendientes</p>
+              <p className="text-sm mt-1" style={{ color: S.sub }}>Todos los clientes están activados</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pending.map(c => (
+                <div key={c.id} className="rounded-2xl p-4"
+                  style={{ backgroundColor: S.card, border: '1px solid rgba(239,68,68,0.25)' }}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-black text-lg shrink-0"
+                      style={{ background: 'linear-gradient(135deg,#7c3aed,#4f6ef7)' }}>
+                      {initial(c.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold" style={{ color: S.text }}>{c.name}</p>
+                      <p className="text-sm" style={{ color: S.sub }}>{c.phone}</p>
+                      <p className="text-xs" style={{ color: S.sub }}>Registrado {timeAgo(c.registeredAt)}</p>
+                    </div>
+                    <span className="text-xs font-bold px-2 py-1 rounded-full shrink-0"
+                      style={{ backgroundColor: 'rgba(239,68,68,0.15)', color: '#f87171' }}>Pendiente</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => activate(c.id)}
+                      className="flex-1 font-bold py-2.5 rounded-xl text-sm"
+                      style={{ backgroundColor: S.accent, color: '#000' }}>
+                      ✅ Activar
+                    </button>
+                    {c.phone && (
+                      <a href={waLink(c)} target="_blank" rel="noopener noreferrer"
+                        className="flex-1 font-bold py-2.5 rounded-xl text-sm text-center"
+                        style={{ backgroundColor: '#22c55e', color: '#000' }}>
+                        💬 Enviar link
+                      </a>
+                    )}
+                    <button onClick={() => remove(c.id)}
+                      className="px-3 py-2.5 rounded-xl text-sm font-medium"
+                      style={{ border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', backgroundColor: 'transparent' }}>
+                      🗑
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         ) : filtered.length === 0 ? (
-          <div className="text-center py-14 text-gray-400">
-            <p className="text-5xl mb-3">{search ? '🔍' : '☕'}</p>
-            <p className="font-semibold">{search ? 'Sin resultados' : 'Aún no hay clientes activos'}</p>
+          <div className="text-center py-14 rounded-2xl" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            <p className="text-5xl mb-3">{search ? '🔍' : '👥'}</p>
+            <p className="font-semibold" style={{ color: S.text }}>{search ? 'Sin resultados' : 'Sin clientes activos'}</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {filtered.map(c => (
-              <div key={c.id} className={`bg-white rounded-2xl shadow-sm p-4 ${c.visits >= STAMPS ? 'ring-2 ring-yellow-400 ring-offset-1' : ''}`}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-lg shrink-0 shadow-sm ${avatarColor(c.name)}`}>
-                    {initial(c.name)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-gray-900 truncate">{c.name}</p>
-                      {c.visits >= STAMPS && <span className="text-xs bg-yellow-100 text-yellow-700 font-bold px-2 py-0.5 rounded-full shrink-0">🎉 Premio</span>}
+          <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            {/* Table header */}
+            <div className="hidden sm:grid grid-cols-12 px-4 py-2.5 text-xs font-bold uppercase tracking-wide"
+              style={{ borderBottom: `1px solid ${S.border}`, color: S.sub }}>
+              <span className="col-span-4">Cliente</span>
+              <span className="col-span-2">Teléfono</span>
+              <span className="col-span-2 text-center">Visitas</span>
+              <span className="col-span-2 text-center">Tier</span>
+              <span className="col-span-2 text-right">Último sello</span>
+            </div>
+
+            {/* Rows */}
+            <div className="divide-y" style={{ borderColor: S.border }}>
+              {filtered.map(c => {
+                const seg = segment(c.visits)
+                return (
+                  <div key={c.id} className="px-4 py-3">
+                    {/* Mobile layout */}
+                    <div className="flex items-center gap-3 sm:hidden">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center font-black text-sm shrink-0"
+                        style={{ background: 'linear-gradient(135deg,#7c3aed,#4f6ef7)', color: '#fff' }}>
+                        {initial(c.name)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="font-bold text-sm truncate" style={{ color: S.text }}>{c.name}</p>
+                          {c.visits >= STAMPS && <span className="text-xs" style={{ color: '#fbbf24' }}>🎉</span>}
+                        </div>
+                        <p className="text-xs" style={{ color: S.sub }}>{c.phone}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-black text-sm" style={{ color: S.accent }}>{c.visits}/{STAMPS}</p>
+                        <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                          style={{ backgroundColor: seg.bg, color: seg.color }}>{seg.label}</span>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-500">{c.phone}</p>
+
+                    {/* Desktop layout */}
+                    <div className="hidden sm:grid grid-cols-12 items-center">
+                      <div className="col-span-4 flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center font-black text-sm shrink-0"
+                          style={{ background: 'linear-gradient(135deg,#7c3aed,#4f6ef7)', color: '#fff' }}>
+                          {initial(c.name)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-sm truncate" style={{ color: S.text }}>{c.name}</p>
+                          {c.visits >= STAMPS && (
+                            <span className="text-xs font-bold" style={{ color: '#fbbf24' }}>🎉 Premio listo</span>
+                          )}
+                        </div>
+                      </div>
+                      <span className="col-span-2 text-sm" style={{ color: S.sub }}>{c.phone}</span>
+                      <div className="col-span-2 text-center">
+                        <p className="font-bold text-sm" style={{ color: S.accent }}>{c.visits}/{STAMPS}</p>
+                        <div className="flex gap-0.5 justify-center mt-1">
+                          {Array.from({ length: STAMPS }).map((_, i) => (
+                            <div key={i} className="w-3 h-1 rounded-full"
+                              style={{ backgroundColor: i < c.visits ? S.accent : 'rgba(255,255,255,0.1)' }} />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="col-span-2 text-center">
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                          style={{ backgroundColor: seg.bg, color: seg.color }}>{seg.label}</span>
+                      </div>
+                      <div className="col-span-2 text-right">
+                        <p className="text-xs" style={{ color: S.sub }}>
+                          {c.stamps.at(-1) ? timeAgo(c.stamps.at(-1)!.timestamp) : timeAgo(c.registeredAt)}
+                        </p>
+                        <button onClick={() => remove(c.id)}
+                          className="text-xs mt-0.5 px-2 py-0.5 rounded-lg"
+                          style={{ color: '#f87171', border: '1px solid rgba(239,68,68,0.2)', backgroundColor: 'transparent' }}>
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="font-black text-amber-700 text-lg leading-none">{c.visits}/{STAMPS}</p>
-                    <p className="text-xs text-gray-400">sellos</p>
-                  </div>
-                </div>
-
-                {/* Progress dots */}
-                <div className="flex gap-2 mb-3">
-                  {Array.from({ length: STAMPS }).map((_, i) => (
-                    <div key={i} className={`flex-1 h-2 rounded-full transition-all ${i < c.visits ? 'bg-amber-500' : 'bg-gray-100'}`} />
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
-                  <span>Registrado {timeAgo(c.registeredAt)}</span>
-                  {c.stamps.at(-1) && <span>Último sello {timeAgo(c.stamps.at(-1)!.timestamp)}</span>}
-                </div>
-
-                <button type="button" onClick={() => remove(c.id)}
-                  className="w-full text-red-500 border border-red-100 bg-red-50 rounded-xl py-2 text-sm font-semibold active:bg-red-100 transition-colors">
-                  🗑 Eliminar cliente
-                </button>
-              </div>
-            ))}
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
