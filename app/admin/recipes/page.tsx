@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {
@@ -28,7 +28,13 @@ export default function AdminRecipesPage() {
   const [form, setForm] = useState(EMPTY)
   const [editing, setEditing] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadingCardId, setUploadingCardId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [search, setSearch] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
+  const cardFileRef = useRef<HTMLInputElement>(null)
+  const pendingCardId = useRef<string | null>(null)
 
   async function load() {
     const r = await fetch('/api/recipes')
@@ -38,23 +44,73 @@ export default function AdminRecipesPage() {
 
   useEffect(() => { load() }, [])
 
+  const filtered = recipes.filter(r =>
+    r.name.toLowerCase().includes(search.toLowerCase()) ||
+    r.category.toLowerCase().includes(search.toLowerCase())
+  )
+
   function openNew() {
     setEditing(null)
     setForm(EMPTY)
     setShowForm(true)
+    setSelected(null)
   }
 
   function openEdit(r: Recipe) {
     setEditing(r.id)
-    setForm({ name: r.name, description: r.description, category: r.category, ingredients: r.ingredients, steps: r.steps, imageUrl: r.imageUrl ?? '' })
+    setForm({
+      name: r.name, description: r.description, category: r.category,
+      ingredients: r.ingredients.length ? r.ingredients : [''],
+      steps: r.steps.length ? r.steps : [''],
+      imageUrl: r.imageUrl ?? '',
+    })
     setShowForm(true)
     setSelected(null)
+  }
+
+  async function uploadImage(file: File) {
+    setUploading(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    const r = await fetch('/api/recipes/upload', { method: 'POST', body: fd })
+    if (r.ok) {
+      const d = await r.json()
+      setForm(p => ({ ...p, imageUrl: d.url }))
+    }
+    setUploading(false)
+  }
+
+  async function uploadCardImage(file: File, recipeId: string) {
+    setUploadingCardId(recipeId)
+    const fd = new FormData()
+    fd.append('file', file)
+    const r = await fetch('/api/recipes/upload', { method: 'POST', body: fd })
+    if (r.ok) {
+      const d = await r.json()
+      await fetch(`/api/recipes/${recipeId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: d.url }),
+      })
+      load()
+    }
+    setUploadingCardId(null)
+  }
+
+  function triggerCardUpload(recipeId: string) {
+    pendingCardId.current = recipeId
+    cardFileRef.current?.click()
   }
 
   async function save() {
     if (!form.name.trim()) return
     setSaving(true)
-    const body = { ...form, ingredients: form.ingredients.filter(Boolean), steps: form.steps.filter(Boolean), imageUrl: form.imageUrl || undefined }
+    const body = {
+      ...form,
+      ingredients: form.ingredients.filter(Boolean),
+      steps: form.steps.filter(Boolean),
+      imageUrl: form.imageUrl || undefined,
+    }
     if (editing) {
       await fetch(`/api/recipes/${editing}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     } else {
@@ -66,25 +122,31 @@ export default function AdminRecipesPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm('Eliminar esta receta?')) return
+    if (!confirm('¿Eliminar esta receta?')) return
     await fetch(`/api/recipes/${id}`, { method: 'DELETE' })
     setSelected(null)
     load()
   }
 
-  function listField(arr: string[], onChange: (v: string[]) => void) {
+  function listField(arr: string[], onChange: (v: string[]) => void, placeholder: string) {
     return (
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         {arr.map((v, i) => (
           <div key={i} className="flex gap-2">
             <input value={v} onChange={e => { const n = [...arr]; n[i] = e.target.value; onChange(n) }}
-              className="flex-1 px-3 py-2 rounded-xl text-sm"
-              style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}`, outline: 'none' }} />
-            <button onClick={() => onChange(arr.filter((_, j) => j !== i))} className="text-red-400 px-2">x</button>
+              placeholder={placeholder}
+              className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
+              style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+            {arr.length > 1 && (
+              <button onClick={() => onChange(arr.filter((_, j) => j !== i))}
+                className="px-2.5 rounded-xl text-xs font-bold"
+                style={{ backgroundColor: 'rgba(239,68,68,.12)', color: '#f87171' }}>✕</button>
+            )}
           </div>
         ))}
         <button onClick={() => onChange([...arr, ''])}
-          className="text-xs font-bold px-3 py-1 rounded-lg" style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+          className="text-xs font-bold px-3 py-1.5 rounded-lg"
+          style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
           + Agregar
         </button>
       </div>
@@ -94,33 +156,100 @@ export default function AdminRecipesPage() {
   return (
     <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <AdminNav />
+
+      {/* Input oculto para subir imagen directo desde tarjeta */}
+      <input ref={cardFileRef} type="file" accept="image/*" className="hidden"
+        onChange={e => {
+          const file = e.target.files?.[0]
+          if (file && pendingCardId.current) uploadCardImage(file, pendingCardId.current)
+          e.target.value = ''
+        }} />
+
       <div className="max-w-[1000px] mx-auto p-4 space-y-4">
 
+        {/* Header */}
         <div className="flex items-center justify-between pt-1">
           <div>
             <h1 className="text-xl font-black" style={{ color: S.text }}>Recetario</h1>
-            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Recetas del restaurante con ingredientes y pasos</p>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>{recipes.length} receta{recipes.length !== 1 ? 's' : ''} en total</p>
           </div>
-          <button onClick={openNew} className="text-sm px-4 py-2 rounded-xl font-bold" style={{ backgroundColor: S.accent, color: '#000' }}>
+          <button onClick={openNew} className="text-sm px-4 py-2 rounded-xl font-bold"
+            style={{ backgroundColor: S.accent, color: '#000' }}>
             + Nueva receta
           </button>
         </div>
 
+        {/* Buscar */}
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Buscar receta o categoría..."
+          className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
+          style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }} />
+
+        {/* Grid */}
         {loading ? (
           <div className="text-center py-12 text-sm" style={{ color: S.sub }}>Cargando...</div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12 rounded-2xl text-sm"
+            style={{ color: S.sub, backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            No hay recetas{search ? ' con ese filtro' : '. Crea la primera.'}
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {recipes.map(r => (
-              <button key={r.id} onClick={() => setSelected(r)} className="text-left rounded-2xl overflow-hidden transition-all"
+            {filtered.map(r => (
+              <div key={r.id} className="rounded-2xl overflow-hidden"
                 style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-                {r.imageUrl && <img src={r.imageUrl} alt={r.name} className="w-full object-cover" style={{ height: '140px' }} />}
+
+                {/* Imagen — clic para cambiarla */}
+                <button
+                  type="button"
+                  onClick={() => triggerCardUpload(r.id)}
+                  className="relative w-full group block"
+                  title="Clic para cambiar imagen"
+                  disabled={uploadingCardId === r.id}>
+                  {r.imageUrl
+                    ? <img src={r.imageUrl} alt={r.name} className="w-full object-cover" style={{ height: '160px' }} />
+                    : <div className="w-full flex items-center justify-center text-5xl"
+                        style={{ height: '120px', backgroundColor: S.bg }}>📷</div>
+                  }
+                  {/* Overlay al hacer hover */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}>
+                    {uploadingCardId === r.id
+                      ? <span className="text-white text-xs font-bold">Subiendo...</span>
+                      : <span className="text-white text-xs font-bold bg-black/60 px-3 py-1.5 rounded-full">
+                          {r.imageUrl ? '📷 Cambiar foto' : '📷 Agregar foto'}
+                        </span>
+                    }
+                  </div>
+                </button>
+
+                {/* Info + acciones */}
                 <div className="p-4">
                   <span className="text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
                     style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>{r.category}</span>
                   <p className="font-black text-sm mt-2" style={{ color: S.text }}>{r.name}</p>
-                  <p className="text-xs mt-1" style={{ color: S.sub }}>{r.ingredients.length} ingredientes · {r.steps.length} pasos</p>
+                  {r.description && <p className="text-xs mt-1 line-clamp-2" style={{ color: S.sub }}>{r.description}</p>}
+                  <p className="text-xs mt-2" style={{ color: S.sub }}>{r.ingredients.length} ingredientes · {r.steps.length} pasos</p>
+
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => setSelected(r)}
+                      className="flex-1 py-2 rounded-xl text-xs font-bold"
+                      style={{ backgroundColor: S.bg, color: S.sub, border: `1px solid ${S.border}` }}>
+                      Ver
+                    </button>
+                    <button onClick={() => openEdit(r)}
+                      className="flex-1 py-2 rounded-xl text-xs font-bold"
+                      style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                      Editar
+                    </button>
+                    <button onClick={() => remove(r.id)}
+                      className="px-3 py-2 rounded-xl text-xs font-bold"
+                      style={{ backgroundColor: 'rgba(239,68,68,.12)', color: '#f87171' }}>
+                      🗑
+                    </button>
+                  </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -131,18 +260,25 @@ export default function AdminRecipesPage() {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.85)' }} onClick={() => setSelected(null)}>
           <div className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl"
-            style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }} onClick={e => e.stopPropagation()}>
-            {selected.imageUrl && <img src={selected.imageUrl} alt={selected.name} className="w-full object-cover rounded-t-3xl" style={{ height: '200px' }} />}
+            style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}
+            onClick={e => e.stopPropagation()}>
+
+            {selected.imageUrl
+              ? <img src={selected.imageUrl} alt={selected.name} className="w-full object-cover rounded-t-3xl" style={{ height: '220px' }} />
+              : <div className="w-full flex items-center justify-center text-5xl rounded-t-3xl" style={{ height: '120px', backgroundColor: S.bg }}>📖</div>
+            }
+
             <div className="p-5 space-y-4">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <div>
                   <span className="text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
                     style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>{selected.category}</span>
                   <h2 className="text-xl font-black mt-1" style={{ color: S.text }}>{selected.name}</h2>
                   {selected.description && <p className="text-sm mt-1" style={{ color: S.sub }}>{selected.description}</p>}
                 </div>
-                <button onClick={() => setSelected(null)} style={{ color: S.sub }} className="text-xl">x</button>
+                <button onClick={() => setSelected(null)} className="text-xl shrink-0" style={{ color: S.sub }}>✕</button>
               </div>
+
               <div>
                 <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: S.accent }}>Ingredientes</p>
                 <ul className="space-y-1">
@@ -153,8 +289,9 @@ export default function AdminRecipesPage() {
                   ))}
                 </ul>
               </div>
+
               <div>
-                <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: S.accent }}>Preparacion</p>
+                <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: S.accent }}>Preparación</p>
                 <ol className="space-y-2">
                   {selected.steps.map((step, i) => (
                     <li key={i} className="flex gap-3 text-sm" style={{ color: S.text }}>
@@ -165,52 +302,93 @@ export default function AdminRecipesPage() {
                   ))}
                 </ol>
               </div>
-              <div className="flex gap-2 pt-2">
-                <button onClick={() => openEdit(selected)} className="flex-1 py-3 rounded-2xl text-sm font-bold"
-                  style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>Editar</button>
-                <button onClick={() => remove(selected.id)} className="flex-1 py-3 rounded-2xl text-sm font-bold"
-                  style={{ backgroundColor: 'rgba(239,68,68,.12)', color: '#f87171' }}>Eliminar</button>
+
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => openEdit(selected)}
+                  className="flex-1 py-3 rounded-2xl text-sm font-bold"
+                  style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                  Editar
+                </button>
+                <button onClick={() => remove(selected.id)}
+                  className="flex-1 py-3 rounded-2xl text-sm font-bold"
+                  style={{ backgroundColor: 'rgba(239,68,68,.12)', color: '#f87171' }}>
+                  Eliminar
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal form */}
+      {/* Modal formulario */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
-          <div className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-5 space-y-4"
+          <div className="w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-5 space-y-4"
             style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-black" style={{ color: S.text }}>{editing ? 'Editar receta' : 'Nueva receta'}</h2>
-              <button onClick={() => setShowForm(false)} style={{ color: S.sub }} className="text-xl">x</button>
+              <button onClick={() => setShowForm(false)} className="text-xl" style={{ color: S.sub }}>✕</button>
             </div>
-            {(['name', 'category', 'imageUrl'] as const).map(key => (
-              <div key={key}>
-                <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>
-                  {key === 'name' ? 'Nombre' : key === 'category' ? 'Categoria' : 'URL imagen'}
-                </label>
-                <input type="text" value={form[key]}
-                  onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-2xl text-sm"
-                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}`, outline: 'none' }} />
-              </div>
-            ))}
+
+            {/* Imagen */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Descripcion</label>
-              <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2}
-                className="w-full px-4 py-3 rounded-2xl text-sm resize-none"
-                style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}`, outline: 'none' }} />
+              <label className="block text-xs font-bold uppercase tracking-wide mb-2" style={{ color: S.sub }}>Imagen</label>
+              <div className="flex items-center gap-3">
+                {form.imageUrl
+                  ? <img src={form.imageUrl} alt="" className="w-16 h-16 rounded-2xl object-cover shrink-0" />
+                  : <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: S.bg }}>📷</div>
+                }
+                <button onClick={() => fileRef.current?.click()} disabled={uploading}
+                  className="flex-1 py-2.5 rounded-2xl text-sm font-bold border-dashed border-2 transition-all"
+                  style={{ borderColor: S.border, color: S.sub }}>
+                  {uploading ? 'Subiendo...' : form.imageUrl ? 'Cambiar imagen' : 'Subir imagen'}
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" className="hidden"
+                  onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0])} />
+              </div>
             </div>
+
+            {/* Nombre */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Nombre *</label>
+              <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                placeholder="Ej: Tacos de Birria"
+                className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
+                style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+            </div>
+
+            {/* Categoría */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Categoría</label>
+              <input type="text" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+                placeholder="Ej: Platillo principal, Bebida, Postre..."
+                className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
+                style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+            </div>
+
+            {/* Descripción */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Descripción</label>
+              <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                rows={2} placeholder="Descripción breve de la receta..."
+                className="w-full px-4 py-3 rounded-2xl text-sm resize-none outline-none"
+                style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+            </div>
+
+            {/* Ingredientes */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wide mb-2" style={{ color: S.sub }}>Ingredientes</label>
-              {listField(form.ingredients, v => setForm(p => ({ ...p, ingredients: v })))}
+              {listField(form.ingredients, v => setForm(p => ({ ...p, ingredients: v })), 'Ej: 500g de carne')}
             </div>
+
+            {/* Pasos */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide mb-2" style={{ color: S.sub }}>Pasos de preparacion</label>
-              {listField(form.steps, v => setForm(p => ({ ...p, steps: v })))}
+              <label className="block text-xs font-bold uppercase tracking-wide mb-2" style={{ color: S.sub }}>Pasos de preparación</label>
+              {listField(form.steps, v => setForm(p => ({ ...p, steps: v })), 'Describe el paso...')}
             </div>
+
             <button onClick={save} disabled={saving || !form.name.trim()}
               className="w-full py-4 rounded-2xl font-black text-base disabled:opacity-50"
               style={{ backgroundColor: S.accent, color: '#000' }}>
