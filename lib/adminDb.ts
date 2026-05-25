@@ -1,6 +1,5 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
-import { join, dirname } from 'node:path'
-import { randomUUID, createHash } from 'node:crypto'
+import { supabase } from './supabase'
+import { createHash } from 'node:crypto'
 
 export interface AdminUser {
   id: string
@@ -9,46 +8,39 @@ export interface AdminUser {
   createdAt: string
 }
 
-const DB_PATH = join(process.cwd(), 'data', 'admins.json')
-
-function load(): AdminUser[] {
-  const dir = dirname(DB_PATH)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  if (!existsSync(DB_PATH)) return []
-  try { return JSON.parse(readFileSync(DB_PATH, 'utf-8')) } catch { return [] }
-}
-
-function save(rows: AdminUser[]) {
-  const dir = dirname(DB_PATH)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  writeFileSync(DB_PATH, JSON.stringify(rows, null, 2))
-}
-
 function hashPassword(name: string, password: string): string {
   const secret = process.env.ADMIN_SECRET ?? 'dev-secret'
   return createHash('sha256').update(`${secret}:${name.toLowerCase()}:${password}`).digest('hex')
 }
 
-export function createAdmin(name: string, password: string): AdminUser | null {
-  const rows = load()
-  if (rows.find(a => a.name.toLowerCase() === name.toLowerCase())) return null
-  const admin: AdminUser = {
-    id: randomUUID(),
-    name: name.trim(),
-    passwordHash: hashPassword(name, password),
-    createdAt: new Date().toISOString(),
+function toAdmin(row: Record<string, unknown>): AdminUser {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    passwordHash: row.password_hash as string,
+    createdAt: row.created_at as string,
   }
-  rows.push(admin)
-  save(rows)
-  return admin
 }
 
-export function authenticateAdmin(name: string, password: string): AdminUser | null {
-  const rows = load()
+export async function createAdmin(name: string, password: string): Promise<AdminUser | null> {
+  const { data: existing } = await supabase.from('admins').select('id').ilike('name', name).maybeSingle()
+  if (existing) return null
+  const { data, error } = await supabase.from('admins').insert({
+    name: name.trim(),
+    password_hash: hashPassword(name, password),
+  }).select().single()
+  if (error) throw error
+  return toAdmin(data)
+}
+
+export async function authenticateAdmin(name: string, password: string): Promise<AdminUser | null> {
   const hash = hashPassword(name, password)
-  return rows.find(a => a.name.toLowerCase() === name.toLowerCase() && a.passwordHash === hash) ?? null
+  const { data } = await supabase.from('admins')
+    .select('*').ilike('name', name).eq('password_hash', hash).maybeSingle()
+  return data ? toAdmin(data) : null
 }
 
-export function getAdminById(id: string): AdminUser | undefined {
-  return load().find(a => a.id === id)
+export async function getAdminById(id: string): Promise<AdminUser | undefined> {
+  const { data } = await supabase.from('admins').select('*').eq('id', id).maybeSingle()
+  return data ? toAdmin(data) : undefined
 }

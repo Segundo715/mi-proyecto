@@ -10,10 +10,12 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const customers = getAllCustomers()   // login con contraseña (LoyaltyCard.tsx)
-  const cards = getAllCards()            // formulario simple /loyalty
-  const orders = getAllOrders()
-  const reviews = getAllReviews()
+  const [customers, cards, orders, reviews] = await Promise.all([
+    getAllCustomers(),
+    getAllCards(),
+    getAllOrders(),
+    getAllReviews(),
+  ])
 
   const confirmedCustomers = customers.filter(c => c.confirmed)
 

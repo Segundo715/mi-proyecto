@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Nombre y contraseña requeridos' }, { status: 400 })
 
   if (action === 'register') {
-    const employee = createEmployee(name.trim(), password)
+    const employee = await createEmployee(name.trim(), password)
     if (!employee)
       return NextResponse.json({ error: 'Ese nombre ya está en uso' }, { status: 409 })
     const res = NextResponse.json({ ok: true, name: employee.name })
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     return res
   }
 
-  const employee = authenticateEmployee(name.trim(), password)
+  const employee = await authenticateEmployee(name.trim(), password)
   if (!employee)
     return NextResponse.json({ error: 'Nombre o contraseña incorrectos' }, { status: 401 })
 

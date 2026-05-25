@@ -6,7 +6,7 @@ export async function GET(
   ctx: RouteContext<'/api/customers/[id]'>
 ) {
   const { id } = await ctx.params
-  const c = getCustomer(id)
+  const c = await getCustomer(id)
   if (!c) return Response.json({ error: 'No encontrado' }, { status: 404 })
   return Response.json(c)
 }
@@ -19,25 +19,25 @@ export async function PATCH(
   const { action } = await req.json()
 
   if (action === 'confirm') {
-    const c = confirmCustomer(id)
+    const c = await confirmCustomer(id)
     if (!c) return Response.json({ error: 'No encontrado' }, { status: 404 })
     return Response.json(c)
   }
 
   if (action === 'stamp') {
-    const c = addStamp(id)
+    const c = await addStamp(id)
     if (!c) return Response.json({ error: 'No encontrado o no confirmado' }, { status: 404 })
     return Response.json(c)
   }
 
   if (action === 'redeem') {
-    const c = redeemCoffee(id)
+    const c = await redeemCoffee(id)
     if (!c) return Response.json({ error: 'No encontrado' }, { status: 404 })
     return Response.json(c)
   }
 
   if (action === 'checkin') {
-    const c = requestCheckIn(id)
+    const c = await requestCheckIn(id)
     if (!c) return Response.json({ error: 'No encontrado' }, { status: 404 })
     return Response.json(c)
   }
@@ -50,6 +50,6 @@ export async function DELETE(
   ctx: RouteContext<'/api/customers/[id]'>
 ) {
   const { id } = await ctx.params
-  const ok = deleteCustomer(id)
+  const ok = await deleteCustomer(id)
   return ok ? Response.json({ ok: true }) : Response.json({ error: 'No encontrado' }, { status: 404 })
 }

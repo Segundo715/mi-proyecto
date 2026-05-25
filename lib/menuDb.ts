@@ -1,6 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
-import { join, dirname } from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { supabase } from './supabase'
 
 export interface MenuItem {
   id: string
@@ -14,52 +12,53 @@ export interface MenuItem {
   createdAt: string
 }
 
-const DB_PATH = join(process.cwd(), 'data', 'menu.json')
-
-function load(): MenuItem[] {
-  const dir = dirname(DB_PATH)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  if (!existsSync(DB_PATH)) return []
-  try {
-    return JSON.parse(readFileSync(DB_PATH, 'utf-8'))
-  } catch {
-    return []
+function toItem(row: Record<string, unknown>): MenuItem {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    description: (row.description as string) ?? '',
+    price: row.price as number,
+    category: row.category as string,
+    imageUrl: (row.image_url as string) ?? undefined,
+    available: row.available as boolean,
+    likes: (row.likes as number) ?? 0,
+    createdAt: row.created_at as string,
   }
 }
 
-function save(rows: MenuItem[]) {
-  const dir = dirname(DB_PATH)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  writeFileSync(DB_PATH, JSON.stringify(rows, null, 2))
+export async function getAllMenuItems(): Promise<MenuItem[]> {
+  const { data } = await supabase.from('menu_items').select('*').order('created_at')
+  return (data ?? []).map(toItem)
 }
 
-export const getAllMenuItems = () => load()
-
-export function createMenuItem(data: Omit<MenuItem, 'id' | 'createdAt'>): MenuItem {
-  const rows = load()
-  const item: MenuItem = { ...data, likes: data.likes ?? 0, id: randomUUID(), createdAt: new Date().toISOString() }
-  rows.push(item)
-  save(rows)
-  return item
+export async function createMenuItem(data: Omit<MenuItem, 'id' | 'createdAt'>): Promise<MenuItem> {
+  const { data: row, error } = await supabase.from('menu_items').insert({
+    name: data.name,
+    description: data.description,
+    price: data.price,
+    category: data.category,
+    image_url: data.imageUrl ?? null,
+    available: data.available,
+    likes: data.likes ?? 0,
+  }).select().single()
+  if (error) throw error
+  return toItem(row)
 }
 
-export function updateMenuItem(
-  id: string,
-  data: Partial<Omit<MenuItem, 'id' | 'createdAt'>>
-): MenuItem | null {
-  const rows = load()
-  const i = rows.findIndex(r => r.id === id)
-  if (i === -1) return null
-  rows[i] = { ...rows[i], ...data }
-  save(rows)
-  return rows[i]
+export async function updateMenuItem(id: string, data: Partial<Omit<MenuItem, 'id' | 'createdAt'>>): Promise<MenuItem | null> {
+  const patch: Record<string, unknown> = {}
+  if (data.name !== undefined) patch.name = data.name
+  if (data.description !== undefined) patch.description = data.description
+  if (data.price !== undefined) patch.price = data.price
+  if (data.category !== undefined) patch.category = data.category
+  if (data.imageUrl !== undefined) patch.image_url = data.imageUrl
+  if (data.available !== undefined) patch.available = data.available
+  if (data.likes !== undefined) patch.likes = data.likes
+  const { data: row } = await supabase.from('menu_items').update(patch).eq('id', id).select().single()
+  return row ? toItem(row) : null
 }
 
-export function deleteMenuItem(id: string): boolean {
-  const rows = load()
-  const i = rows.findIndex(r => r.id === id)
-  if (i === -1) return false
-  rows.splice(i, 1)
-  save(rows)
-  return true
+export async function deleteMenuItem(id: string): Promise<boolean> {
+  const { error } = await supabase.from('menu_items').delete().eq('id', id)
+  return !error
 }

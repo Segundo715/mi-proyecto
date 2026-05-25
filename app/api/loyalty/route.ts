@@ -5,7 +5,7 @@ import { verifySession } from '@/lib/auth'
 export async function GET(req: NextRequest) {
   if (!verifySession(req.cookies.get('admin_session')?.value))
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  return Response.json(getAllCards())
+  return Response.json(await getAllCards())
 }
 
 export async function POST(req: NextRequest) {
@@ -14,6 +14,6 @@ export async function POST(req: NextRequest) {
   const phone = (body.phone ?? '').trim()
   if (!name || !phone)
     return Response.json({ error: 'Nombre y teléfono requeridos' }, { status: 400 })
-  const card = findOrCreate(name, phone)
+  const card = await findOrCreate(name, phone)
   return Response.json(card, { status: 201 })
 }
