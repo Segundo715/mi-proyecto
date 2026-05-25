@@ -1,91 +1,95 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
-import { join, dirname } from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { supabase } from './supabase'
 
 export interface LoyaltyCard {
   id: string
   name: string
   phone: string
   visits: number
+  active: boolean
+  expiresAt?: string
   registeredAt: string
   stamps: { timestamp: string; visitsAfter: number }[]
 }
 
-const DB_PATH = join(process.cwd(), 'data', 'loyaltyCards.json')
-
-function load(): LoyaltyCard[] {
-  const dir = dirname(DB_PATH)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  if (!existsSync(DB_PATH)) return []
-  try { return JSON.parse(readFileSync(DB_PATH, 'utf-8')) } catch { return [] }
+function toCard(row: Record<string, unknown>): LoyaltyCard {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    phone: (row.phone as string) ?? '',
+    visits: (row.visits as number) ?? 0,
+    active: row.active as boolean,
+    expiresAt: row.expires_at as string | undefined,
+    registeredAt: row.registered_at as string,
+    stamps: (row.stamps as LoyaltyCard['stamps']) ?? [],
+  }
 }
 
-function save(rows: LoyaltyCard[]) {
-  const dir = dirname(DB_PATH)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  writeFileSync(DB_PATH, JSON.stringify(rows, null, 2))
+function expiryDate(): string {
+  return new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
 }
 
-export function getAllCards(): LoyaltyCard[] {
-  return load().sort((a, b) => {
-    const aT = a.stamps.at(-1)?.timestamp ?? a.registeredAt
-    const bT = b.stamps.at(-1)?.timestamp ?? b.registeredAt
-    return bT.localeCompare(aT)
-  })
+export async function getAllCards(): Promise<LoyaltyCard[]> {
+  const { data } = await supabase.from('loyalty_cards').select('*').order('registered_at', { ascending: false })
+  return (data ?? []).map(toCard)
 }
 
-export function getCard(id: string): LoyaltyCard | undefined {
-  return load().find(c => c.id === id)
+export async function getCard(id: string): Promise<LoyaltyCard | undefined> {
+  const { data } = await supabase.from('loyalty_cards').select('*').eq('id', id).maybeSingle()
+  return data ? toCard(data) : undefined
 }
 
-export function findOrCreate(name: string, phone: string): LoyaltyCard {
-  const rows = load()
+export async function findOrCreate(name: string, phone: string): Promise<LoyaltyCard> {
   const clean = phone.replace(/\D/g, '')
-  const existing = rows.find(c =>
-    c.name.toLowerCase() === name.toLowerCase() &&
-    c.phone.replace(/\D/g, '') === clean
+  const { data: all } = await supabase.from('loyalty_cards').select('*').ilike('name', name)
+  const existing = (all ?? []).find((r: Record<string, unknown>) =>
+    (r.phone as string).replace(/\D/g, '') === clean
   )
-  if (existing) return existing
-  const card: LoyaltyCard = {
-    id: randomUUID(),
+  if (existing) return toCard(existing)
+
+  const { data, error } = await supabase.from('loyalty_cards').insert({
     name: name.trim(),
     phone: phone.trim(),
     visits: 0,
-    registeredAt: new Date().toISOString(),
+    active: true,
+    expires_at: expiryDate(),
     stamps: [],
-  }
-  rows.push(card)
-  save(rows)
-  return card
+  }).select().single()
+  if (error) throw error
+  return toCard(data)
 }
 
-export function addStamp(id: string): LoyaltyCard | null {
-  const rows = load()
-  const i = rows.findIndex(c => c.id === id)
-  if (i === -1) return null
-  const c = rows[i]
-  if (c.visits < 5) {
-    c.visits += 1
-    c.stamps.push({ timestamp: new Date().toISOString(), visitsAfter: c.visits })
-    save(rows)
-  }
-  return c
+export async function addStamp(id: string): Promise<LoyaltyCard | null> {
+  const { data: row } = await supabase.from('loyalty_cards').select('*').eq('id', id).maybeSingle()
+  if (!row) return null
+  const c = toCard(row)
+  if (!c.active || c.visits >= 5) return c
+  const newStamps = [...c.stamps, { timestamp: new Date().toISOString(), visitsAfter: c.visits + 1 }]
+  const { data } = await supabase.from('loyalty_cards')
+    .update({ visits: c.visits + 1, stamps: newStamps, expires_at: expiryDate() })
+    .eq('id', id).select().single()
+  return data ? toCard(data) : null
 }
 
-export function redeemCoffee(id: string): LoyaltyCard | null {
-  const rows = load()
-  const i = rows.findIndex(c => c.id === id)
-  if (i === -1) return null
-  rows[i].visits = 0
-  save(rows)
-  return rows[i]
+export async function redeemCoffee(id: string): Promise<LoyaltyCard | null> {
+  const { data } = await supabase.from('loyalty_cards')
+    .update({ visits: 0, expires_at: expiryDate() })
+    .eq('id', id).select().single()
+  return data ? toCard(data) : null
 }
 
-export function deleteCard(id: string): boolean {
-  const rows = load()
-  const i = rows.findIndex(c => c.id === id)
-  if (i === -1) return false
-  rows.splice(i, 1)
-  save(rows)
-  return true
+export async function deleteCard(id: string): Promise<boolean> {
+  const { error } = await supabase.from('loyalty_cards').delete().eq('id', id)
+  return !error
+}
+
+export async function deactivateCard(id: string): Promise<LoyaltyCard | null> {
+  const { data } = await supabase.from('loyalty_cards').update({ active: false }).eq('id', id).select().single()
+  return data ? toCard(data) : null
+}
+
+export async function activateCard(id: string): Promise<LoyaltyCard | null> {
+  const { data } = await supabase.from('loyalty_cards')
+    .update({ active: true, expires_at: expiryDate() })
+    .eq('id', id).select().single()
+  return data ? toCard(data) : null
 }

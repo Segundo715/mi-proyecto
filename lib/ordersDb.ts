@@ -1,6 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
-import { join, dirname } from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { supabase } from './supabase'
 
 export interface OrderItem {
   menuItemId: string
@@ -20,38 +18,38 @@ export interface Order {
   notes?: string
 }
 
-const DB_PATH = join(process.cwd(), 'data', 'orders.json')
-
-function load(): Order[] {
-  const dir = dirname(DB_PATH)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  if (!existsSync(DB_PATH)) return []
-  try { return JSON.parse(readFileSync(DB_PATH, 'utf-8')) } catch { return [] }
+function toOrder(row: Record<string, unknown>): Order {
+  return {
+    id: row.id as string,
+    customerName: row.customer_name as string,
+    tableNumber: row.table_number as string | undefined,
+    items: (row.items as OrderItem[]) ?? [],
+    total: row.total as number,
+    status: row.status as Order['status'],
+    createdAt: row.created_at as string,
+    notes: row.notes as string | undefined,
+  }
 }
 
-function save(rows: Order[]) {
-  const dir = dirname(DB_PATH)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  writeFileSync(DB_PATH, JSON.stringify(rows, null, 2))
+export async function getAllOrders(): Promise<Order[]> {
+  const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false })
+  return (data ?? []).map(toOrder)
 }
 
-export function getAllOrders(): Order[] {
-  return load().sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+export async function createOrder(data: Omit<Order, 'id' | 'createdAt' | 'status'>): Promise<Order> {
+  const { data: row, error } = await supabase.from('orders').insert({
+    customer_name: data.customerName,
+    table_number: data.tableNumber ?? null,
+    items: data.items,
+    total: data.total,
+    status: 'pending',
+    notes: data.notes ?? null,
+  }).select().single()
+  if (error) throw error
+  return toOrder(row)
 }
 
-export function createOrder(data: Omit<Order, 'id' | 'createdAt' | 'status'>): Order {
-  const rows = load()
-  const order: Order = { ...data, id: randomUUID(), status: 'pending', createdAt: new Date().toISOString() }
-  rows.push(order)
-  save(rows)
-  return order
-}
-
-export function updateOrderStatus(id: string, status: Order['status']): Order | null {
-  const rows = load()
-  const i = rows.findIndex(o => o.id === id)
-  if (i === -1) return null
-  rows[i].status = status
-  save(rows)
-  return rows[i]
+export async function updateOrderStatus(id: string, status: Order['status']): Promise<Order | null> {
+  const { data } = await supabase.from('orders').update({ status }).eq('id', id).select().single()
+  return data ? toOrder(data) : null
 }

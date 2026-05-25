@@ -10,7 +10,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if (!auth(req)) return Response.json({ error: 'No autorizado' }, { status: 401 })
   const { id } = await ctx.params
   const data = await req.json()
-  const r = updateReview(id, data)
+  const r = await updateReview(id, data)
   return r
     ? Response.json(r)
     : Response.json({ error: 'No encontrado' }, { status: 404 })
@@ -19,7 +19,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   if (!auth(req)) return Response.json({ error: 'No autorizado' }, { status: 401 })
   const { id } = await ctx.params
-  return deleteReview(id)
+  return await deleteReview(id)
     ? Response.json({ ok: true })
     : Response.json({ error: 'No encontrado' }, { status: 404 })
 }

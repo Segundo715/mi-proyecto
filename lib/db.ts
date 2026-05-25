@@ -1,6 +1,5 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
-import { join, dirname } from 'node:path'
-import { randomUUID, createHash } from 'node:crypto'
+import { supabase } from './supabase'
+import { createHash } from 'node:crypto'
 
 export interface Stamp {
   timestamp: string
@@ -10,6 +9,7 @@ export interface Stamp {
 export interface Customer {
   id: string
   name: string
+  age?: number
   phone: string
   visits: number
   confirmed: boolean
@@ -23,145 +23,122 @@ function hashPassword(name: string, password: string): string {
   return createHash('sha256').update(`customer:${name.toLowerCase()}:${password}`).digest('hex')
 }
 
-const DB_PATH = join(process.cwd(), 'data', 'customers.json')
-
-function load(): Customer[] {
-  const dir = dirname(DB_PATH)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  if (!existsSync(DB_PATH)) return []
-  try {
-    return JSON.parse(readFileSync(DB_PATH, 'utf-8'))
-  } catch {
-    return []
+function toCustomer(row: Record<string, unknown>): Customer {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    age: row.age as number | undefined,
+    phone: (row.phone as string) ?? '',
+    visits: (row.visits as number) ?? 0,
+    confirmed: row.confirmed as boolean,
+    registeredAt: row.registered_at as string,
+    stamps: (row.stamps as Stamp[]) ?? [],
+    requestedAt: row.requested_at as string | undefined,
+    passwordHash: row.password_hash as string | undefined,
   }
 }
 
-function save(rows: Customer[]): void {
-  const dir = dirname(DB_PATH)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  writeFileSync(DB_PATH, JSON.stringify(rows, null, 2))
+export async function getAllCustomers(): Promise<Customer[]> {
+  const { data } = await supabase.from('customers').select('*').order('registered_at')
+  return (data ?? []).map(toCustomer)
 }
 
-export function getAllCustomers(): Customer[] {
-  return load()
+export async function getCustomer(id: string): Promise<Customer | undefined> {
+  const { data } = await supabase.from('customers').select('*').eq('id', id).maybeSingle()
+  return data ? toCustomer(data) : undefined
 }
 
-export function getCustomer(id: string): Customer | undefined {
-  return load().find(c => c.id === id)
-}
-
-export function createCustomer(name: string, phone: string): Customer {
-  const rows = load()
-  const customer: Customer = {
-    id: randomUUID(),
-    name,
-    phone,
+export async function createCustomer(name: string, phone: string, age?: number): Promise<Customer> {
+  const { data, error } = await supabase.from('customers').insert({
+    name: name.trim(),
+    age: age ?? null,
+    phone: phone.trim(),
     visits: 0,
     confirmed: false,
-    registeredAt: new Date().toISOString(),
     stamps: [],
-  }
-  rows.push(customer)
-  save(rows)
-  return customer
+  }).select().single()
+  if (error) throw error
+  return toCustomer(data)
 }
 
-export function confirmCustomer(id: string): Customer | null {
-  const rows = load()
-  const i = rows.findIndex(c => c.id === id)
-  if (i === -1) return null
-  rows[i].confirmed = true
-  save(rows)
-  return rows[i]
+export async function confirmCustomer(id: string): Promise<Customer | null> {
+  const { data } = await supabase.from('customers').update({ confirmed: true }).eq('id', id).select().single()
+  return data ? toCustomer(data) : null
 }
 
-export function addStamp(id: string): Customer | null {
-  const rows = load()
-  const i = rows.findIndex(c => c.id === id)
-  if (i === -1) return null
-  const c = rows[i]
-  if (!c.confirmed) return null
-  if (c.visits < 5) {
-    c.visits += 1
-    c.stamps.push({ timestamp: new Date().toISOString(), visitsAfter: c.visits })
-    save(rows)
-  }
-  return c
+export async function addStamp(id: string): Promise<Customer | null> {
+  const { data: row } = await supabase.from('customers').select('*').eq('id', id).maybeSingle()
+  if (!row) return null
+  const c = toCustomer(row)
+  if (!c.confirmed || c.visits >= 5) return c
+  const newStamps = [...c.stamps, { timestamp: new Date().toISOString(), visitsAfter: c.visits + 1 }]
+  const { data } = await supabase.from('customers')
+    .update({ visits: c.visits + 1, stamps: newStamps })
+    .eq('id', id).select().single()
+  return data ? toCustomer(data) : null
 }
 
-export function redeemCoffee(id: string): Customer | null {
-  const rows = load()
-  const i = rows.findIndex(c => c.id === id)
-  if (i === -1) return null
-  rows[i].visits = 0
-  save(rows)
-  return rows[i]
+export async function redeemCoffee(id: string): Promise<Customer | null> {
+  const { data } = await supabase.from('customers').update({ visits: 0 }).eq('id', id).select().single()
+  return data ? toCustomer(data) : null
 }
 
-export function requestCheckIn(id: string): Customer | null {
-  const rows = load()
-  const i = rows.findIndex(c => c.id === id)
-  if (i === -1) return null
-  rows[i].requestedAt = new Date().toISOString()
-  save(rows)
-  return rows[i]
+export async function requestCheckIn(id: string): Promise<Customer | null> {
+  const { data } = await supabase.from('customers')
+    .update({ requested_at: new Date().toISOString() })
+    .eq('id', id).select().single()
+  return data ? toCustomer(data) : null
 }
 
-export function deleteCustomer(id: string): boolean {
-  const rows = load()
-  const i = rows.findIndex(c => c.id === id)
-  if (i === -1) return false
-  rows.splice(i, 1)
-  save(rows)
-  return true
+export async function deleteCustomer(id: string): Promise<boolean> {
+  const { error } = await supabase.from('customers').delete().eq('id', id)
+  return !error
 }
 
-export function createCustomerAccount(name: string, password: string, phone = ''): Customer | null {
-  const rows = load()
-  if (rows.find(c => c.name.toLowerCase() === name.toLowerCase() && c.passwordHash))
-    return null
-  const customer: Customer = {
-    id: randomUUID(),
+export async function createCustomerAccount(name: string, password: string, phone = '', age?: number): Promise<Customer | null> {
+  const { data: existing } = await supabase.from('customers')
+    .select('id').ilike('name', name).not('password_hash', 'is', null).maybeSingle()
+  if (existing) return null
+  const { data, error } = await supabase.from('customers').insert({
     name: name.trim(),
+    age: age ?? null,
     phone: phone.trim(),
     visits: 0,
     confirmed: true,
-    registeredAt: new Date().toISOString(),
     stamps: [],
-    passwordHash: hashPassword(name, password),
-  }
-  rows.push(customer)
-  save(rows)
-  return customer
+    password_hash: hashPassword(name, password),
+  }).select().single()
+  if (error) throw error
+  return toCustomer(data)
 }
 
-export function authenticateCustomer(name: string, password: string): Customer | null {
-  const rows = load()
+export async function authenticateCustomer(name: string, password: string): Promise<Customer | null> {
   const hash = hashPassword(name, password)
-  return rows.find(c => c.name.toLowerCase() === name.toLowerCase() && c.passwordHash === hash) ?? null
+  const { data } = await supabase.from('customers')
+    .select('*').ilike('name', name).eq('password_hash', hash).maybeSingle()
+  return data ? toCustomer(data) : null
 }
 
-export function findOrCreateSimple(name: string, phone: string): Customer {
-  const rows = load()
+export async function findOrCreateSimple(name: string, phone: string): Promise<Customer> {
   const clean = phone.replace(/\D/g, '')
-  const existing = rows.find(c =>
-    c.name.toLowerCase() === name.toLowerCase() &&
-    c.phone.replace(/\D/g, '') === clean
+  const { data: all } = await supabase.from('customers').select('*').ilike('name', name)
+  const existing = (all ?? []).find((r: Record<string, unknown>) =>
+    (r.phone as string).replace(/\D/g, '') === clean
   )
   if (existing) {
-    if (!existing.confirmed) { existing.confirmed = true; save(rows) }
-    return existing
+    if (!existing.confirmed) {
+      await supabase.from('customers').update({ confirmed: true }).eq('id', existing.id)
+      existing.confirmed = true
+    }
+    return toCustomer(existing)
   }
-  const customer: Customer = {
-    id: randomUUID(),
+  const { data, error } = await supabase.from('customers').insert({
     name: name.trim(),
     phone: phone.trim(),
     visits: 0,
     confirmed: true,
-    registeredAt: new Date().toISOString(),
     stamps: [],
-  }
-  rows.push(customer)
-  save(rows)
-  return customer
+  }).select().single()
+  if (error) throw error
+  return toCustomer(data)
 }

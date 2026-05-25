@@ -1,6 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
-import { join, dirname } from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { supabase } from './supabase'
 
 export interface Review {
   id: string
@@ -12,58 +10,50 @@ export interface Review {
   bad: boolean
 }
 
-const DB_PATH = join(process.cwd(), 'data', 'reviews.json')
-
-function load(): Review[] {
-  const dir = dirname(DB_PATH)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  if (!existsSync(DB_PATH)) return []
-  try {
-    return JSON.parse(readFileSync(DB_PATH, 'utf-8'))
-  } catch {
-    return []
+function toReview(row: Record<string, unknown>): Review {
+  return {
+    id: row.id as string,
+    customerName: row.customer_name as string,
+    rating: row.rating as number,
+    comment: (row.comment as string) ?? '',
+    createdAt: row.created_at as string,
+    published: row.published as boolean,
+    bad: row.bad as boolean,
   }
 }
 
-function save(rows: Review[]) {
-  const dir = dirname(DB_PATH)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  writeFileSync(DB_PATH, JSON.stringify(rows, null, 2))
+export async function getAllReviews(): Promise<Review[]> {
+  const { data } = await supabase.from('reviews').select('*').order('created_at', { ascending: false })
+  return (data ?? []).map(toReview)
 }
 
-export const getAllReviews = () => load()
-export const getPublishedReviews = () => load().filter(r => r.published)
+export async function getPublishedReviews(): Promise<Review[]> {
+  const { data } = await supabase.from('reviews').select('*').eq('published', true).order('created_at', { ascending: false })
+  return (data ?? []).map(toReview)
+}
 
-export function createReview(
-  data: Pick<Review, 'customerName' | 'rating' | 'comment'>
-): Review {
-  const rows = load()
-  const review: Review = {
-    ...data,
-    id: randomUUID(),
-    createdAt: new Date().toISOString(),
+export async function createReview(data: Pick<Review, 'customerName' | 'rating' | 'comment'>): Promise<Review> {
+  const { data: row, error } = await supabase.from('reviews').insert({
+    customer_name: data.customerName,
+    rating: data.rating,
+    comment: data.comment,
     bad: data.rating <= 3,
     published: data.rating >= 4,
-  }
-  rows.push(review)
-  save(rows)
-  return review
+  }).select().single()
+  if (error) throw error
+  return toReview(row)
 }
 
-export function updateReview(id: string, data: Partial<Review>): Review | null {
-  const rows = load()
-  const i = rows.findIndex(r => r.id === id)
-  if (i === -1) return null
-  rows[i] = { ...rows[i], ...data }
-  save(rows)
-  return rows[i]
+export async function updateReview(id: string, patch: Partial<Review>): Promise<Review | null> {
+  const update: Record<string, unknown> = {}
+  if (patch.published !== undefined) update.published = patch.published
+  if (patch.bad !== undefined) update.bad = patch.bad
+  if (patch.comment !== undefined) update.comment = patch.comment
+  const { data } = await supabase.from('reviews').update(update).eq('id', id).select().single()
+  return data ? toReview(data) : null
 }
 
-export function deleteReview(id: string): boolean {
-  const rows = load()
-  const i = rows.findIndex(r => r.id === id)
-  if (i === -1) return false
-  rows.splice(i, 1)
-  save(rows)
-  return true
+export async function deleteReview(id: string): Promise<boolean> {
+  const { error } = await supabase.from('reviews').delete().eq('id', id)
+  return !error
 }

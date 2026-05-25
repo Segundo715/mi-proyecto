@@ -3,7 +3,7 @@ import { getAllMenuItems, createMenuItem } from '@/lib/menuDb'
 import { verifySession } from '@/lib/auth'
 
 export async function GET() {
-  return Response.json(getAllMenuItems())
+  return Response.json(await getAllMenuItems())
 }
 
 export async function POST(req: NextRequest) {
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'No autorizado' }, { status: 401 })
   const data = await req.json()
   return Response.json(
-    createMenuItem({ ...data, available: data.available ?? true }),
+    await createMenuItem({ ...data, available: data.available ?? true }),
     { status: 201 }
   )
 }

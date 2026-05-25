@@ -1,6 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
-import { join, dirname } from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { supabase } from './supabase'
 
 export interface TVSlide {
   id: string
@@ -14,55 +12,59 @@ export interface TVSlide {
   createdAt: string
 }
 
-const DB_PATH = join(process.cwd(), 'data', 'tv.json')
-
-function load(): TVSlide[] {
-  const dir = dirname(DB_PATH)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  if (!existsSync(DB_PATH)) return []
-  try {
-    return JSON.parse(readFileSync(DB_PATH, 'utf-8'))
-  } catch {
-    return []
+function toSlide(row: Record<string, unknown>): TVSlide {
+  return {
+    id: row.id as string,
+    title: row.title as string,
+    subtitle: row.subtitle as string | undefined,
+    price: row.price as string | undefined,
+    imageUrl: row.image_url as string | undefined,
+    isOffer: row.is_offer as boolean,
+    order: row.slide_order as number,
+    active: row.active as boolean,
+    createdAt: row.created_at as string,
   }
 }
 
-function save(rows: TVSlide[]) {
-  const dir = dirname(DB_PATH)
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  writeFileSync(DB_PATH, JSON.stringify(rows, null, 2))
+export async function getAllSlides(): Promise<TVSlide[]> {
+  const { data } = await supabase.from('tv_slides').select('*').order('slide_order')
+  return (data ?? []).map(toSlide)
 }
 
-export const getAllSlides = () => [...load()].sort((a, b) => a.order - b.order)
-export const getActiveSlides = () => getAllSlides().filter(s => s.active)
-
-export function createSlide(data: Omit<TVSlide, 'id' | 'createdAt' | 'order'>): TVSlide {
-  const rows = load()
-  const slide: TVSlide = {
-    ...data,
-    id: randomUUID(),
-    createdAt: new Date().toISOString(),
-    order: rows.length,
-  }
-  rows.push(slide)
-  save(rows)
-  return slide
+export async function getActiveSlides(): Promise<TVSlide[]> {
+  const { data } = await supabase.from('tv_slides').select('*').eq('active', true).order('slide_order')
+  return (data ?? []).map(toSlide)
 }
 
-export function updateSlide(id: string, data: Partial<TVSlide>): TVSlide | null {
-  const rows = load()
-  const i = rows.findIndex(r => r.id === id)
-  if (i === -1) return null
-  rows[i] = { ...rows[i], ...data }
-  save(rows)
-  return rows[i]
+export async function createSlide(data: Omit<TVSlide, 'id' | 'createdAt' | 'order'>): Promise<TVSlide> {
+  const { count } = await supabase.from('tv_slides').select('*', { count: 'exact', head: true })
+  const { data: row, error } = await supabase.from('tv_slides').insert({
+    title: data.title,
+    subtitle: data.subtitle ?? null,
+    price: data.price ?? null,
+    image_url: data.imageUrl ?? null,
+    is_offer: data.isOffer,
+    slide_order: count ?? 0,
+    active: data.active,
+  }).select().single()
+  if (error) throw error
+  return toSlide(row)
 }
 
-export function deleteSlide(id: string): boolean {
-  const rows = load()
-  const i = rows.findIndex(r => r.id === id)
-  if (i === -1) return false
-  rows.splice(i, 1)
-  save(rows)
-  return true
+export async function updateSlide(id: string, data: Partial<TVSlide>): Promise<TVSlide | null> {
+  const patch: Record<string, unknown> = {}
+  if (data.title !== undefined) patch.title = data.title
+  if (data.subtitle !== undefined) patch.subtitle = data.subtitle
+  if (data.price !== undefined) patch.price = data.price
+  if (data.imageUrl !== undefined) patch.image_url = data.imageUrl
+  if (data.isOffer !== undefined) patch.is_offer = data.isOffer
+  if (data.order !== undefined) patch.slide_order = data.order
+  if (data.active !== undefined) patch.active = data.active
+  const { data: row } = await supabase.from('tv_slides').update(patch).eq('id', id).select().single()
+  return row ? toSlide(row) : null
+}
+
+export async function deleteSlide(id: string): Promise<boolean> {
+  const { error } = await supabase.from('tv_slides').delete().eq('id', id)
+  return !error
 }
