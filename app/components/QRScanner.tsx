@@ -51,7 +51,7 @@ export function QRScanner({ onScan, onCameraError }: Props) {
   return (
     <div className="relative w-full">
       <div id="qr-reader" className="w-full rounded-xl overflow-hidden" />
-      <p className="text-center text-xs text-gray-500 mt-2">
+      <p className="text-center text-xs text-zinc-500 mt-2">
         Apunta la cámara al código QR del cliente
       </p>
     </div>

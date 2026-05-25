@@ -87,9 +87,27 @@ export default function LoyaltyCard() {
     setTimeout(() => setNotified(false), 4000)
   }
 
+<<<<<<< Updated upstream
   function handleLogout() {
     localStorage.removeItem('loyalty_id')
     setCustomer(null); setName(''); setPassword(''); setStep('form')
+=======
+  const earned = (customer?.visits ?? 0) >= STAMPS
+
+  // ── Cargando ───────────────────────────────────────────────────────────────
+  if (step === 'loading') {
+    return (
+      <div className="fixed inset-0 bg-zinc-950 flex flex-col items-center justify-center gap-8">
+        <span className="text-6xl animate-pulse">☕</span>
+        <button
+          onClick={() => setStep('form')}
+          className="text-amber-400 text-sm underline"
+        >
+          Toca aquí si no carga
+        </button>
+      </div>
+    )
+>>>>>>> Stashed changes
   }
 
   const earned = (customer?.visits ?? 0) >= STAMPS
@@ -101,6 +119,7 @@ export default function LoyaltyCard() {
   // ── LOGIN / REGISTRO ─────────────────────────────────────────────────────────
   if (step === 'form') {
     return (
+<<<<<<< Updated upstream
       <div className="fixed inset-0 z-50 bg-gradient-to-b from-amber-950 to-amber-900 flex flex-col items-center justify-center p-5 pb-24">
         {/* Brand above card */}
         <div className="text-center mb-6">
@@ -123,10 +142,21 @@ export default function LoyaltyCard() {
                 {t === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
               </button>
             ))}
+=======
+      <div className="fixed inset-0 z-50 bg-zinc-950 flex items-center justify-center p-5">
+        <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden">
+          <div className="bg-zinc-800/80 border-b border-zinc-800 px-6 py-5 text-center">
+            <p className="text-5xl mb-1">☕</p>
+            <h1 className="text-zinc-50 text-xl font-bold">¡Bienvenido!</h1>
+            <p className="text-amber-400 text-sm mt-1">
+              Regístrate y gana un café gratis por cada 5 visitas
+            </p>
+>>>>>>> Stashed changes
           </div>
 
           <div className="px-5 pb-5 space-y-3">
             <div>
+<<<<<<< Updated upstream
               <label className="block text-xs font-bold text-amber-900 mb-1.5 uppercase tracking-wide">Nombre</label>
               <input type="text" value={name} onChange={e => { setName(e.target.value); setFormError('') }}
                 placeholder="Ej. María González" autoComplete="username" className={INPUT} />
@@ -142,6 +172,40 @@ export default function LoyaltyCard() {
             {formError && (
               <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl px-4 py-3 text-sm font-medium">{formError}</div>
             )}
+=======
+              <label className="block text-sm font-semibold text-amber-400 mb-1">
+                Nombre completo <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: undefined })) }}
+                placeholder="Ej. María González"
+                autoComplete="name"
+                className="w-full bg-zinc-800 border-2 border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500"
+              />
+              {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-amber-400 mb-1">
+                Número de teléfono <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={e => { setPhone(e.target.value); setErrors(p => ({ ...p, phone: undefined })) }}
+                placeholder="Ej. +52 55 1234 5678"
+                autoComplete="tel"
+                className="w-full bg-zinc-800 border-2 border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500"
+              />
+              {errors.phone && <p className="text-red-400 text-xs mt-1">{errors.phone}</p>}
+            </div>
+
+            <p className="text-xs text-zinc-500 text-center pt-1">
+              El empleado activará tu tarjeta desde el panel.
+            </p>
+>>>>>>> Stashed changes
 
             <button type="button" onClick={handleAuth} disabled={submitting}
               className="w-full bg-amber-800 active:bg-amber-950 text-white font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors mt-1">
@@ -155,6 +219,7 @@ export default function LoyaltyCard() {
     )
   }
 
+<<<<<<< Updated upstream
   // ── TARJETA DE FIDELIZACIÓN ──────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-stone-100 pb-24 relative">
@@ -208,6 +273,75 @@ export default function LoyaltyCard() {
                 )
               })}
             </div>
+=======
+  // ── Esperando activación del empleado ─────────────────────────────────────
+  if (step === 'waiting') {
+    return (
+      <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center p-5">
+        <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden">
+          <div className="bg-zinc-800/80 border-b border-zinc-800 px-6 py-5 text-center">
+            <p className="text-5xl mb-1">⏳</p>
+            <h2 className="text-zinc-50 text-xl font-bold">Activación pendiente</h2>
+          </div>
+
+          <div className="px-6 py-6 text-center space-y-4">
+            <p className="text-zinc-300 text-sm">
+              Hola <strong className="text-zinc-100">{customer?.name}</strong>, tu registro fue recibido.
+            </p>
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-sm text-amber-300">
+              Muéstrale esta pantalla al empleado para que active tu tarjeta.
+            </div>
+            <div className="flex items-center justify-center gap-2 text-amber-400 text-sm animate-pulse">
+              <span>⏳</span>
+              <span>Esperando activación...</span>
+            </div>
+            <button
+              onClick={refreshCard}
+              className="w-full bg-amber-700 active:bg-amber-900 text-white font-bold py-3 rounded-xl"
+            >
+              Verificar ahora
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Tarjeta de fidelización con QR ────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-sm space-y-4">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl p-6 text-white">
+          <div className="flex justify-between items-start mb-1">
+            <div>
+              <h2 className="font-bold text-lg text-zinc-50">¡Hola, {customer?.name}!</h2>
+              <p className="text-amber-400 text-xs">{customer?.phone}</p>
+            </div>
+            <span className="text-4xl">☕</span>
+          </div>
+          <p className="text-zinc-400 text-xs mb-5 mt-1">Tarjeta de fidelización</p>
+
+          {/* Sellos */}
+          <div className="grid grid-cols-5 gap-3 mb-3">
+            {Array.from({ length: STAMPS }).map((_, i) => {
+              const filled = i < (customer?.visits ?? 0)
+              return (
+                <div
+                  key={i}
+                  className={`aspect-square rounded-full flex items-center justify-center text-2xl border-2 transition-all ${
+                    filled ? 'bg-amber-500 border-amber-400' : 'bg-zinc-800 border-zinc-700'
+                  }`}
+                >
+                  {filled ? '☕' : '○'}
+                </div>
+              )
+            })}
+          </div>
+
+          <p className="text-center text-zinc-400 text-xs mb-5">
+            {customer?.visits ?? 0} / {STAMPS} visitas
+          </p>
+>>>>>>> Stashed changes
 
             {/* Progress bar */}
             <div className="h-1.5 bg-amber-900/50 rounded-full overflow-hidden mb-1">
@@ -249,9 +383,23 @@ export default function LoyaltyCard() {
           </div>
         )}
 
+<<<<<<< Updated upstream
         {/* Notify button */}
         <button type="button" onClick={notifyEmployee}
           className={`w-full font-black py-4 rounded-2xl text-base transition-all shadow-md ${
+=======
+        {!earned && (
+          <p className="text-center text-zinc-400 text-sm">
+            Te {STAMPS - (customer?.visits ?? 0) === 1 ? 'falta' : 'faltan'}{' '}
+            <strong>{STAMPS - (customer?.visits ?? 0)}</strong>{' '}
+            {STAMPS - (customer?.visits ?? 0) === 1 ? 'visita' : 'visitas'} para tu café gratis
+          </p>
+        )}
+
+        <button
+          onClick={notifyEmployee}
+          className={`w-full font-bold py-3 rounded-xl transition-colors ${
+>>>>>>> Stashed changes
             notified
               ? 'bg-green-500 text-white scale-95'
               : 'bg-amber-800 active:bg-amber-950 text-white'
@@ -259,9 +407,14 @@ export default function LoyaltyCard() {
           {notified ? '✅ ¡Empleado avisado!' : '🔔 Avisar al empleado'}
         </button>
 
+<<<<<<< Updated upstream
         <button type="button" onClick={refreshCard}
           className="w-full text-amber-700 text-sm font-medium py-2 flex items-center justify-center gap-1.5">
           <span className="text-base">↻</span> Actualizar tarjeta
+=======
+        <button onClick={refreshCard} className="w-full text-amber-400 text-sm underline py-1">
+          Actualizar tarjeta
+>>>>>>> Stashed changes
         </button>
       </div>
 

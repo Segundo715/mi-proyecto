@@ -37,8 +37,8 @@ export default function ActivateClient() {
 
   if (status === 'loading') {
     return (
-      <div className="fixed inset-0 bg-amber-950 flex items-center justify-center">
-        <div className="text-center text-white space-y-3">
+      <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center">
+        <div className="text-center text-zinc-100 space-y-3">
           <span className="text-6xl animate-pulse">☕</span>
           <p className="font-semibold text-lg">Activando tu tarjeta...</p>
         </div>
@@ -48,19 +48,19 @@ export default function ActivateClient() {
 
   if (status === 'done') {
     return (
-      <div className="fixed inset-0 bg-amber-900 flex items-center justify-center p-6">
-        <div className="bg-white rounded-3xl p-8 text-center w-full max-w-sm shadow-2xl">
+      <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center p-6">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 text-center w-full max-w-sm shadow-2xl">
           <p className="text-6xl mb-4">🎉</p>
-          <h1 className="text-2xl font-bold text-amber-900 mb-2">
+          <h1 className="text-2xl font-bold text-amber-400 mb-2">
             ¡Tarjeta activada, {customerName}!
           </h1>
-          <p className="text-gray-500 text-sm">
+          <p className="text-zinc-400 text-sm">
             Redirigiendo a tu tarjeta en unos segundos...
           </p>
           <div className="mt-4">
             <button
               onClick={() => router.replace('/')}
-              className="text-amber-700 underline text-sm"
+              className="text-amber-400 underline text-sm"
             >
               Ir ahora
             </button>
@@ -71,11 +71,11 @@ export default function ActivateClient() {
   }
 
   return (
-    <div className="fixed inset-0 bg-amber-950 flex items-center justify-center p-6">
-      <div className="bg-white rounded-3xl p-8 text-center w-full max-w-sm shadow-2xl">
+    <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center p-6">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 text-center w-full max-w-sm shadow-2xl">
         <p className="text-5xl mb-4">❌</p>
-        <h1 className="text-xl font-bold text-gray-800 mb-2">Link inválido</h1>
-        <p className="text-gray-500 text-sm">
+        <h1 className="text-xl font-bold text-zinc-100 mb-2">Link inválido</h1>
+        <p className="text-zinc-400 text-sm">
           Este link puede haber expirado o ya fue usado. Pide uno nuevo al negocio.
         </p>
       </div>
