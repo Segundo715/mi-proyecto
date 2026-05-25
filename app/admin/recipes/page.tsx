@@ -29,9 +29,12 @@ export default function AdminRecipesPage() {
   const [editing, setEditing] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadingCardId, setUploadingCardId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+  const cardFileRef = useRef<HTMLInputElement>(null)
+  const pendingCardId = useRef<string | null>(null)
 
   async function load() {
     const r = await fetch('/api/recipes')
@@ -75,6 +78,28 @@ export default function AdminRecipesPage() {
       setForm(p => ({ ...p, imageUrl: d.url }))
     }
     setUploading(false)
+  }
+
+  async function uploadCardImage(file: File, recipeId: string) {
+    setUploadingCardId(recipeId)
+    const fd = new FormData()
+    fd.append('file', file)
+    const r = await fetch('/api/recipes/upload', { method: 'POST', body: fd })
+    if (r.ok) {
+      const d = await r.json()
+      await fetch(`/api/recipes/${recipeId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: d.url }),
+      })
+      load()
+    }
+    setUploadingCardId(null)
+  }
+
+  function triggerCardUpload(recipeId: string) {
+    pendingCardId.current = recipeId
+    cardFileRef.current?.click()
   }
 
   async function save() {
@@ -131,6 +156,15 @@ export default function AdminRecipesPage() {
   return (
     <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <AdminNav />
+
+      {/* Input oculto para subir imagen directo desde tarjeta */}
+      <input ref={cardFileRef} type="file" accept="image/*" className="hidden"
+        onChange={e => {
+          const file = e.target.files?.[0]
+          if (file && pendingCardId.current) uploadCardImage(file, pendingCardId.current)
+          e.target.value = ''
+        }} />
+
       <div className="max-w-[1000px] mx-auto p-4 space-y-4">
 
         {/* Header */}
@@ -155,27 +189,67 @@ export default function AdminRecipesPage() {
         {loading ? (
           <div className="text-center py-12 text-sm" style={{ color: S.sub }}>Cargando...</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 rounded-2xl text-sm" style={{ color: S.sub, backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="text-center py-12 rounded-2xl text-sm"
+            style={{ color: S.sub, backgroundColor: S.card, border: `1px solid ${S.border}` }}>
             No hay recetas{search ? ' con ese filtro' : '. Crea la primera.'}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {filtered.map(r => (
-              <button key={r.id} onClick={() => setSelected(r)}
-                className="text-left rounded-2xl overflow-hidden transition-all hover:scale-[1.01]"
+              <div key={r.id} className="rounded-2xl overflow-hidden"
                 style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-                {r.imageUrl
-                  ? <img src={r.imageUrl} alt={r.name} className="w-full object-cover" style={{ height: '150px' }} />
-                  : <div className="w-full flex items-center justify-center text-4xl" style={{ height: '100px', backgroundColor: S.bg }}>📖</div>
-                }
+
+                {/* Imagen — clic para cambiarla */}
+                <button
+                  type="button"
+                  onClick={() => triggerCardUpload(r.id)}
+                  className="relative w-full group block"
+                  title="Clic para cambiar imagen"
+                  disabled={uploadingCardId === r.id}>
+                  {r.imageUrl
+                    ? <img src={r.imageUrl} alt={r.name} className="w-full object-cover" style={{ height: '160px' }} />
+                    : <div className="w-full flex items-center justify-center text-5xl"
+                        style={{ height: '120px', backgroundColor: S.bg }}>📷</div>
+                  }
+                  {/* Overlay al hacer hover */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}>
+                    {uploadingCardId === r.id
+                      ? <span className="text-white text-xs font-bold">Subiendo...</span>
+                      : <span className="text-white text-xs font-bold bg-black/60 px-3 py-1.5 rounded-full">
+                          {r.imageUrl ? '📷 Cambiar foto' : '📷 Agregar foto'}
+                        </span>
+                    }
+                  </div>
+                </button>
+
+                {/* Info + acciones */}
                 <div className="p-4">
                   <span className="text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
                     style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>{r.category}</span>
                   <p className="font-black text-sm mt-2" style={{ color: S.text }}>{r.name}</p>
                   {r.description && <p className="text-xs mt-1 line-clamp-2" style={{ color: S.sub }}>{r.description}</p>}
                   <p className="text-xs mt-2" style={{ color: S.sub }}>{r.ingredients.length} ingredientes · {r.steps.length} pasos</p>
+
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => setSelected(r)}
+                      className="flex-1 py-2 rounded-xl text-xs font-bold"
+                      style={{ backgroundColor: S.bg, color: S.sub, border: `1px solid ${S.border}` }}>
+                      Ver
+                    </button>
+                    <button onClick={() => openEdit(r)}
+                      className="flex-1 py-2 rounded-xl text-xs font-bold"
+                      style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                      Editar
+                    </button>
+                    <button onClick={() => remove(r.id)}
+                      className="px-3 py-2 rounded-xl text-xs font-bold"
+                      style={{ backgroundColor: 'rgba(239,68,68,.12)', color: '#f87171' }}>
+                      🗑
+                    </button>
+                  </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -264,7 +338,7 @@ export default function AdminRecipesPage() {
               <div className="flex items-center gap-3">
                 {form.imageUrl
                   ? <img src={form.imageUrl} alt="" className="w-16 h-16 rounded-2xl object-cover shrink-0" />
-                  : <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: S.bg }}>📖</div>
+                  : <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: S.bg }}>📷</div>
                 }
                 <button onClick={() => fileRef.current?.click()} disabled={uploading}
                   className="flex-1 py-2.5 rounded-2xl text-sm font-bold border-dashed border-2 transition-all"
