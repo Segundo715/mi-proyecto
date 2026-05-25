@@ -1,8 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 type Step = 'form' | 'success'
+
+const DEFAULT_TITLE = '¡Bienvenido!'
+const DEFAULT_SUBTITLE = 'Completa tus datos para registrarte. La información será guardada de forma segura.'
 
 export default function RegistroPage() {
   const [step, setStep] = useState<Step>('form')
@@ -12,6 +15,13 @@ export default function RegistroPage() {
   const [terms, setTerms] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [welcomeTitle, setWelcomeTitle] = useState(DEFAULT_TITLE)
+  const [welcomeSubtitle, setWelcomeSubtitle] = useState(DEFAULT_SUBTITLE)
+
+  useEffect(() => {
+    fetch('/api/settings?key=registro_titulo').then(r => r.json()).then(d => { if (d.value) setWelcomeTitle(d.value) })
+    fetch('/api/settings?key=registro_subtitulo').then(r => r.json()).then(d => { if (d.value) setWelcomeSubtitle(d.value) })
+  }, [])
 
   async function handleSubmit() {
     if (!name.trim()) { setError('Ingresa tu nombre completo'); return }
@@ -78,10 +88,8 @@ export default function RegistroPage() {
 
         {/* Bienvenida */}
         <div className="rounded-2xl p-4 text-center" style={{ backgroundColor: '#111', border: '1px solid #B90F45' }}>
-          <p className="font-black text-white text-base">¡Bienvenido!</p>
-          <p className="text-xs mt-1" style={{ color: '#aaa' }}>
-            Completa tus datos para registrarte. La información será guardada de forma segura.
-          </p>
+          <p className="font-black text-white text-base">{welcomeTitle}</p>
+          <p className="text-xs mt-1" style={{ color: '#aaa' }}>{welcomeSubtitle}</p>
         </div>
 
         {/* Nombre */}
