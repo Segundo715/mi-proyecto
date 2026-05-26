@@ -44,3 +44,28 @@ export async function getAdminById(id: string): Promise<AdminUser | undefined> {
   const { data } = await supabase.from('admins').select('*').eq('id', id).maybeSingle()
   return data ? toAdmin(data) : undefined
 }
+
+export interface AdminListItem {
+  id: string
+  name: string
+  createdAt: string
+}
+
+export async function listAdmins(): Promise<AdminListItem[]> {
+  const { data } = await supabase.from('admins')
+    .select('id,name,created_at').order('created_at', { ascending: true })
+  return (data ?? []).map(r => ({
+    id: r.id as string,
+    name: r.name as string,
+    createdAt: r.created_at as string,
+  }))
+}
+
+export async function countAdmins(): Promise<number> {
+  const { count } = await supabase.from('admins').select('id', { count: 'exact', head: true })
+  return count ?? 0
+}
+
+export async function deleteAdmin(id: string): Promise<void> {
+  await supabase.from('admins').delete().eq('id', id)
+}

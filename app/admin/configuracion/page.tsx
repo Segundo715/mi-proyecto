@@ -13,30 +13,113 @@ const SETTINGS = [
   { key: 'registro_subtitulo', label: 'Subtítulo de bienvenida', placeholder: 'Completa tus datos para registrarte...', hint: 'Texto debajo del título en /registro' },
 ]
 
+interface AdminItem { id: string; name: string; createdAt: string }
+
+function currentAdminName(): string {
+  if (typeof document === 'undefined') return ''
+  const m = document.cookie.match(/(?:^|;\s*)admin_name=([^;]+)/)
+  return m ? decodeURIComponent(m[1]) : ''
+}
+
 export default function AdminConfiguracionPage() {
   const [values, setValues] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<string | null>(null)
   const [saved, setSaved] = useState<string | null>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+
+  // Perfiles
+  const [admins, setAdmins] = useState<AdminItem[]>([])
+  const [newName, setNewName] = useState('')
+  const [newPass, setNewPass] = useState('')
+  const [profileError, setProfileError] = useState('')
+  const [creating, setCreating] = useState(false)
+  const me = currentAdminName()
 
   useEffect(() => {
-    SETTINGS.forEach(async s => {
-      const r = await fetch(`/api/settings?key=${s.key}`)
+    const allKeys = [...SETTINGS.map(s => s.key), 'restaurant_name', 'profile_logo', 'sidebar_accent']
+    allKeys.forEach(async key => {
+      const r = await fetch(`/api/settings?key=${key}`)
       const d = await r.json()
-      if (d.value) setValues(p => ({ ...p, [s.key]: d.value }))
+      if (d.value) setValues(p => ({ ...p, [key]: d.value }))
     })
+    loadAdmins()
   }, [])
 
-  async function saveSetting(key: string) {
+  async function loadAdmins() {
+    const r = await fetch('/api/admins')
+    if (r.ok) setAdmins(await r.json())
+  }
+
+  async function saveSetting(key: string, valueOverride?: string) {
     setSaving(key)
     await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, value: values[key] ?? '' }),
+      body: JSON.stringify({ key, value: valueOverride ?? values[key] ?? '' }),
     })
     setSaving(null)
     setSaved(key)
     setTimeout(() => setSaved(null), 2000)
   }
+
+  async function uploadLogo(file: File) {
+    setUploadingLogo(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const r = await fetch('/api/settings/upload', { method: 'POST', body: fd })
+      const d = await r.json()
+      if (d.url) {
+        setValues(p => ({ ...p, profile_logo: d.url }))
+        await saveSetting('profile_logo', d.url)
+      }
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
+
+  async function createProfile() {
+    setProfileError('')
+    if (!newName.trim() || !newPass) { setProfileError('Nombre y contraseña requeridos'); return }
+    setCreating(true)
+    try {
+      const r = await fetch('/api/admins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName.trim(), password: newPass }),
+      })
+      const d = await r.json()
+      if (!r.ok) { setProfileError(d.error ?? 'Error al crear el perfil'); return }
+      setNewName(''); setNewPass('')
+      await loadAdmins()
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  async function deleteProfile(id: string, name: string) {
+    if (!confirm(`¿Eliminar el perfil "${name}"? Esta acción no se puede deshacer.`)) return
+    setProfileError('')
+    const r = await fetch(`/api/admins?id=${id}`, { method: 'DELETE' })
+    if (!r.ok) {
+      const d = await r.json()
+      setProfileError(d.error ?? 'No se pudo eliminar')
+      return
+    }
+    await loadAdmins()
+  }
+
+  const accent = values.sidebar_accent || '#00e676'
+
+  const renderSaveBtn = (k: string) => (
+    <button
+      onClick={() => saveSetting(k)}
+      disabled={saving === k}
+      className="px-4 py-2 rounded-2xl text-sm font-bold shrink-0 transition-all"
+      style={{ backgroundColor: saved === k ? 'rgba(0,230,118,.2)' : `${S.accent}22`, color: saved === k ? '#4ade80' : S.accent }}>
+      {saving === k ? '...' : saved === k ? '✓ Guardado' : 'Guardar'}
+    </button>
+  )
 
   return (
     <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
@@ -48,7 +131,156 @@ export default function AdminConfiguracionPage() {
           <p className="text-xs mt-0.5" style={{ color: S.sub }}>Textos y personalización del sistema</p>
         </div>
 
-        {/* Textos del formulario de registro */}
+        {/* ===== Identidad del restaurante ===== */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <p className="font-bold text-sm" style={{ color: S.text }}>Identidad del restaurante</p>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Nombre, logo y color que se muestran en el panel</p>
+          </div>
+          <div className="p-5 space-y-5">
+
+            {/* Nombre del restaurante */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Nombre del restaurante</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={values.restaurant_name ?? ''}
+                  onChange={e => setValues(p => ({ ...p, restaurant_name: e.target.value }))}
+                  placeholder="NICHO"
+                  className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}
+                />
+                {renderSaveBtn('restaurant_name')}
+              </div>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>Se muestra en el menú lateral del panel</p>
+            </div>
+
+            {/* Logo de perfil */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Logo de perfil</label>
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden shrink-0"
+                  style={{ background: 'linear-gradient(135deg,var(--ad-accent),#06b6d4)' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={values.profile_logo || '/logo.png'} alt="logo" className="w-10 h-10 object-contain" />
+                </div>
+                <label className="px-4 py-2 rounded-2xl text-sm font-bold cursor-pointer transition-all"
+                  style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                  {uploadingLogo ? 'Subiendo...' : 'Cambiar logo'}
+                  <input type="file" accept="image/*" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f) }} />
+                </label>
+              </div>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>PNG o SVG con fondo transparente recomendado</p>
+            </div>
+
+            {/* Color del botón del menú lateral */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Color del botón del menú lateral</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={/^#[0-9a-fA-F]{6}$/.test(accent) ? accent : '#00e676'}
+                  onChange={e => setValues(p => ({ ...p, sidebar_accent: e.target.value }))}
+                  className="w-12 h-11 rounded-2xl cursor-pointer bg-transparent"
+                  style={{ border: `1px solid ${S.border}` }}
+                />
+                <input
+                  type="text"
+                  value={values.sidebar_accent ?? ''}
+                  onChange={e => setValues(p => ({ ...p, sidebar_accent: e.target.value }))}
+                  placeholder="#00e676"
+                  className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none font-mono"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}
+                />
+                {renderSaveBtn('sidebar_accent')}
+              </div>
+              <div className="mt-2 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium"
+                style={{ backgroundColor: accent, color: '#000' }}>
+                Vista previa del botón activo
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ===== Administración de perfiles ===== */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <p className="font-bold text-sm" style={{ color: S.text }}>Administración de perfiles</p>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Usuarios con acceso al panel /admin</p>
+          </div>
+          <div className="p-5 space-y-4">
+
+            {/* Lista */}
+            <div className="space-y-2">
+              {admins.map(a => {
+                const isMe = a.name.toLowerCase() === me.toLowerCase()
+                return (
+                  <div key={a.id} className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ backgroundColor: S.bg, border: `1px solid ${S.border}` }}>
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
+                      style={{ background: 'linear-gradient(135deg,#7c3aed,#4f6ef7)', color: '#fff' }}>
+                      {a.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold truncate" style={{ color: S.text }}>
+                        {a.name}{isMe && <span className="ml-2 text-xs font-medium" style={{ color: S.accent }}>(tú)</span>}
+                      </p>
+                      <p className="text-xs" style={{ color: S.sub }}>Alta: {new Date(a.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <button
+                      onClick={() => deleteProfile(a.id, a.name)}
+                      disabled={isMe}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                      style={{ color: '#f87171', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'transparent' }}>
+                      Eliminar
+                    </button>
+                  </div>
+                )
+              })}
+              {admins.length === 0 && (
+                <p className="text-xs" style={{ color: S.sub }}>Cargando perfiles...</p>
+              )}
+            </div>
+
+            {/* Crear nuevo */}
+            <div className="pt-2" style={{ borderTop: `1px solid ${S.border}` }}>
+              <p className="text-xs font-bold uppercase tracking-wide mt-3 mb-2" style={{ color: S.sub }}>Crear nuevo perfil</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={e => { setNewName(e.target.value); setProfileError('') }}
+                  placeholder="Nombre de usuario"
+                  className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}
+                />
+                <input
+                  type="password"
+                  value={newPass}
+                  onChange={e => { setNewPass(e.target.value); setProfileError('') }}
+                  placeholder="Contraseña"
+                  className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}
+                />
+                <button
+                  onClick={createProfile}
+                  disabled={creating}
+                  className="px-4 py-2 rounded-2xl text-sm font-bold shrink-0 transition-all"
+                  style={{ backgroundColor: S.accent, color: '#000' }}>
+                  {creating ? '...' : '+ Crear'}
+                </button>
+              </div>
+              {profileError && (
+                <p className="text-xs mt-2 font-medium" style={{ color: '#f87171' }}>{profileError}</p>
+              )}
+            </div>
+
+          </div>
+        </div>
+
+        {/* ===== Textos del formulario de registro ===== */}
         <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
           <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
             <p className="font-bold text-sm" style={{ color: S.text }}>Formulario de Registro (/registro)</p>
@@ -67,13 +299,7 @@ export default function AdminConfiguracionPage() {
                     className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
                     style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}
                   />
-                  <button
-                    onClick={() => saveSetting(s.key)}
-                    disabled={saving === s.key}
-                    className="px-4 py-2 rounded-2xl text-sm font-bold shrink-0 transition-all"
-                    style={{ backgroundColor: saved === s.key ? 'rgba(0,230,118,.2)' : `${S.accent}22`, color: saved === s.key ? '#4ade80' : S.accent }}>
-                    {saving === s.key ? '...' : saved === s.key ? '✓ Guardado' : 'Guardar'}
-                  </button>
+                  {renderSaveBtn(s.key)}
                 </div>
                 <p className="text-xs mt-1" style={{ color: S.sub }}>{s.hint}</p>
               </div>

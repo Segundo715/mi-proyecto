@@ -1,9 +1,10 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { FEATURES, type FeatureKey } from '@/lib/features'
 import AdminThemeToggle from '@/app/components/AdminThemeToggle'
+import { useBrand } from '@/app/components/BrandProvider'
 
 interface NavLink {
   href: string; icon: string; label: string; exact?: boolean; feature?: FeatureKey
@@ -67,14 +68,33 @@ function isEnabled(feature?: FeatureKey) {
   return FEATURES[feature].enabled
 }
 
+// Texto negro o blanco según la luminancia del color de fondo, para que contraste.
+function contrastText(hex: string): string {
+  const m = /^#([0-9a-fA-F]{6})$/.exec(hex)
+  if (!m) return '#000'
+  const n = parseInt(m[1], 16)
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return lum > 0.6 ? '#000' : '#fff'
+}
+
 export default function AdminNav() {
   const router = useRouter()
   const [pathname, setPathname] = useState('')
   const [open, setOpen] = useState(false)
+  const brand = useBrand()
 
   useEffect(() => {
     setPathname(window.location.pathname)
   }, [])
+
+  const brandName = brand.name || 'NICHO'
+  const brandLogo = brand.logo || '/logo.png'
+  const accentColor = brand.accent || 'var(--ad-accent)'
+  const accentText = contrastText(brand.accent)
+  const navActive = { backgroundColor: accentColor, color: accentText }
+  // Variables que consume el hover de los enlaces (ver .ad-navlink en globals.css)
+  const navVars = { '--ad-nav-hover': accentColor, '--ad-nav-hover-text': accentText } as CSSProperties
 
   async function logout() {
     await fetch('/api/auth', { method: 'DELETE' })
@@ -99,9 +119,9 @@ export default function AdminNav() {
 
   return (
     <>
-      {/* ===== Logo agencia + toggle de tema (fijo, esquina superior derecha) ===== */}
-      <div className="fixed top-5 right-[250px] z-[100] flex items-center gap-3">
-        <img src="/L_agencia/logo_singular.svg" alt="Singular" className="ad-logo h-8 w-auto pointer-events-none" />
+      {/* ===== Logo agencia + toggle de tema (fijo, escritorio) ===== */}
+      <div className="hidden md:flex fixed top-5 right-[250px] z-[100] items-center gap-3">
+        <img src="/L_agencia/logo_singular.svg" alt="Singular" className="ad-logo h-6 w-auto pointer-events-none" />
         <AdminThemeToggle />
       </div>
 
@@ -117,41 +137,40 @@ export default function AdminNav() {
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg,var(--ad-accent),#06b6d4)' }}>
-              <img src="/logo.png" alt="" className="w-5 h-5 object-contain" />
+              <img src={brandLogo} alt="" className="w-5 h-5 object-contain" />
             </div>
-            <span className="font-bold text-sm" style={S.text}>Admin</span>
+            <span className="font-bold text-sm" style={S.text}>{brandName}</span>
           </div>
         </button>
-        <button type="button" onClick={logout} className="text-xs px-3 py-1.5 rounded-lg font-medium"
-          style={{ backgroundColor: 'var(--ad-card)', color: 'var(--ad-sub)', border: '1px solid var(--ad-border)' }}>
-          Salir
-        </button>
+        <div className="flex items-center gap-2">
+          <img src="/L_agencia/logo_singular.svg" alt="Singular" className="ad-logo h-6 w-auto" />
+          <AdminThemeToggle />
+        </div>
       </div>
 
       {/* ===== SIDEBAR desktop ===== */}
       <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 z-40 w-[240px]" style={S.sidebar}>
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center relative flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg,var(--ad-accent),#06b6d4)' }}>
-            <img src="/logo.png" alt="" className="w-7 h-7 object-contain" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center relative flex-shrink-0 overflow-hidden">
+            <img src={brandLogo} alt="" className="w-full h-full object-contain" />
           </div>
           <div>
-            <div className="font-extrabold text-base tracking-wide" style={S.text}>NICHO</div>
+            <div className="font-extrabold text-base tracking-wide" style={S.text}>{brandName}</div>
             <div className="text-[11px] uppercase tracking-widest font-semibold" style={S.sub}>Restaurantes</div>
           </div>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto">
+        <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto" style={navVars}>
           {NAV_LINKS.map(link => {
             const active = isActive(link.href, link.exact)
             const enabled = isEnabled(link.feature)
             return (
               <a key={link.href} href={enabled ? link.href : undefined}
                 onClick={enabled ? undefined : e => e.preventDefault()}
-                className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all"
-                style={active ? S.navActive : { color: 'var(--ad-sub)', opacity: enabled ? 1 : 0.4, cursor: enabled ? 'pointer' : 'not-allowed' }}>
+                className={`ad-navlink flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all${active ? ' is-active' : ''}`}
+                style={active ? navActive : { color: 'var(--ad-sub)', opacity: enabled ? 1 : 0.4, cursor: enabled ? 'pointer' : 'not-allowed' }}>
                 <NavIcon name={link.icon} />
                 <span className="flex-1">{link.label}</span>
                 {!enabled && (
@@ -195,10 +214,10 @@ export default function AdminNav() {
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center"
                 style={{ background: 'linear-gradient(135deg,var(--ad-accent),#06b6d4)' }}>
-                <img src="/logo.png" alt="" className="w-6 h-6 object-contain" />
+                <img src={brandLogo} alt="" className="w-6 h-6 object-contain" />
               </div>
               <div>
-                <div className="font-extrabold text-sm" style={S.text}>NICHO</div>
+                <div className="font-extrabold text-sm" style={S.text}>{brandName}</div>
                 <div className="text-[10px] uppercase tracking-widest" style={S.sub}>Restaurantes</div>
               </div>
             </div>
@@ -207,15 +226,15 @@ export default function AdminNav() {
               style={{ backgroundColor: 'var(--ad-overlay)', color: 'var(--ad-sub)' }}>×</button>
           </div>
 
-          <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto">
+          <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto" style={navVars}>
             {NAV_LINKS.map(link => {
               const active = isActive(link.href, link.exact)
               const enabled = isEnabled(link.feature)
               return (
                 <a key={link.href} href={enabled ? link.href : undefined}
                   onClick={enabled ? (() => setOpen(false)) : (e => e.preventDefault())}
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium"
-                  style={active ? S.navActive : { color: 'var(--ad-sub)', opacity: enabled ? 1 : 0.4 }}>
+                  className={`ad-navlink flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium${active ? ' is-active' : ''}`}
+                  style={active ? navActive : { color: 'var(--ad-sub)', opacity: enabled ? 1 : 0.4 }}>
                   <NavIcon name={link.icon} />
                   <span className="flex-1">{link.label}</span>
                   {!enabled && (
