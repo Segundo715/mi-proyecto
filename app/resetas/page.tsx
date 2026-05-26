@@ -1,0 +1,439 @@
+'use client'
+
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+
+/* ============================================================================
+ * Tema (claro / oscuro). El guinda es constante en ambos.
+ * ========================================================================== */
+const GUINDA = '#B90F45'
+const GUINDA_DARK = '#8E0B34'
+
+const THEMES = {
+  light: {
+    bg: '#ececec', card: '#ffffff', ink: '#1f1f1f', sub: '#4a4a4a',
+    line: 'rgba(0,0,0,0.12)', header: 'rgba(185,15,69,0.16)',
+    chip: '#f3f3f3', chipInk: '#555', field: '#f6f6f6', label: GUINDA_DARK,
+  },
+  dark: {
+    bg: '#0a0a0a', card: '#161616', ink: '#f0f0f0', sub: '#9a9a9a',
+    line: 'rgba(255,255,255,0.12)', header: 'rgba(185,15,69,0.30)',
+    chip: '#1f1f1f', chipInk: '#bbb', field: '#1c1c1c', label: '#E8638A',
+  },
+} as const
+type ThemeName = keyof typeof THEMES
+
+interface Theme {
+  bg: string; card: string; ink: string; sub: string; line: string
+  header: string; chip: string; chipInk: string; field: string; label: string
+}
+
+// Color con transparencia a partir de un hex #rrggbb.
+function hexA(hex: string, alpha: number): string {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(hex)
+  if (!m) return hex
+  const n = parseInt(m[1], 16)
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`
+}
+
+// Mezcla dos colores hex (amount 0..1 hacia el segundo). Sirve para aclarar el guinda.
+function mix(hex: string, withHex: string, amount: number): string {
+  const toRgb = (h: string) => { const n = parseInt(h.replace('#', ''), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255] }
+  const a = toRgb(hex), b = toRgb(withHex)
+  const c = a.map((v, i) => Math.round(v + (b[i] - v) * amount))
+  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`
+}
+
+// Construye el tema usando el color de marca elegido en /admin/recipes.
+function buildTheme(name: ThemeName, guinda: string): Theme {
+  const base = THEMES[name]
+  return {
+    ...base,
+    header: hexA(guinda, name === 'dark' ? 0.30 : 0.16),
+    label: name === 'dark' ? mix(guinda, '#ffffff', 0.5) : guinda,
+  }
+}
+
+/* ============================================================================
+ * Iconos planos (SVG)
+ * ========================================================================== */
+function IconSearch({ size = 18, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
+      <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.5" y2="16.5" />
+    </svg>
+  )
+}
+function IconSun({ size = 18, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
+      <circle cx="12" cy="12" r="4.5" />
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((d) => (
+        <line key={d} x1="12" y1="2" x2="12" y2="4.5" transform={`rotate(${d} 12 12)`} />
+      ))}
+    </svg>
+  )
+}
+function IconMoon({ size = 18, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+    </svg>
+  )
+}
+function IconCoffee({ size = 16, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 8h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z" />
+      <path d="M17 9h2.5a2.5 2.5 0 0 1 0 5H17" />
+      <line x1="7" y1="2.5" x2="7" y2="4.5" /><line x1="11" y1="2.5" x2="11" y2="4.5" />
+    </svg>
+  )
+}
+function IconFood({ size = 16, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 2v8M3 2v4a2 2 0 0 0 2 2M7 2v4a2 2 0 0 1-2 2M5 10v12" />
+      <path d="M17 2c-1.7 0-3 2-3 5s1.3 4 3 4v11" />
+    </svg>
+  )
+}
+function IconGrid({ size = 16, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  )
+}
+
+/* ============================================================================
+ * Modelo (coincide con /api/recipes y /admin/recipes)
+ * ========================================================================== */
+interface Recipe {
+  id: string
+  name: string
+  description: string
+  category: string
+  ingredients: string[]
+  steps: string[]
+  imageUrl?: string
+  createdAt: string
+}
+
+// Adivina si una categoría es bebida (para elegir ícono café vs comida)
+const DRINK_HINTS = ['bebida', 'café', 'cafe', 'espresso', 'espresso', 'frap', 'latte', 'moka', 'mocha', 'té', 'te', 'capuch', 'capp', 'smoothie', 'jugo', 'refresc', 'drink']
+function isDrinkCategory(cat: string) {
+  const c = cat.toLowerCase()
+  return DRINK_HINTS.some((h) => c.includes(h))
+}
+
+/* ============================================================================
+ * Visual de la receta (imagen real o ícono plano según categoría)
+ * ========================================================================== */
+function RecipeVisual({ recipe, guinda }: { recipe: Recipe; guinda: string }) {
+  if (recipe.imageUrl) {
+    return (
+      <img
+        src={recipe.imageUrl}
+        alt={recipe.name}
+        className="w-full max-w-[560px] aspect-[4/3] object-cover rounded-2xl"
+      />
+    )
+  }
+  const drink = isDrinkCategory(recipe.category)
+  return (
+    <div
+      className="w-full max-w-[260px] aspect-square rounded-2xl flex items-center justify-center"
+      style={{ background: hexA(guinda, 0.08), border: `2px solid ${guinda}` }}
+    >
+      {drink ? <IconCoffee size={120} color={guinda} /> : <IconFood size={120} color={guinda} />}
+    </div>
+  )
+}
+
+/* ============================================================================
+ * Cuerpo de la receta (encabezado + visual + ingredientes + preparación)
+ * ========================================================================== */
+function RecipeBody({ recipe, t, controls, guinda, logo }: { recipe: Recipe; t: Theme; controls?: React.ReactNode; guinda: string; logo: string }) {
+  const cellBorder = `1px solid ${t.line}`
+  // Datos directos de la receta administrada en /admin/recipes (vía /api/recipes).
+  const ingredients = recipe.ingredients
+  const steps = recipe.steps
+  return (
+    <div className="flex flex-col md:h-full md:min-h-0">
+      {/* Encabezado */}
+      <div className="flex items-start justify-between gap-4 shrink-0">
+        <div className="min-w-0">
+          <h1 className="text-3xl sm:text-5xl font-black leading-tight" style={{ color: guinda }}>{recipe.name}</h1>
+          {recipe.description && (
+            <p className="mt-3 text-sm sm:text-lg max-w-2xl" style={{ color: t.ink }}>{recipe.description}</p>
+          )}
+        </div>
+        <div className="shrink-0 hidden sm:block">
+          <img src={logo} alt="Logo" className="h-[88px] w-auto object-contain" />
+        </div>
+      </div>
+
+      {/* Botones (debajo de la descripción) */}
+      {controls && <div className="mt-5 shrink-0">{controls}</div>}
+
+      <div className="mt-5 h-[3px] w-full rounded shrink-0" style={{ background: guinda }} />
+
+      {/* Cuerpo */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-[560px_1fr] gap-8 md:gap-10 items-start md:flex-1 md:min-h-0">
+        <div className="flex justify-center items-start pt-2 md:h-full md:overflow-hidden">
+          <RecipeVisual recipe={recipe} guinda={guinda} />
+        </div>
+
+        <div className="recipe-scroll min-w-0 md:h-full md:min-h-0 md:overflow-y-auto pr-2">
+          {/* Ingredientes */}
+          <table className="w-full border-collapse text-sm sm:text-base">
+            <thead>
+              <tr>
+                <th className="text-left px-3 py-2.5 font-bold" style={{ background: t.header, color: t.label, border: cellBorder }}>
+                  Ingredientes ({ingredients.length})
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {ingredients.length === 0 ? (
+                <tr><td className="px-3 py-2.5" style={{ color: t.sub, border: cellBorder }}>Sin ingredientes registrados</td></tr>
+              ) : (
+                ingredients.map((ing, i) => (
+                  <tr key={i}>
+                    <td className="px-3 py-2.5" style={{ color: t.ink, border: cellBorder }}>
+                      <span className="inline-block w-2 h-2 rounded-full mr-2 align-middle" style={{ background: guinda }} />
+                      {ing}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+
+          {/* Preparación */}
+          <div className="mt-7">
+            <div className="px-3 py-2.5 font-bold rounded-t text-sm sm:text-base" style={{ background: t.header, color: t.label, border: cellBorder }}>
+              Preparación ({steps.length} pasos)
+            </div>
+            {steps.length === 0 ? (
+              <div className="px-3 py-3 text-sm" style={{ color: t.sub, borderLeft: cellBorder, borderRight: cellBorder, borderBottom: cellBorder }}>
+                Sin pasos registrados
+              </div>
+            ) : (
+              <ol>
+                {steps.map((step, i) => (
+                  <li key={i} className="flex gap-3 px-3 py-3 text-sm sm:text-base items-start"
+                    style={{ color: t.ink, borderLeft: cellBorder, borderRight: cellBorder, borderBottom: cellBorder }}>
+                    <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black mt-0.5" style={{ background: guinda, color: '#fff' }}>{i + 1}</span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ============================================================================
+ * Página
+ * ========================================================================== */
+export default function RecetasPage() {
+  const [theme, setTheme] = useState<ThemeName>('light')
+  const [search, setSearch] = useState('')
+  const [category, setCategory] = useState('Todas')
+  const [selectedId, setSelectedId] = useState<string>('')
+  const [recipes, setRecipes] = useState<Recipe[]>([])
+  const [loading, setLoading] = useState(true)
+  const [brandColor, setBrandColor] = useState('')
+  const [brandLogo, setBrandLogo] = useState('')
+
+  // Cargar recetas reales desde la BD (las que se administran en /admin/recipes)
+  useEffect(() => {
+    fetch('/api/recipes')
+      .then((r) => r.json())
+      .then((d: Recipe[]) => { setRecipes(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  // Color y logo del recetario (configurables desde /admin/recipes vía settings)
+  useEffect(() => {
+    const get = (k: string) => fetch(`/api/settings?key=${k}`).then((r) => r.json()).catch(() => ({}))
+    Promise.all([get('recetario_color'), get('recetario_logo')])
+      .then(([c, l]) => { setBrandColor(c?.value || ''); setBrandLogo(l?.value || '') })
+  }, [])
+
+  // Preferencia de tema
+  useEffect(() => {
+    const saved = localStorage.getItem('recetas_theme') as ThemeName | null
+    if (saved === 'light' || saved === 'dark') setTheme(saved)
+  }, [])
+  useEffect(() => { localStorage.setItem('recetas_theme', theme) }, [theme])
+
+  const guinda = brandColor || GUINDA
+  const logo = brandLogo || '/logo.png'
+  const t = buildTheme(theme, guinda)
+
+  const categories = useMemo(
+    () => ['Todas', ...Array.from(new Set(recipes.map((r) => r.category)))],
+    [recipes]
+  )
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return recipes.filter((r) => {
+      const matchCat = category === 'Todas' || r.category === category
+      const matchSearch = !q || r.name.toLowerCase().includes(q) || r.description.toLowerCase().includes(q) || r.category.toLowerCase().includes(q)
+      return matchCat && matchSearch
+    })
+  }, [recipes, search, category])
+
+  const selected = selectedId ? filtered.find((r) => r.id === selectedId) : undefined
+
+  const catIcon = (cat: string) => {
+    if (cat === 'Todas') return <IconGrid color="currentColor" />
+    return isDrinkCategory(cat) ? <IconCoffee color="currentColor" /> : <IconFood color="currentColor" />
+  }
+
+  // Botón de cambio de tema (reutilizado en cuadrícula y detalle).
+  const themeBtn = (
+    <button
+      onClick={() => setTheme((p) => (p === 'light' ? 'dark' : 'light'))}
+      className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors shrink-0"
+      style={{ background: t.chip, color: t.ink, border: `1px solid ${t.line}` }}
+      aria-label="Cambiar tema"
+    >
+      {theme === 'light' ? <IconMoon color={t.ink} /> : <IconSun color={t.ink} />}
+      <span className="hidden sm:inline">{theme === 'light' ? 'Oscuro' : 'Claro'}</span>
+    </button>
+  )
+
+  // Fila de categorías + tema (vista de cuadrícula). Al elegir categoría se vuelve a la cuadrícula.
+  const categoryRow = (
+    <div className="flex flex-wrap items-center gap-3 shrink-0">
+      <div className="recipe-scroll flex gap-2 overflow-x-auto pb-1 mr-auto">
+        {categories.map((cat) => {
+          const active = category === cat
+          return (
+            <button
+              key={cat}
+              onClick={() => { setCategory(cat); setSelectedId('') }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors shrink-0"
+              style={active
+                ? { background: guinda, color: '#fff', border: `1px solid ${guinda}` }
+                : { background: t.chip, color: t.chipInk, border: `1px solid ${t.line}` }}
+            >
+              {catIcon(cat)}
+              {cat}
+            </button>
+          )
+        })}
+      </div>
+      {themeBtn}
+    </div>
+  )
+
+  // Controles del detalle: volver a la cuadrícula + tema.
+  const detailControls = (
+    <div className="flex flex-wrap items-center gap-3">
+      <button
+        onClick={() => setSelectedId('')}
+        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors shrink-0 mr-auto"
+        style={{ background: guinda, color: '#fff', border: `1px solid ${guinda}` }}
+      >
+        ← Volver a platillos
+      </button>
+      {themeBtn}
+    </div>
+  )
+
+  return (
+    <div className="min-h-screen md:h-screen md:overflow-hidden px-4 py-4 sm:px-8 sm:py-6 transition-colors flex flex-col" style={{ background: t.bg, '--recetas-guinda': guinda } as CSSProperties}>
+      <div className="max-w-[1600px] w-full mx-auto flex flex-col md:flex-1 md:min-h-0 gap-4">
+
+        {/* ---------- Buscador (fuera de la tarjeta) ---------- */}
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3 mr-auto">
+            <img src={logo} alt="Logo" className="h-10 w-auto object-contain" />
+            <span className="text-xl font-black" style={{ color: guinda }}>Recetario</span>
+          </div>
+          <div className="relative flex-1 min-w-[220px] max-w-md">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: t.sub }}>
+              <IconSearch color="currentColor" />
+            </span>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar receta..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none transition-colors"
+              style={{ background: t.card, color: t.ink, border: `1px solid ${t.line}` }}
+            />
+          </div>
+        </div>
+
+        {/* ---------- Tarjeta (con los botones adentro) ---------- */}
+        <div className="w-full shadow-xl overflow-hidden flex rounded-2xl md:flex-1 md:min-h-0" style={{ background: t.card }}>
+          {/* Contenido */}
+          <div className="flex-1 min-w-0 p-6 sm:p-9 flex flex-col md:min-h-0">
+            {loading ? (
+              <div className="flex-1 flex items-center justify-center text-sm" style={{ color: t.sub }}>Cargando recetas...</div>
+            ) : selected ? (
+              <RecipeBody recipe={selected} t={t} controls={detailControls} guinda={guinda} logo={logo} />
+            ) : (
+              <div className="flex flex-col md:h-full md:min-h-0">
+                {categoryRow}
+                <div className="mt-5 h-[3px] w-full rounded shrink-0" style={{ background: guinda }} />
+                {filtered.length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center text-center py-16" style={{ color: t.sub }}>
+                    {recipes.length === 0
+                      ? 'No hay recetas. Crea la primera en /admin/recipes.'
+                      : 'No se encontraron recetas con ese filtro.'}
+                  </div>
+                ) : (
+                  <div className="recipe-scroll mt-6 md:flex-1 md:min-h-0 md:overflow-y-auto pr-1">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 pb-1">
+                      {filtered.map((r) => {
+                        const drink = isDrinkCategory(r.category)
+                        return (
+                          <button
+                            key={r.id}
+                            onClick={() => setSelectedId(r.id)}
+                            className="text-left rounded-2xl overflow-hidden shadow-sm transition-transform hover:-translate-y-1"
+                            style={{ background: t.card, border: `1px solid ${t.line}` }}
+                          >
+                            <div className="aspect-[4/3] w-full overflow-hidden flex items-center justify-center" style={{ background: hexA(guinda, 0.06) }}>
+                              {r.imageUrl
+                                ? <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover" />
+                                : (drink ? <IconCoffee size={56} color={guinda} /> : <IconFood size={56} color={guinda} />)}
+                            </div>
+                            <div className="p-3">
+                              <p className="font-bold text-sm leading-snug line-clamp-2" style={{ color: t.ink }}>{r.name}</p>
+                              <p className="text-xs mt-0.5" style={{ color: t.sub }}>{r.category}</p>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Banda lateral — solo en el detalle del platillo */}
+          {selected && (
+            <div className="hidden sm:flex shrink-0 w-[72px] items-start justify-center pt-9" style={{ background: guinda }}>
+              <div className="flex gap-7 text-white tracking-widest" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                <span className="text-2xl font-bold">{selected.category}</span>
+                <span className="text-lg font-medium opacity-90">Recetario</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

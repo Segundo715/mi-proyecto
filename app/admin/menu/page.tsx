@@ -27,6 +27,23 @@ export default function AdminMenuPage() {
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // Personalización de /menu (logo, hover, fondo y botones inactivos)
+  const [menuLogo, setMenuLogo] = useState('')
+  const [menuHover, setMenuHover] = useState('#B90F45')
+  const [menuBg, setMenuBg] = useState('#000000')
+  const [menuBtn, setMenuBtn] = useState('#0d0d0d')
+  const [savingKey, setSavingKey] = useState<string | null>(null)
+  const [savedKey, setSavedKey] = useState<string | null>(null)
+  const [uploadingMenuLogo, setUploadingMenuLogo] = useState(false)
+  const menuLogoRef = useRef<HTMLInputElement>(null)
+
+  // Carrusel de imágenes del menú
+  const [carousel, setCarousel] = useState<{ imageUrl: string; linkUrl: string }[]>([])
+  const [uploadingSlide, setUploadingSlide] = useState(false)
+  const [savingCarousel, setSavingCarousel] = useState(false)
+  const [savedCarousel, setSavedCarousel] = useState(false)
+  const carouselFileRef = useRef<HTMLInputElement>(null)
+
   async function load() {
     const r = await fetch('/api/menu')
     if (r.ok) setItems(await r.json())
@@ -34,6 +51,88 @@ export default function AdminMenuPage() {
   }
 
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    const get = (k: string) => fetch(`/api/settings?key=${k}`).then(r => r.json()).catch(() => ({}))
+    get('menu_logo').then(d => { if (d.value) setMenuLogo(d.value) })
+    get('menu_hover_color').then(d => { if (d.value) setMenuHover(d.value) })
+    get('menu_bg_color').then(d => { if (d.value) setMenuBg(d.value) })
+    get('menu_btn_color').then(d => { if (d.value) setMenuBtn(d.value) })
+    get('menu_carousel').then(d => { if (d.value) { try { setCarousel(JSON.parse(d.value)) } catch {} } })
+  }, [])
+
+  async function saveMenuSetting(key: string, value: string) {
+    await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, value }) })
+  }
+
+  async function saveColor(key: string, value: string) {
+    setSavingKey(key)
+    await saveMenuSetting(key, value)
+    setSavingKey(null)
+    setSavedKey(key)
+    setTimeout(() => setSavedKey(null), 2000)
+  }
+
+  async function uploadMenuLogo(file: File) {
+    setUploadingMenuLogo(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    const r = await fetch('/api/settings/upload', { method: 'POST', body: fd })
+    const d = await r.json()
+    if (d.url) {
+      setMenuLogo(d.url)
+      await saveMenuSetting('menu_logo', d.url)
+    }
+    setUploadingMenuLogo(false)
+  }
+
+  async function addSlide(file: File) {
+    setUploadingSlide(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    const r = await fetch('/api/settings/upload', { method: 'POST', body: fd })
+    const d = await r.json()
+    if (d.url) setCarousel(prev => [...prev, { imageUrl: d.url, linkUrl: '' }])
+    setUploadingSlide(false)
+  }
+
+  function updateSlideUrl(i: number, linkUrl: string) {
+    setCarousel(prev => prev.map((s, idx) => idx === i ? { ...s, linkUrl } : s))
+  }
+
+  function removeSlide(i: number) {
+    setCarousel(prev => prev.filter((_, idx) => idx !== i))
+  }
+
+  async function saveCarousel() {
+    setSavingCarousel(true)
+    await saveMenuSetting('menu_carousel', JSON.stringify(carousel))
+    setSavingCarousel(false)
+    setSavedCarousel(true)
+    setTimeout(() => setSavedCarousel(false), 2000)
+  }
+
+  const renderColorRow = (label: string, value: string, setValue: (v: string) => void, key: string) => (
+    <div>
+      <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>{label}</label>
+      <div className="flex items-center gap-2">
+        <input type="color"
+          value={/^#[0-9a-fA-F]{6}$/.test(value) ? value : '#000000'}
+          onChange={e => setValue(e.target.value)}
+          className="w-12 h-11 rounded-2xl cursor-pointer bg-transparent shrink-0"
+          style={{ border: `1px solid ${S.border}` }} />
+        <input type="text" value={value} onChange={e => setValue(e.target.value)}
+          placeholder="#000000"
+          className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none font-mono"
+          style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+        <button onClick={() => saveColor(key, value)} disabled={savingKey === key}
+          className="px-4 py-2 rounded-2xl text-sm font-bold shrink-0"
+          style={{ backgroundColor: savedKey === key ? 'rgba(0,230,118,.2)' : `${S.accent}22`, color: savedKey === key ? '#4ade80' : S.accent }}>
+          {savingKey === key ? '...' : savedKey === key ? '✓' : 'Guardar'}
+        </button>
+      </div>
+    </div>
+  )
 
   const ranked = [...items].filter(i => (i.likes ?? 0) > 0).sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0))
   const maxLikes = ranked.length > 0 ? ranked[0].likes : 1
@@ -99,6 +198,100 @@ export default function AdminMenuPage() {
           <button onClick={openNew} className="text-sm px-4 py-2 rounded-xl font-bold" style={{ backgroundColor: S.accent, color: '#000' }}>
             + Nuevo platillo
           </button>
+        </div>
+
+        {/* Personalización del menú público (/menu) */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <p className="font-bold text-sm" style={{ color: S.text }}>Personalización del menú</p>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Logo y color de los botones que se muestran en la página pública /menu</p>
+          </div>
+          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+            {/* Logo */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Logo del menú</label>
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden shrink-0" style={{ backgroundColor: menuBg || '#000', border: `1px solid ${S.border}` }}>
+                  <img src={menuLogo || '/logo.png'} alt="logo" className="w-12 h-12 object-contain" />
+                </div>
+                <button onClick={() => menuLogoRef.current?.click()} disabled={uploadingMenuLogo}
+                  className="flex-1 py-2.5 rounded-2xl text-sm font-bold border-dashed border-2"
+                  style={{ borderColor: S.border, color: S.sub }}>
+                  {uploadingMenuLogo ? 'Subiendo...' : menuLogo ? 'Cambiar logo' : 'Subir logo'}
+                </button>
+                <input ref={menuLogoRef} type="file" accept="image/*" className="hidden"
+                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadMenuLogo(f); e.target.value = '' }} />
+              </div>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>Se muestra arriba del menú y en el botón del carrito</p>
+            </div>
+
+            {renderColorRow('Color de los botones (hover/activo)', menuHover, setMenuHover, 'menu_hover_color')}
+            {renderColorRow('Color de fondo', menuBg, setMenuBg, 'menu_bg_color')}
+            {renderColorRow('Color de los botones inactivos', menuBtn, setMenuBtn, 'menu_btn_color')}
+
+            {/* Vista previa */}
+            <div className="rounded-2xl p-4" style={{ backgroundColor: menuBg, border: `1px solid ${S.border}` }}>
+              <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: S.sub }}>Vista previa</p>
+              <div className="space-y-1.5">
+                <div className="rounded-lg px-3 py-2 text-sm font-bold text-white" style={{ backgroundColor: menuHover }}>Botón activo</div>
+                <div className="rounded-lg px-3 py-2 text-sm font-bold text-white" style={{ backgroundColor: menuBtn }}>Botón inactivo</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Carrusel de imágenes (/menu) */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4 flex items-center justify-between gap-3" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <div>
+              <p className="font-bold text-sm" style={{ color: S.text }}>Carrusel de imágenes</p>
+              <p className="text-xs mt-0.5" style={{ color: S.sub }}>Imágenes 16:6 que rotan en /menu. Cada una puede dirigir a un enlace.</p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button onClick={() => carouselFileRef.current?.click()} disabled={uploadingSlide}
+                className="text-sm px-4 py-2 rounded-xl font-bold"
+                style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }}>
+                {uploadingSlide ? 'Subiendo...' : '+ Imagen'}
+              </button>
+              <button onClick={saveCarousel} disabled={savingCarousel}
+                className="text-sm px-4 py-2 rounded-xl font-bold"
+                style={{ backgroundColor: savedCarousel ? 'rgba(0,230,118,.2)' : S.accent, color: savedCarousel ? '#4ade80' : '#000' }}>
+                {savingCarousel ? '...' : savedCarousel ? '✓ Guardado' : 'Guardar carrusel'}
+              </button>
+            </div>
+            <input ref={carouselFileRef} type="file" accept="image/*" className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) addSlide(f); e.target.value = '' }} />
+          </div>
+          <div className="p-5">
+            {carousel.length === 0 ? (
+              <p className="text-sm text-center py-6" style={{ color: S.sub }}>Aún no hay imágenes. Usa “+ Imagen” para subir la primera.</p>
+            ) : (
+              <div className="space-y-3">
+                {carousel.map((s, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-2xl" style={{ backgroundColor: S.bg, border: `1px solid ${S.border}` }}>
+                    <div className="w-28 rounded-xl overflow-hidden shrink-0" style={{ aspectRatio: '16 / 6', backgroundColor: '#000' }}>
+                      <img src={s.imageUrl} alt="" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>URL de destino (al tocar la imagen)</label>
+                      <input type="url" value={s.linkUrl} onChange={e => updateSlideUrl(i, e.target.value)}
+                        placeholder="https://… (opcional)"
+                        className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                        style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }} />
+                    </div>
+                    <button onClick={() => removeSlide(i)}
+                      className="px-3 py-2 rounded-xl text-xs font-bold shrink-0"
+                      style={{ backgroundColor: 'rgba(239,68,68,.12)', color: '#f87171' }}>
+                      Eliminar
+                    </button>
+                  </div>
+                ))}
+                <p className="text-xs" style={{ color: S.sub }}>Recuerda pulsar “Guardar carrusel” para aplicar los cambios.</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Ranking */}

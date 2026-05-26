@@ -31,10 +31,49 @@ export default function AdminRecipesPage() {
   const [uploading, setUploading] = useState(false)
   const [uploadingCardId, setUploadingCardId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [seeding, setSeeding] = useState(false)
   const [search, setSearch] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
   const cardFileRef = useRef<HTMLInputElement>(null)
   const pendingCardId = useRef<string | null>(null)
+
+  // Personalización de /resetas (color y logo)
+  const [brandColor, setBrandColor] = useState('#B90F45')
+  const [brandLogo, setBrandLogo] = useState('')
+  const [savingColor, setSavingColor] = useState(false)
+  const [savedColor, setSavedColor] = useState(false)
+  const [uploadingBrandLogo, setUploadingBrandLogo] = useState(false)
+  const brandLogoRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    fetch('/api/settings?key=recetario_color').then(r => r.json()).then(d => { if (d.value) setBrandColor(d.value) }).catch(() => {})
+    fetch('/api/settings?key=recetario_logo').then(r => r.json()).then(d => { if (d.value) setBrandLogo(d.value) }).catch(() => {})
+  }, [])
+
+  async function saveBrand(key: string, value: string) {
+    await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, value }) })
+  }
+
+  async function saveBrandColor() {
+    setSavingColor(true)
+    await saveBrand('recetario_color', brandColor)
+    setSavingColor(false)
+    setSavedColor(true)
+    setTimeout(() => setSavedColor(false), 2000)
+  }
+
+  async function uploadBrandLogo(file: File) {
+    setUploadingBrandLogo(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    const r = await fetch('/api/settings/upload', { method: 'POST', body: fd })
+    const d = await r.json()
+    if (d.url) {
+      setBrandLogo(d.url)
+      await saveBrand('recetario_logo', d.url)
+    }
+    setUploadingBrandLogo(false)
+  }
 
   async function load() {
     const r = await fetch('/api/recipes')
@@ -121,6 +160,20 @@ export default function AdminRecipesPage() {
     load()
   }
 
+  async function seedExamples() {
+    if (!confirm('Se crearán las recetas del catálogo de /resetas que falten y se rellenarán con ingredientes y pasos de ejemplo las que estén vacías. No se sobrescribe nada de lo ya capturado. ¿Continuar?')) return
+    setSeeding(true)
+    const r = await fetch('/api/recipes/seed', { method: 'POST' })
+    const d = await r.json()
+    setSeeding(false)
+    if (r.ok) {
+      alert(`Listo: ${d.created} receta(s) creada(s) y ${d.updated} actualizada(s).`)
+      load()
+    } else {
+      alert(d.error ?? 'Error al cargar las recetas')
+    }
+  }
+
   async function remove(id: string) {
     if (!confirm('¿Eliminar esta receta?')) return
     await fetch(`/api/recipes/${id}`, { method: 'DELETE' })
@@ -179,10 +232,69 @@ export default function AdminRecipesPage() {
               style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }}>
               Ver recetario ↗
             </a>
+            <button onClick={seedExamples} disabled={seeding}
+              className="text-sm px-4 py-2 rounded-xl font-bold disabled:opacity-60"
+              style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }}>
+              {seeding ? 'Cargando...' : 'Cargar ejemplos'}
+            </button>
             <button onClick={openNew} className="text-sm px-4 py-2 rounded-xl font-bold"
               style={{ backgroundColor: S.accent, color: '#000' }}>
               + Nueva receta
             </button>
+          </div>
+        </div>
+
+        {/* Personalización del recetario (/resetas) */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <p className="font-bold text-sm" style={{ color: S.text }}>Personalización del recetario</p>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Color y logo que se muestran en la página pública /resetas</p>
+          </div>
+          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+            {/* Color */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Color del recetario</label>
+              <div className="flex items-center gap-2">
+                <input type="color"
+                  value={/^#[0-9a-fA-F]{6}$/.test(brandColor) ? brandColor : '#B90F45'}
+                  onChange={e => setBrandColor(e.target.value)}
+                  className="w-12 h-11 rounded-2xl cursor-pointer bg-transparent shrink-0"
+                  style={{ border: `1px solid ${S.border}` }} />
+                <input type="text" value={brandColor} onChange={e => setBrandColor(e.target.value)}
+                  placeholder="#B90F45"
+                  className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none font-mono"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+                <button onClick={saveBrandColor} disabled={savingColor}
+                  className="px-4 py-2 rounded-2xl text-sm font-bold shrink-0"
+                  style={{ backgroundColor: savedColor ? 'rgba(0,230,118,.2)' : `${S.accent}22`, color: savedColor ? '#4ade80' : S.accent }}>
+                  {savingColor ? '...' : savedColor ? '✓' : 'Guardar'}
+                </button>
+              </div>
+              <div className="mt-2 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-bold"
+                style={{ backgroundColor: brandColor, color: '#fff' }}>
+                Vista previa
+              </div>
+            </div>
+
+            {/* Logo */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Logo del recetario</label>
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden shrink-0" style={{ backgroundColor: S.bg, border: `1px solid ${S.border}` }}>
+                  <img src={brandLogo || '/logo.png'} alt="logo" className="w-12 h-12 object-contain" />
+                </div>
+                <button onClick={() => brandLogoRef.current?.click()} disabled={uploadingBrandLogo}
+                  className="flex-1 py-2.5 rounded-2xl text-sm font-bold border-dashed border-2"
+                  style={{ borderColor: S.border, color: S.sub }}>
+                  {uploadingBrandLogo ? 'Subiendo...' : brandLogo ? 'Cambiar logo' : 'Subir logo'}
+                </button>
+                <input ref={brandLogoRef} type="file" accept="image/*" className="hidden"
+                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadBrandLogo(f); e.target.value = '' }} />
+              </div>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>PNG o SVG con fondo transparente recomendado</p>
+            </div>
+
           </div>
         </div>
 

@@ -11,7 +11,10 @@ interface MenuItem {
   category: string; imageUrl?: string; available: boolean; likes: number
 }
 
-interface CartItem { item: MenuItem; qty: number }
+interface CartItem { item: MenuItem; qty: number; notes?: string }
+
+type OrderType = 'restaurante' | 'domicilio'
+type PayMethod = 'stripe' | 'deposito'
 
 interface Order {
   id: string; customerName: string; status: 'pending' | 'preparing' | 'ready' | 'delivered'
@@ -31,6 +34,12 @@ const INPUT = 'w-full border border-[#B90F45]/40 rounded-2xl px-4 py-3 text-whit
 export default function MenuPage() {
   const [items, setItems] = useState<MenuItem[]>([])
   const [loadingMenu, setLoadingMenu] = useState(true)
+  const [menuLogo, setMenuLogo] = useState('')
+  const [menuHover, setMenuHover] = useState('')
+  const [menuBg, setMenuBg] = useState('')
+  const [menuBtn, setMenuBtn] = useState('')
+  const [carousel, setCarousel] = useState<{ imageUrl: string; linkUrl: string }[]>([])
+  const [slide, setSlide] = useState(0)
   const [myOrders, setMyOrders] = useState<Order[]>([])
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -40,9 +49,11 @@ export default function MenuPage() {
 
   const [cart, setCart] = useState<CartItem[]>([])
   const [showOrder, setShowOrder] = useState(false)
+  const [orderType, setOrderType] = useState<OrderType | null>(null)
   const [orderName, setOrderName] = useState('')
   const [orderTable, setOrderTable] = useState('')
-  const [orderNotes, setOrderNotes] = useState('')
+  const [orderAddress, setOrderAddress] = useState('')
+  const [payMethod, setPayMethod] = useState<PayMethod | null>(null)
   const [orderSubmitting, setOrderSubmitting] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
 
@@ -61,6 +72,24 @@ export default function MenuPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Logo, color de hover, fondo y botones inactivos configurables desde /admin/menu
+  useEffect(() => {
+    const get = (k: string) => fetch(`/api/settings?key=${k}`).then(r => r.json()).catch(() => ({}))
+    Promise.all([get('menu_logo'), get('menu_hover_color'), get('menu_bg_color'), get('menu_btn_color'), get('menu_carousel')])
+      .then(([l, h, bg, btn, car]) => {
+        setMenuLogo(l?.value || ''); setMenuHover(h?.value || '')
+        setMenuBg(bg?.value || ''); setMenuBtn(btn?.value || '')
+        if (car?.value) { try { setCarousel(JSON.parse(car.value)) } catch {} }
+      })
+  }, [])
+
+  // Auto-rotación del carrusel
+  useEffect(() => {
+    if (carousel.length <= 1) return
+    const id = setInterval(() => setSlide(s => (s + 1) % carousel.length), 4000)
+    return () => clearInterval(id)
+  }, [carousel.length])
+
   async function pollMyOrders() {
     const ids: string[] = JSON.parse(localStorage.getItem(MY_ORDERS_KEY) ?? '[]')
     if (ids.length === 0) return
@@ -78,14 +107,15 @@ export default function MenuPage() {
     } catch {}
   }
 
-  function toggleFavorite(item: MenuItem) {
-    setFavorites(prev => {
-      const alreadyLiked = prev.includes(item.id)
-      const next = alreadyLiked ? prev.filter(f => f !== item.id) : [...prev, item.id]
-      localStorage.setItem(FAVORITES_KEY, JSON.stringify(next))
-      if (!alreadyLiked) fetch(`/api/menu/${item.id}/like`, { method: 'POST' }).catch(() => {})
-      return next
-    })
+  function likeItem(item: MenuItem) {
+    // Un solo voto por platillo: si ya votó, no hace nada
+    if (favorites.includes(item.id)) return
+    const next = [...favorites, item.id]
+    setFavorites(next)
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(next))
+    // Actualización optimista del contador en pantalla
+    setItems(prev => prev.map(i => i.id === item.id ? { ...i, likes: (i.likes ?? 0) + 1 } : i))
+    fetch(`/api/menu/${item.id}/like`, { method: 'POST' }).catch(() => {})
   }
 
   function toggleCategory(cat: string) {
@@ -109,11 +139,47 @@ export default function MenuPage() {
     setCart(prev => prev.map(c => c.item.id === itemId ? { ...c, qty: c.qty + delta } : c).filter(c => c.qty > 0))
   }
 
+  function setItemNotes(itemId: string, notes: string) {
+    setCart(prev => prev.map(c => c.item.id === itemId ? { ...c, notes } : c))
+  }
+
+  function resetOrderForm() {
+    setShowOrder(false)
+    setOrderType(null)
+    setOrderName('')
+    setOrderTable('')
+    setOrderAddress('')
+    setPayMethod(null)
+  }
+
   const cartTotal = cart.reduce((s, c) => s + c.item.price * c.qty, 0)
   const cartCount = cart.reduce((s, c) => s + c.qty, 0)
 
+  // ¿Puede confirmarse el pedido según el tipo y los campos llenados?
+  const canSubmit =
+    !!orderType && !!orderName.trim() &&
+    (orderType === 'restaurante' || (!!orderAddress.trim() && !!payMethod))
+
+  // Resumen del pedido que se guarda en el campo `notes` (la tabla no tiene
+  // columnas para tipo/domicilio/pago, así que se codifican aquí).
+  function buildOrderNotes(): string {
+    const lines: string[] = []
+    if (orderType === 'restaurante') {
+      lines.push('🍽 En restaurante')
+    } else if (orderType === 'domicilio') {
+      lines.push('🛵 A domicilio')
+      if (orderAddress.trim()) lines.push(`Domicilio: ${orderAddress.trim()}`)
+      lines.push(`Pago: ${payMethod === 'stripe' ? 'Stripe (pendiente de cobro)' : 'Depósito'}`)
+    }
+    return lines.join('\n')
+  }
+
   async function submitOrder() {
-    if (!orderName.trim()) return
+    if (!canSubmit) return
+
+    // TODO: cuando se integre el checkout real de Stripe, si payMethod === 'stripe'
+    // redirigir aquí a la sesión de pago antes de (o en lugar de) crear el pedido.
+
     setOrderSubmitting(true)
     try {
       const res = await fetch('/api/orders', {
@@ -121,10 +187,16 @@ export default function MenuPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerName: orderName.trim(),
-          tableNumber: orderTable.trim() || undefined,
-          items: cart.map(c => ({ menuItemId: c.item.id, name: c.item.name, quantity: c.qty, price: c.item.price })),
+          tableNumber: orderType === 'restaurante' ? (orderTable.trim() || undefined) : undefined,
+          items: cart.map(c => ({
+            menuItemId: c.item.id,
+            name: c.item.name,
+            quantity: c.qty,
+            price: c.item.price,
+            notes: c.notes?.trim() || undefined,
+          })),
           total: cartTotal,
-          notes: orderNotes.trim() || undefined,
+          notes: buildOrderNotes() || undefined,
         }),
       })
       if (res.ok) {
@@ -132,7 +204,8 @@ export default function MenuPage() {
         const ids: string[] = JSON.parse(localStorage.getItem(MY_ORDERS_KEY) ?? '[]')
         localStorage.setItem(MY_ORDERS_KEY, JSON.stringify([...ids, order.id]))
         setMyOrders(prev => [...prev, order])
-        setCart([]); setShowOrder(false); setOrderName(''); setOrderTable(''); setOrderNotes('')
+        setCart([])
+        resetOrderForm()
         setOrderSuccess(true)
         setTimeout(() => setOrderSuccess(false), 5000)
       }
@@ -147,6 +220,11 @@ export default function MenuPage() {
     grouped[item.category].push(item)
   }
   const categories = Object.keys(grouped)
+
+  const logo = menuLogo || '/logo.png'
+  const hoverColor = menuHover || '#B90F45'
+  const bgColor = menuBg || '#000000'
+  const btnColor = menuBtn || '#0d0d0d'
 
   function ItemDetail({ item }: { item: MenuItem }) {
     const inCart = cart.find(c => c.item.id === item.id)
@@ -183,7 +261,7 @@ export default function MenuPage() {
   }
 
   return (
-    <div className="min-h-screen pb-20" style={{ backgroundColor: '#000000' }}>
+    <div className="min-h-screen pb-20" style={{ backgroundColor: bgColor }}>
 
       {/* Toast pedido enviado */}
       {orderSuccess && (
@@ -214,17 +292,39 @@ export default function MenuPage() {
         </div>
       )}
 
-      {/* Logo + Cerrar sesión */}
-      <div className="py-5 flex items-center justify-center relative" style={{ maxWidth: '800px', margin: '0 auto' }}>
-        <img src="/logo.png" alt="Logo" className="mx-auto block" style={{ maxWidth: '90px' }} />
-        <button
-          type="button"
-          onClick={() => { localStorage.removeItem('loyalty_id'); localStorage.removeItem('loyalty_pending_id'); localStorage.removeItem('loyalty_card_id'); window.location.href = '/loyalty' }}
-          className="absolute right-4 text-xs font-semibold px-3 py-1.5 rounded-full"
-          style={{ backgroundColor: '#1a1a1a', color: '#B90F45', border: '1px solid #B90F45' }}>
-          Cerrar sesión
-        </button>
+      {/* Logo */}
+      <div className="py-24 flex items-center justify-center relative" style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <img src={logo} alt="Logo" className="mx-auto block" style={{ maxWidth: '120px' }} />
       </div>
+
+      {/* Carrusel 16:12 */}
+      {carousel.length > 0 && (
+        <div className="w-full">
+          <div className="relative w-full overflow-hidden" style={{ aspectRatio: '16 / 6', backgroundColor: '#0d0d0d' }}>
+            {carousel.map((s, i) => {
+              const img = <img src={s.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              return (
+                <div key={i} className="absolute inset-0 transition-opacity duration-700"
+                  style={{ opacity: i === slide ? 1 : 0, pointerEvents: i === slide ? 'auto' : 'none' }}>
+                  {s.linkUrl
+                    ? <a href={s.linkUrl} target="_blank" rel="noopener noreferrer" className="block w-full h-full">{img}</a>
+                    : img}
+                </div>
+              )
+            })}
+            {carousel.length > 1 && (
+              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+                {carousel.map((_, i) => (
+                  <button key={i} type="button" onClick={() => setSlide(i)}
+                    className="w-2 h-2 rounded-full transition-colors"
+                    style={{ backgroundColor: i === slide ? '#fff' : 'rgba(255,255,255,0.45)' }}
+                    aria-label={`Imagen ${i + 1}`} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Menú acordeón */}
       <div className="mx-auto" style={{ maxWidth: '800px' }}>
@@ -251,7 +351,7 @@ export default function MenuPage() {
                 <div key={category}>
                   <button type="button" onClick={() => toggleCategory(category)}
                     className="w-full flex items-center justify-between px-3 py-3 text-white font-bold text-base"
-                    style={{ backgroundColor: isOpen ? '#B90F45' : '#000000', borderTop: '1px solid #1a1a1a' }}>
+                    style={{ backgroundColor: isOpen ? hoverColor : btnColor, borderTop: '1px solid #1a1a1a' }}>
                     <span>{category}</span>
                     <span style={{ fontSize: '18px' }}>{isOpen ? '∧' : '∨'}</span>
                   </button>
@@ -267,7 +367,7 @@ export default function MenuPage() {
                               onClick={() => item.available && toggleItem(item.id)}
                               className="w-full flex items-center py-3 px-4 text-white"
                               style={{
-                                backgroundColor: isItemOpen ? '#B90F45' : '#0d0d0d',
+                                backgroundColor: isItemOpen ? hoverColor : btnColor,
                                 borderTop: '1px solid #1a1a1a',
                                 cursor: item.available ? 'pointer' : 'not-allowed',
                               }}>
@@ -276,14 +376,25 @@ export default function MenuPage() {
                                 {item.name}
                                 {!item.available && <span className="ml-1 text-xs text-red-300">(Agotado)</span>}
                               </span>
-                              {/* Corazón al lado del nombre */}
+                              {/* Me encanta: ícono plano + contador (un voto por platillo) */}
                               {FEATURES.favorites.enabled && (
                                 <span
                                   role="button"
-                                  onClick={e => { e.stopPropagation(); toggleFavorite(item) }}
-                                  className="text-lg mx-3 shrink-0"
-                                  style={{ color: isFav ? '#fff' : 'rgba(255,255,255,0.35)' }}>
-                                  {isFav ? '❤️' : '🤍'}
+                                  aria-label="Me encanta"
+                                  onClick={e => { e.stopPropagation(); likeItem(item) }}
+                                  className="flex items-center gap-1 mx-3 shrink-0"
+                                  style={{ cursor: isFav ? 'default' : 'pointer' }}>
+                                  <svg viewBox="0 0 24 24" width="18" height="18"
+                                    fill={isFav ? '#fff' : 'none'}
+                                    stroke="#fff" strokeWidth="2"
+                                    strokeLinecap="round" strokeLinejoin="round"
+                                    style={{ opacity: isFav ? 1 : 0.45 }}>
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                                  </svg>
+                                  <span className="text-xs font-bold tabular-nums"
+                                    style={{ color: '#fff', opacity: 0.8, minWidth: '12px' }}>
+                                    {item.likes ?? 0}
+                                  </span>
                                 </span>
                               )}
                               <span className="shrink-0" style={{ fontSize: '18px' }}>{isItemOpen ? '∧' : '∨'}</span>
@@ -307,7 +418,7 @@ export default function MenuPage() {
         <button type="button" onClick={() => cartCount > 0 && setShowOrder(true)}
           className="relative flex items-center justify-center rounded-full shadow-2xl transition-transform active:scale-95"
           style={{ width: '60px', height: '60px', backgroundColor: '#DC5E86', opacity: cartCount > 0 ? 1 : 0.45 }}>
-          <img src="/logo.png" alt="" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+          <img src={logo} alt="" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
           {cartCount > 0 && (
             <span className="absolute flex items-center justify-center text-white font-black rounded-full"
               style={{ top: '-4px', right: '-4px', width: '22px', height: '22px', backgroundColor: '#B02350', fontSize: '11px' }}>
@@ -317,66 +428,158 @@ export default function MenuPage() {
         </button>
       </div>
 
-      {/* Modal del pedido */}
+      {/* Modal del pedido — baja desde arriba para no quedar tapado por el nav */}
       {showOrder && (
-        <div className="fixed inset-0 z-[60] bg-black/80 flex items-end backdrop-blur-sm">
-          <div className="w-full rounded-t-3xl p-6 pb-10 space-y-4 max-h-[92vh] overflow-y-auto"
+        <div className="fixed inset-0 z-[60] bg-black/80 flex items-start justify-center backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-b-3xl p-6 pt-5 pb-8 space-y-4 max-h-[90vh] overflow-y-auto"
             style={{ backgroundColor: '#0d0d0d' }}>
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-black text-white">Tu pedido</h2>
-              <button type="button" onClick={() => setShowOrder(false)}
+              <button type="button" onClick={resetOrderForm}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-lg"
                 style={{ backgroundColor: '#1a1a1a' }}>×</button>
             </div>
-            <div className="space-y-2">
+
+            {/* Items con notas por platillo */}
+            <div className="space-y-3">
               {cart.map(c => (
-                <div key={c.item.id} className="flex items-center gap-3 py-2"
+                <div key={c.item.id} className="py-2 space-y-2"
                   style={{ borderBottom: '1px solid #1a1a1a' }}>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white text-sm">{c.item.name}</p>
-                    <p className="text-xs text-gray-400">${c.item.price.toFixed(2)} c/u</p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-white text-sm">{c.item.name}</p>
+                      <p className="text-xs text-gray-400">${c.item.price.toFixed(2)} c/u</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button type="button" onClick={() => changeQty(c.item.id, -1)}
+                        className="w-8 h-8 rounded-full font-bold text-lg flex items-center justify-center text-white"
+                        style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>−</button>
+                      <span className="font-black text-white w-4 text-center text-sm">{c.qty}</span>
+                      <button type="button" onClick={() => changeQty(c.item.id, 1)}
+                        className="w-8 h-8 rounded-full font-bold text-lg flex items-center justify-center text-white"
+                        style={{ backgroundColor: '#B90F45' }}>+</button>
+                    </div>
+                    <span className="text-sm font-black text-white w-14 text-right shrink-0">
+                      ${(c.item.price * c.qty).toFixed(2)}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button type="button" onClick={() => changeQty(c.item.id, -1)}
-                      className="w-8 h-8 rounded-full font-bold text-lg flex items-center justify-center text-white"
-                      style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>−</button>
-                    <span className="font-black text-white w-4 text-center text-sm">{c.qty}</span>
-                    <button type="button" onClick={() => changeQty(c.item.id, 1)}
-                      className="w-8 h-8 rounded-full font-bold text-lg flex items-center justify-center text-white"
-                      style={{ backgroundColor: '#B90F45' }}>+</button>
-                  </div>
-                  <span className="text-sm font-black text-white w-14 text-right shrink-0">
-                    ${(c.item.price * c.qty).toFixed(2)}
-                  </span>
+                  <input type="text" value={c.notes ?? ''}
+                    onChange={e => setItemNotes(c.item.id, e.target.value)}
+                    placeholder="Nota para este platillo (sin cebolla, término...)"
+                    className="w-full border border-[#B90F45]/30 rounded-xl px-3 py-2 text-xs text-white bg-[#1a1a1a] placeholder-gray-500 focus:outline-none focus:border-[#B90F45] transition-colors" />
                 </div>
               ))}
             </div>
+
             <div className="rounded-2xl px-4 py-3 flex justify-between font-black text-white text-lg"
               style={{ backgroundColor: '#1a1a1a' }}>
               <span>Total</span><span>${cartTotal.toFixed(2)}</span>
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Tu nombre *</label>
-                <input type="text" value={orderName} onChange={e => setOrderName(e.target.value)}
-                  placeholder="Ej. María" className={INPUT} />
+
+            {/* Selector de tipo de pedido */}
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                {
+                  type: 'restaurante' as OrderType, label: 'En restaurante',
+                  // Cubiertos (tenedor + cuchillo)
+                  path: 'M3 2v7c0 1.1.9 2 2 2a2 2 0 0 0 2-2V2M5 2v9M5 11v11M16 2v20M16 13h3a1 1 0 0 0 1-1c0-5-2-10-4-10',
+                },
+                {
+                  type: 'domicilio' as OrderType, label: 'A domicilio',
+                  // Bolsa de entrega
+                  path: 'M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4ZM3 6h18M16 10a4 4 0 0 1-8 0',
+                },
+              ]).map(opt => {
+                const active = orderType === opt.type
+                return (
+                  <button key={opt.type} type="button" onClick={() => setOrderType(opt.type)}
+                    className="rounded-2xl py-4 px-3 font-black text-sm transition-all flex flex-col items-center gap-1.5"
+                    style={{
+                      backgroundColor: active ? hoverColor : btnColor,
+                      color: '#fff',
+                      border: `1.5px solid ${active ? hoverColor : '#333'}`,
+                    }}>
+                    <svg viewBox="0 0 24 24" width="26" height="26" fill="none"
+                      stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d={opt.path} />
+                    </svg>
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Campos según el tipo elegido */}
+            {orderType === 'restaurante' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Tu nombre *</label>
+                  <input type="text" value={orderName} onChange={e => setOrderName(e.target.value)}
+                    placeholder="Ej. María" className={INPUT} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Mesa (opcional)</label>
+                  <input type="text" value={orderTable} onChange={e => setOrderTable(e.target.value)}
+                    placeholder="Ej. 3" className={INPUT} />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Mesa (opcional)</label>
-                <input type="text" value={orderTable} onChange={e => setOrderTable(e.target.value)}
-                  placeholder="Ej. 3" className={INPUT} />
+            )}
+
+            {orderType === 'domicilio' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Tu nombre *</label>
+                  <input type="text" value={orderName} onChange={e => setOrderName(e.target.value)}
+                    placeholder="Ej. María" className={INPUT} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Domicilio *</label>
+                  <input type="text" value={orderAddress} onChange={e => setOrderAddress(e.target.value)}
+                    placeholder="Calle, número, colonia, referencias" className={INPUT} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Forma de pago *</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {([
+                      { method: 'stripe' as PayMethod, icon: '💳', label: 'Stripe' },
+                      { method: 'deposito' as PayMethod, icon: '🏦', label: 'Depósito' },
+                    ]).map(opt => {
+                      const active = payMethod === opt.method
+                      return (
+                        <button key={opt.method} type="button" onClick={() => setPayMethod(opt.method)}
+                          className="rounded-2xl py-3 px-3 font-bold text-sm transition-all flex items-center justify-center gap-2"
+                          style={{
+                            backgroundColor: active ? hoverColor : btnColor,
+                            color: '#fff',
+                            border: `1.5px solid ${active ? hoverColor : '#333'}`,
+                          }}>
+                          <span>{opt.icon}</span>{opt.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {payMethod === 'stripe' && (
+                    <p className="text-xs mt-1.5" style={{ color: '#777' }}>
+                      💡 El cobro con Stripe se habilitará próximamente; por ahora se registra como pendiente.
+                    </p>
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Notas (opcional)</label>
-                <input type="text" value={orderNotes} onChange={e => setOrderNotes(e.target.value)}
-                  placeholder="Sin cebolla, extra salsa..." className={INPUT} />
-              </div>
-              <button type="button" onClick={submitOrder} disabled={orderSubmitting || !orderName.trim()}
+            )}
+
+            {orderType && (
+              <button type="button" onClick={submitOrder} disabled={orderSubmitting || !canSubmit}
                 className="w-full text-white font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors"
                 style={{ backgroundColor: '#B90F45' }}>
                 {orderSubmitting ? 'Enviando...' : '✅ Confirmar pedido'}
               </button>
-            </div>
+            )}
+
+            {!orderType && (
+              <p className="text-center text-xs" style={{ color: '#777' }}>
+                Elige cómo quieres tu pedido para continuar.
+              </p>
+            )}
           </div>
         </div>
       )}
