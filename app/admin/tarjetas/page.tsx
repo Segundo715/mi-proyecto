@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { RewardIcon, REWARD_ICON_KEYS, isCustomIcon } from '@/app/components/RewardIcon'
 
 const S = {
   bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
@@ -12,6 +13,24 @@ interface LoyaltyCard {
   id: string; name: string; phone: string; visits: number
   active: boolean; expiresAt?: string; registeredAt: string
   stamps: { timestamp: string; visitsAfter: number }[]
+}
+
+interface RewardCategory {
+  id: string; name: string; reward: string; goal: number; icon: string; color: string
+  iconColor?: string; logo?: string; image?: string; brandText?: string; brandLogo?: string
+}
+
+const CATEGORIES_KEY = 'reward_categories'
+const COLOR_PRESETS = ['#B90F45', '#00e676', '#fb923c', '#f87171', '#60a5fa', '#a78bfa', '#f472b6', '#fbbf24', '#34d399']
+
+const DEFAULT_CATEGORIES: RewardCategory[] = [
+  { id: 'cafe',      name: 'Tarjeta de Café',   reward: 'Café gratis',             goal: 5, icon: 'coffee',  color: '#B90F45', iconColor: '#ffffff', brandText: 'NICHO' },
+  { id: 'dosxuno',   name: 'Tarjeta 2x1',       reward: 'Segundo producto gratis', goal: 4, icon: 'gift',    color: '#60a5fa', iconColor: '#ffffff', brandText: 'NICHO' },
+  { id: 'descuento', name: 'Descuento Directo', reward: '20% de descuento',        goal: 3, icon: 'percent', color: '#fb923c', iconColor: '#ffffff', brandText: 'NICHO' },
+]
+
+function emptyDraft(): RewardCategory {
+  return { id: '', name: '', reward: '', goal: 5, icon: REWARD_ICON_KEYS[0], color: COLOR_PRESETS[0], iconColor: '#ffffff', logo: '', image: '', brandText: 'NICHO', brandLogo: '' }
 }
 
 function daysLeft(iso?: string) {
@@ -38,13 +57,92 @@ export default function AdminTarjetasPage() {
   const [filter, setFilter] = useState<'todas' | 'activas' | 'inactivas' | 'vencidas'>('todas')
   const [inactiveDays, setInactiveDays] = useState(30)
 
+  // Categorías de Rewards (tipos de tarjeta) — módulos en pestañas
+  const [categories, setCategories] = useState<RewardCategory[]>(DEFAULT_CATEGORIES)
+  const [draft, setDraft] = useState<RewardCategory>({ ...DEFAULT_CATEGORIES[0] })
+  const [activeId, setActiveId] = useState<string | null>(DEFAULT_CATEGORIES[0].id) // null = creando nueva
+  const [savingCats, setSavingCats] = useState(false)
+  const [uploading, setUploading] = useState<'logo' | 'image' | 'icon' | 'brandLogo' | null>(null)
+
   async function load() {
     const r = await fetch('/api/loyalty')
     if (r.ok) setCards(await r.json())
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  async function loadCategories() {
+    // El estado ya arranca con DEFAULT_CATEGORIES; solo sobreescribe si hay datos guardados
+    try {
+      const r = await fetch(`/api/settings?key=${CATEGORIES_KEY}`)
+      const d = await r.json()
+      const parsed = d.value ? JSON.parse(d.value) : null
+      if (Array.isArray(parsed) && parsed.length) {
+        setCategories(parsed)
+        setActiveId(parsed[0].id)
+        setDraft({ ...parsed[0] })
+      }
+    } catch { /* settings vacío o JSON inválido: se mantienen los defaults */ }
+  }
+
+  useEffect(() => { load(); loadCategories() }, [])
+
+  async function persistCategories(next: RewardCategory[]) {
+    setCategories(next)
+    setSavingCats(true)
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: CATEGORIES_KEY, value: JSON.stringify(next) }),
+    })
+    setSavingCats(false)
+  }
+
+  function selectCategory(c: RewardCategory) {
+    setActiveId(c.id)
+    setDraft({ ...c })
+  }
+
+  function newCategory() {
+    setActiveId(null)
+    setDraft(emptyDraft())
+  }
+
+  async function uploadImage(field: 'logo' | 'image' | 'icon' | 'brandLogo', file: File) {
+    setUploading(field)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const r = await fetch('/api/settings/upload', { method: 'POST', body: fd })
+      const d = await r.json()
+      if (d.url) setDraft(prev => ({ ...prev, [field]: d.url }))
+    } finally {
+      setUploading(null)
+    }
+  }
+
+  async function saveCategory() {
+    const name = draft.name.trim()
+    const reward = draft.reward.trim()
+    if (!name || !reward) return
+    const goal = Math.max(1, Math.round(draft.goal) || 1)
+    if (activeId) {
+      await persistCategories(categories.map(c =>
+        c.id === activeId ? { ...draft, id: activeId, name, reward, goal } : c
+      ))
+    } else {
+      const id = crypto.randomUUID()
+      await persistCategories([...categories, { ...draft, id, name, reward, goal }])
+      setActiveId(id)
+    }
+  }
+
+  async function deleteCategory(id: string) {
+    if (!confirm('¿Eliminar esta categoría de reward?')) return
+    const next = categories.filter(c => c.id !== id)
+    await persistCategories(next)
+    if (next.length) selectCategory(next[0])
+    else newCategory()
+  }
 
   async function toggleCard(card: LoyaltyCard) {
     const action = card.active ? 'deactivate' : 'activate'
@@ -113,6 +211,253 @@ export default function AdminTarjetasPage() {
               <p className="text-xs mt-1" style={{ color: S.sub }}>{s.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* Categorías de Rewards (módulos en pestañas) */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4 flex items-center justify-between gap-2" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <div>
+              <p className="font-bold text-sm" style={{ color: S.text }}>Categorías de Rewards</p>
+              <p className="text-xs mt-0.5" style={{ color: S.sub }}>Tipos de tarjeta — elige un módulo para personalizarlo</p>
+            </div>
+            {savingCats && <span className="text-xs" style={{ color: S.sub }}>Guardando…</span>}
+          </div>
+
+          {/* Pestañas / módulos */}
+          <div className="px-5 pt-4 flex gap-2 flex-wrap">
+            {categories.map(c => {
+              const active = activeId === c.id
+              return (
+                <button key={c.id} onClick={() => selectCategory(c)}
+                  className="px-4 py-2.5 rounded-2xl text-sm font-bold flex items-center gap-2 transition-all"
+                  style={active
+                    ? { backgroundColor: c.color, color: '#000' }
+                    : { backgroundColor: S.bg, color: S.sub, border: `1px solid ${S.border}` }}>
+                  <RewardIcon name={c.icon} size={18} />
+                  {c.name}
+                </button>
+              )
+            })}
+            <button onClick={newCategory}
+              className="px-4 py-2.5 rounded-2xl text-sm font-bold transition-all"
+              style={activeId === null
+                ? { backgroundColor: S.accent, color: '#000' }
+                : { backgroundColor: S.bg, color: S.accent, border: `1px dashed ${S.accent}` }}>
+              + Nueva
+            </button>
+          </div>
+
+          {/* Módulo activo: editor de modificadores */}
+          <div className="p-5 space-y-4">
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold mb-1" style={{ color: S.sub }}>Texto del tipo</label>
+                <input type="text" value={draft.name}
+                  onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
+                  placeholder="Tarjeta de Café"
+                  className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold mb-1" style={{ color: S.sub }}>Premio</label>
+                <input type="text" value={draft.reward}
+                  onChange={e => setDraft(d => ({ ...d, reward: e.target.value }))}
+                  placeholder="Café gratis"
+                  className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold mb-1" style={{ color: S.sub }}>Sellos para el premio</label>
+              <input type="number" min={1} value={draft.goal}
+                onChange={e => setDraft(d => ({ ...d, goal: Number(e.target.value) }))}
+                className="w-32 px-4 py-3 rounded-2xl text-sm outline-none"
+                style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold mb-1" style={{ color: S.sub }}>Ícono</label>
+              <div className="flex gap-1.5 flex-wrap items-center">
+                {REWARD_ICON_KEYS.map(ic => {
+                  const sel = draft.icon === ic
+                  return (
+                    <button key={ic} onClick={() => setDraft(d => ({ ...d, icon: ic }))}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center transition-all"
+                      style={{ backgroundColor: S.bg, color: sel ? (draft.iconColor || draft.color) : S.sub, border: `1px solid ${sel ? draft.color : S.border}` }}>
+                      <RewardIcon name={ic} size={20} />
+                    </button>
+                  )
+                })}
+                {/* Subir ícono propio */}
+                <label title="Subir ícono propio"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer overflow-hidden transition-all"
+                  style={{ backgroundColor: S.bg, color: S.accent,
+                    border: `1px ${isCustomIcon(draft.icon) ? 'solid' : 'dashed'} ${isCustomIcon(draft.icon) ? draft.color : S.accent}` }}>
+                  {isCustomIcon(draft.icon)
+                    ? <RewardIcon name={draft.icon} size={24} />
+                    : <span className="text-lg leading-none">{uploading === 'icon' ? '…' : '+'}</span>}
+                  <input type="file" accept="image/*" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage('icon', f) }} />
+                </label>
+              </div>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>Elige uno o sube tu propio ícono (PNG/SVG)</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold mb-1" style={{ color: S.sub }}>Color del ícono</label>
+              {isCustomIcon(draft.icon) ? (
+                <p className="text-xs" style={{ color: S.sub }}>Los íconos subidos conservan su color original.</p>
+              ) : (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input type="color"
+                    value={/^#[0-9a-fA-F]{6}$/.test(draft.iconColor || '') ? draft.iconColor : '#ffffff'}
+                    onChange={e => setDraft(d => ({ ...d, iconColor: e.target.value }))}
+                    className="w-11 h-10 rounded-xl cursor-pointer bg-transparent" style={{ border: `1px solid ${S.border}` }} />
+                  <input type="text" value={draft.iconColor || ''}
+                    onChange={e => setDraft(d => ({ ...d, iconColor: e.target.value }))}
+                    placeholder="#ffffff"
+                    className="w-28 px-3 py-2 rounded-xl text-sm outline-none font-mono"
+                    style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+                  {['#ffffff', '#000000', draft.color].map((col, i) => (
+                    <button key={i} onClick={() => setDraft(d => ({ ...d, iconColor: col }))}
+                      className="w-7 h-7 rounded-full transition-all"
+                      style={{ backgroundColor: col, border: `1px solid ${S.border}`, outline: draft.iconColor === col ? `2px solid ${S.text}` : 'none', outlineOffset: '2px' }} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold mb-1" style={{ color: S.sub }}>Color de la tarjeta</label>
+              <div className="flex gap-1.5 flex-wrap items-center">
+                {COLOR_PRESETS.map(col => (
+                  <button key={col} onClick={() => setDraft(d => ({ ...d, color: col }))}
+                    className="w-8 h-8 rounded-full transition-all"
+                    style={{ backgroundColor: col, outline: draft.color === col ? `2px solid ${S.text}` : 'none', outlineOffset: '2px' }} />
+                ))}
+                {/* Selector cromático */}
+                <input type="color"
+                  value={/^#[0-9a-fA-F]{6}$/.test(draft.color) ? draft.color : '#000000'}
+                  onChange={e => setDraft(d => ({ ...d, color: e.target.value }))}
+                  title="Color personalizado"
+                  className="w-9 h-9 rounded-full cursor-pointer bg-transparent" style={{ border: `1px solid ${S.border}` }} />
+                <input type="text" value={draft.color}
+                  onChange={e => setDraft(d => ({ ...d, color: e.target.value }))}
+                  placeholder="#B90F45"
+                  className="w-28 px-3 py-2 rounded-xl text-sm outline-none font-mono"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+              </div>
+            </div>
+
+            {/* Logo e imagen de la tarjeta */}
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold mb-1" style={{ color: S.sub }}>Logo de la tarjeta</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden shrink-0"
+                    style={{ backgroundColor: `${draft.color}22`, border: `1px solid ${S.border}` }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={draft.logo || '/logo.png'} alt="logo" className="w-10 h-10 object-contain" />
+                  </div>
+                  <label className="px-4 py-2 rounded-2xl text-sm font-bold cursor-pointer transition-all"
+                    style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                    {uploading === 'logo' ? 'Subiendo...' : 'Cambiar logo'}
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage('logo', f) }} />
+                  </label>
+                </div>
+                <p className="text-xs mt-1" style={{ color: S.sub }}>PNG/SVG con fondo transparente</p>
+              </div>
+              <div>
+                <label className="block text-xs font-bold mb-1" style={{ color: S.sub }}>Imagen de fondo</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-20 h-14 rounded-xl overflow-hidden shrink-0" style={{ border: `1px solid ${S.border}` }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={draft.image || '/uploads/menu/SalmonBowl.jpeg'} alt="imagen" className="w-full h-full object-cover" />
+                  </div>
+                  <label className="px-4 py-2 rounded-2xl text-sm font-bold cursor-pointer transition-all"
+                    style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                    {uploading === 'image' ? 'Subiendo...' : 'Cambiar imagen'}
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage('image', f) }} />
+                  </label>
+                </div>
+                <p className="text-xs mt-1" style={{ color: S.sub }}>Se ve detrás de los sellos en la tarjeta</p>
+              </div>
+            </div>
+
+            {/* Marca en la tarjeta (reemplaza el texto "NICHO") */}
+            <div>
+              <label className="block text-xs font-bold mb-1" style={{ color: S.sub }}>Marca en la tarjeta</label>
+              {draft.brandLogo ? (
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="h-12 px-3 rounded-xl flex items-center shrink-0" style={{ backgroundColor: draft.color }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={draft.brandLogo} alt="marca" className="h-7 w-auto object-contain" />
+                  </div>
+                  <label className="px-4 py-2 rounded-2xl text-sm font-bold cursor-pointer"
+                    style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                    {uploading === 'brandLogo' ? 'Subiendo...' : 'Cambiar logo'}
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage('brandLogo', f) }} />
+                  </label>
+                  <button onClick={() => setDraft(d => ({ ...d, brandLogo: '' }))}
+                    className="px-4 py-2 rounded-2xl text-sm font-bold"
+                    style={{ backgroundColor: 'rgba(239,68,68,.08)', color: '#f87171' }}>Quitar logo</button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input type="text" value={draft.brandText || ''}
+                    onChange={e => setDraft(d => ({ ...d, brandText: e.target.value }))}
+                    placeholder="NICHO"
+                    className="flex-1 min-w-[160px] px-4 py-3 rounded-2xl text-sm outline-none"
+                    style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+                  <span className="text-xs" style={{ color: S.sub }}>o</span>
+                  <label className="px-4 py-2 rounded-2xl text-sm font-bold cursor-pointer"
+                    style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                    {uploading === 'brandLogo' ? 'Subiendo...' : 'Subir logo de marca'}
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage('brandLogo', f) }} />
+                  </label>
+                </div>
+              )}
+              <p className="text-xs mt-1" style={{ color: S.sub }}>Texto o logo que aparece arriba a la derecha de la tarjeta</p>
+            </div>
+
+            {/* Vista previa */}
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+              style={{ backgroundColor: S.bg, border: `1px solid ${draft.color}` }}>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
+                style={{ backgroundColor: draft.color, color: isCustomIcon(draft.icon) ? undefined : (draft.iconColor || '#fff') }}>
+                <RewardIcon name={draft.icon} size={22} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-bold text-sm" style={{ color: S.text }}>{draft.name || 'Nombre del tipo'}</p>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                    style={{ backgroundColor: `${draft.color}1f`, color: draft.color }}>{Math.max(1, draft.goal || 1)} sellos</span>
+                </div>
+                <p className="text-xs mt-0.5" style={{ color: S.sub }}>Premio: {draft.reward || '—'}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button onClick={saveCategory}
+                disabled={!draft.name.trim() || !draft.reward.trim() || savingCats}
+                className="px-4 py-2 rounded-2xl text-sm font-bold transition-all disabled:opacity-40"
+                style={{ backgroundColor: S.accent, color: '#000' }}>
+                {activeId ? 'Guardar cambios' : '+ Crear categoría'}
+              </button>
+              {activeId && (
+                <button onClick={() => deleteCategory(activeId)}
+                  className="px-4 py-2 rounded-2xl text-sm font-bold"
+                  style={{ backgroundColor: 'rgba(239,68,68,.08)', color: '#f87171' }}>
+                  Eliminar
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Desactivar inactivos */}
