@@ -18,19 +18,27 @@ interface LoyaltyCard {
 interface RewardCategory {
   id: string; name: string; reward: string; goal: number; icon: string; color: string
   iconColor?: string; logo?: string; image?: string; brandText?: string; brandLogo?: string
+  perks?: string[]
 }
 
 const CATEGORIES_KEY = 'reward_categories'
 const COLOR_PRESETS = ['#B90F45', '#00e676', '#fb923c', '#f87171', '#60a5fa', '#a78bfa', '#f472b6', '#fbbf24', '#34d399']
 
+// Beneficios disponibles para la tarjeta Premium/Upgrade (se eligen desde el dashboard)
+const PERK_GROUPS: { label: string; items: string[] }[] = [
+  { label: 'Upgrade', items: ['Tamaño grande gratis', 'Extra incluido', 'Servicio mejorado'] },
+  { label: 'Complementos sin costo', items: ['Bebida gratis', 'Postre gratis', 'Extra de ingrediente'] },
+]
+
 const DEFAULT_CATEGORIES: RewardCategory[] = [
   { id: 'cafe',      name: 'Tarjeta de Café',   reward: 'Café gratis',             goal: 5, icon: 'coffee',  color: '#B90F45', iconColor: '#ffffff', brandText: 'NICHO' },
   { id: 'dosxuno',   name: 'Tarjeta 2x1',       reward: 'Segundo producto gratis', goal: 4, icon: 'gift',    color: '#60a5fa', iconColor: '#ffffff', brandText: 'NICHO' },
   { id: 'descuento', name: 'Descuento Directo', reward: '20% de descuento',        goal: 3, icon: 'percent', color: '#fb923c', iconColor: '#ffffff', brandText: 'NICHO' },
+  { id: 'premium',   name: 'Upgrade Premium',   reward: 'Beneficios premium',      goal: 1, icon: 'crown',   color: '#fbbf24', iconColor: '#000000', brandText: 'NICHO', perks: ['Tamaño grande gratis', 'Bebida gratis'] },
 ]
 
 function emptyDraft(): RewardCategory {
-  return { id: '', name: '', reward: '', goal: 5, icon: REWARD_ICON_KEYS[0], color: COLOR_PRESETS[0], iconColor: '#ffffff', logo: '', image: '', brandText: 'NICHO', brandLogo: '' }
+  return { id: '', name: '', reward: '', goal: 5, icon: REWARD_ICON_KEYS[0], color: COLOR_PRESETS[0], iconColor: '#ffffff', logo: '', image: '', brandText: 'NICHO', brandLogo: '', perks: [] }
 }
 
 function daysLeft(iso?: string) {
@@ -77,9 +85,12 @@ export default function AdminTarjetasPage() {
       const d = await r.json()
       const parsed = d.value ? JSON.parse(d.value) : null
       if (Array.isArray(parsed) && parsed.length) {
-        setCategories(parsed)
-        setActiveId(parsed[0].id)
-        setDraft({ ...parsed[0] })
+        // Fusiona: conserva lo guardado y agrega los tipos por defecto que falten (ej. 'premium')
+        const ids = new Set(parsed.map((c: RewardCategory) => c.id))
+        const merged = [...parsed, ...DEFAULT_CATEGORIES.filter(c => !ids.has(c.id))]
+        setCategories(merged)
+        setActiveId(merged[0].id)
+        setDraft({ ...merged[0] })
       }
     } catch { /* settings vacío o JSON inválido: se mantienen los defaults */ }
   }
@@ -105,6 +116,14 @@ export default function AdminTarjetasPage() {
   function newCategory() {
     setActiveId(null)
     setDraft(emptyDraft())
+  }
+
+  function togglePerk(perk: string) {
+    setDraft(d => {
+      const current = d.perks ?? []
+      const next = current.includes(perk) ? current.filter(p => p !== perk) : [...current, perk]
+      return { ...d, perks: next }
+    })
   }
 
   async function uploadImage(field: 'logo' | 'image' | 'icon' | 'brandLogo', file: File) {
@@ -275,6 +294,35 @@ export default function AdminTarjetasPage() {
                 className="w-32 px-4 py-3 rounded-2xl text-sm outline-none"
                 style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
             </div>
+
+            {/* Beneficios incluidos (solo tarjeta Premium/Upgrade) */}
+            {activeId === 'premium' && (
+              <div>
+                <label className="block text-xs font-bold mb-1" style={{ color: S.sub }}>Beneficios incluidos</label>
+                <p className="text-xs mb-2" style={{ color: S.sub }}>Elige qué beneficios incluye la versión Premium</p>
+                <div className="space-y-3">
+                  {PERK_GROUPS.map(group => (
+                    <div key={group.label}>
+                      <p className="text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: draft.color }}>{group.label}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {group.items.map(item => {
+                          const on = (draft.perks ?? []).includes(item)
+                          return (
+                            <button key={item} onClick={() => togglePerk(item)}
+                              className="px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5"
+                              style={on
+                                ? { backgroundColor: draft.color, color: draft.iconColor || '#000' }
+                                : { backgroundColor: S.bg, color: S.sub, border: `1px solid ${S.border}` }}>
+                              <span>{on ? '✓' : '+'}</span>{item}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-bold mb-1" style={{ color: S.sub }}>Ícono</label>
