@@ -60,14 +60,6 @@ export default function CardPage() {
     }
   }
 
-  function handleLogout() {
-    localStorage.removeItem(STORAGE_KEY)
-    setStep('form')
-    setCustomer(null)
-    setName('')
-    setPhone('')
-  }
-
   if (step === 'form') {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center p-5" style={{ backgroundColor: '#000' }}>
@@ -113,21 +105,6 @@ export default function CardPage() {
 
   return (
     <div className="min-h-screen pb-24" style={{ backgroundColor: '#000' }}>
-      {/* Header */}
-      <div className="sticky top-0 z-20 shadow-lg" style={{ backgroundColor: '#000', borderBottom: '1px solid #B90F45' }}>
-        <div className="max-w-sm mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
-            <span className="font-black text-base tracking-tight text-white">Mi Tarjeta</span>
-          </div>
-          <button type="button" onClick={handleLogout}
-            className="text-xs text-white px-3 py-1.5 rounded-full font-semibold"
-            style={{ backgroundColor: '#B90F45' }}>
-            Cerrar sesión
-          </button>
-        </div>
-      </div>
-
       <div className="flex flex-col items-center px-4 pt-6">
         {/* ── TARJETA ── */}
         <div className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl mb-4"
@@ -183,7 +160,7 @@ export default function CardPage() {
 
           {/* QR */}
           <div className="mx-5 mb-5 bg-white rounded-2xl p-4 flex flex-col items-center">
-            <QRCode value={customer!.id} size={160} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
+            <QRCode value={customer!.id} size={110} style={{ height: 'auto', maxWidth: '200px', width: '100%' }} />
             <p className="text-xs mt-2.5 font-semibold text-center" style={{ color: '#B90F45' }}>
               {earned ? '🎉 ¡Café gratis! Muéstraselo al cajero' : 'Muestra este QR al empleado'}
             </p>
