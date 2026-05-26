@@ -9,12 +9,12 @@ interface Review {
 }
 
 const S = {
-  bg:     '#080b16',
-  card:   '#0e1225',
-  accent: '#00e676',
-  text:   '#eef2f7',
-  sub:    '#6b7a94',
-  border: 'rgba(255,255,255,0.07)',
+  bg:     'var(--ad-bg)',
+  card:   'var(--ad-card)',
+  accent: 'var(--ad-accent)',
+  text:   'var(--ad-text)',
+  sub:    'var(--ad-sub)',
+  border: 'var(--ad-border)',
 }
 
 function initial(name: string) { return name.trim().charAt(0).toUpperCase() }
@@ -73,7 +73,7 @@ export default function AdminReviewsPage() {
     : null
 
   return (
-    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <AdminNav />
 
       <div className="max-w-3xl mx-auto p-4 space-y-4">
@@ -131,8 +131,8 @@ export default function AdminReviewsPage() {
                 <div className="w-10 h-10 rounded-full shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
                 <div className="flex-1 space-y-2">
                   <div className="h-4 rounded-full w-1/3" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
-                  <div className="h-3 rounded-full w-full" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
-                  <div className="h-3 rounded-full w-2/3" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
+                  <div className="h-3 rounded-full w-full" style={{ backgroundColor: 'var(--ad-overlay)' }} />
+                  <div className="h-3 rounded-full w-2/3" style={{ backgroundColor: 'var(--ad-overlay)' }} />
                 </div>
               </div>
             ))}

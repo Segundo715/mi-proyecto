@@ -41,29 +41,29 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center p-5" style={{ backgroundColor: '#060911' }}>
+    <div className="fixed inset-0 flex flex-col items-center justify-center p-5" style={{ backgroundColor: 'var(--ad-sidebar)' }}>
 
       {/* Brand */}
       <div className="text-center mb-8">
         <div className="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl overflow-hidden"
-          style={{ background: 'linear-gradient(135deg,#00e676,#06b6d4)' }}>
+          style={{ background: 'linear-gradient(135deg,var(--ad-accent),#06b6d4)' }}>
           <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-2" />
         </div>
-        <div className="font-extrabold text-xl tracking-wide" style={{ color: '#eef2f7' }}>NICHO</div>
-        <p className="text-sm mt-1 font-medium" style={{ color: '#00e676' }}>Panel de administración</p>
+        <div className="font-extrabold text-xl tracking-wide" style={{ color: 'var(--ad-text)' }}>NICHO</div>
+        <p className="text-sm mt-1 font-medium" style={{ color: 'var(--ad-accent)' }}>Panel de administración</p>
       </div>
 
       <div className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden"
-        style={{ backgroundColor: '#0e1225', border: '1px solid rgba(255,255,255,0.07)' }}>
+        style={{ backgroundColor: 'var(--ad-card)', border: '1px solid var(--ad-border)' }}>
 
         {/* Tabs */}
-        <div className="flex p-1.5 gap-1.5 m-4 rounded-2xl" style={{ backgroundColor: '#080b16' }}>
+        <div className="flex p-1.5 gap-1.5 m-4 rounded-2xl" style={{ backgroundColor: 'var(--ad-bg)' }}>
           {(['login', 'register'] as const).map(t => (
             <button key={t} type="button" onClick={() => switchTab(t)}
               className="flex-1 py-2.5 text-sm font-bold rounded-xl transition-all"
               style={tab === t
-                ? { backgroundColor: '#00e676', color: '#000' }
-                : { color: '#6b7a94' }}>
+                ? { backgroundColor: 'var(--ad-accent)', color: '#000' }
+                : { color: 'var(--ad-sub)' }}>
               {t === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
             </button>
           ))}
@@ -71,29 +71,29 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3">
           <div>
-            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#6b7a94' }}>Nombre</label>
+            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ad-sub)' }}>Nombre</label>
             <input type="text" value={name} onChange={e => { setName(e.target.value); setError('') }}
               placeholder="Ej. Carlos" autoComplete="username" autoFocus
               className={INPUT} style={inputStyle}
-              onFocus={e => e.currentTarget.style.borderColor = '#00e676'}
+              onFocus={e => e.currentTarget.style.borderColor = 'var(--ad-accent)'}
               onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,230,118,0.3)'} />
           </div>
           <div>
-            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#6b7a94' }}>Contraseña</label>
+            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ad-sub)' }}>Contraseña</label>
             <input type="password" value={password} onChange={e => { setPassword(e.target.value); setError('') }}
               placeholder="••••••••" autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
               className={INPUT} style={inputStyle}
-              onFocus={e => e.currentTarget.style.borderColor = '#00e676'}
+              onFocus={e => e.currentTarget.style.borderColor = 'var(--ad-accent)'}
               onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,230,118,0.3)'} />
           </div>
 
           {tab === 'register' && (
             <div>
-              <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#6b7a94' }}>Confirmar contraseña</label>
+              <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ad-sub)' }}>Confirmar contraseña</label>
               <input type="password" value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); setError('') }}
                 placeholder="••••••••" autoComplete="new-password"
                 className={INPUT} style={inputStyle}
-                onFocus={e => e.currentTarget.style.borderColor = '#00e676'}
+                onFocus={e => e.currentTarget.style.borderColor = 'var(--ad-accent)'}
                 onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,230,118,0.3)'} />
             </div>
           )}
@@ -107,13 +107,13 @@ export default function LoginPage() {
 
           <button type="submit" disabled={loading}
             className="w-full font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors mt-1"
-            style={{ backgroundColor: '#00e676', color: '#000' }}>
+            style={{ backgroundColor: 'var(--ad-accent)', color: '#000' }}>
             {loading ? 'Cargando...' : tab === 'login' ? '→ Entrar' : '→ Crear cuenta'}
           </button>
         </form>
       </div>
 
-      <p className="text-xs mt-6" style={{ color: '#6b7a94' }}>Solo para uso del personal autorizado</p>
+      <p className="text-xs mt-6" style={{ color: 'var(--ad-sub)' }}>Solo para uso del personal autorizado</p>
     </div>
   )
 }

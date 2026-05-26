@@ -4,8 +4,8 @@ import { useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {
-  bg: '#080b16', card: '#0e1225', accent: '#00e676',
-  text: '#eef2f7', sub: '#6b7a94', border: 'rgba(255,255,255,0.07)',
+  bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
+  text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)',
 }
 
 const CLIENTS = [
@@ -20,7 +20,7 @@ export default function AdminCRMPage() {
   const filtered = search ? CLIENTS.filter(c => c.name.toLowerCase().includes(search.toLowerCase())) : CLIENTS
 
   return (
-    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <AdminNav />
       <div className="max-w-[1200px] mx-auto p-4 space-y-4">
 
@@ -53,7 +53,7 @@ export default function AdminCRMPage() {
         <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
           <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
             <span className="font-bold text-sm" style={{ color: S.text }}>Clientes recientes</span>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl" style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: `1px solid ${S.border}` }}>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl" style={{ backgroundColor: 'var(--ad-overlay)', border: `1px solid ${S.border}` }}>
               <span style={{ color: S.sub }}>🔍</span>
               <input
                 value={search} onChange={e => setSearch(e.target.value)}

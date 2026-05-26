@@ -3,12 +3,12 @@
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {
-  bg:     '#080b16',
-  card:   '#0e1225',
-  accent: '#00e676',
-  text:   '#eef2f7',
-  sub:    '#6b7a94',
-  border: 'rgba(255,255,255,0.07)',
+  bg:     'var(--ad-bg)',
+  card:   'var(--ad-card)',
+  accent: 'var(--ad-accent)',
+  text:   'var(--ad-text)',
+  sub:    'var(--ad-sub)',
+  border: 'var(--ad-border)',
 }
 
 const CAMPAIGNS = [
@@ -41,7 +41,7 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }>
 
 export default function AdminMarketingPage() {
   return (
-    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <AdminNav />
 
       <div className="max-w-4xl mx-auto p-4 space-y-5">
@@ -66,7 +66,7 @@ export default function AdminMarketingPage() {
             <p className="text-xs font-bold uppercase tracking-wide" style={{ color: S.sub }}>Presupuesto total</p>
             <p className="text-xs font-bold" style={{ color: S.accent }}>${totalSpent.toLocaleString()} / ${totalBudget.toLocaleString()}</p>
           </div>
-          <div className="h-2 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}>
+          <div className="h-2 rounded-full" style={{ backgroundColor: 'var(--ad-border)' }}>
             <div className="h-2 rounded-full transition-all"
               style={{ width: `${(totalSpent / totalBudget) * 100}%`, backgroundColor: S.accent }} />
           </div>
@@ -110,7 +110,7 @@ export default function AdminMarketingPage() {
             {[...CAMPAIGNS].sort((a, b) => b.roi - a.roi).map(c => (
               <div key={c.platform} className="flex items-center gap-3">
                 <span className="text-sm font-medium w-28 shrink-0" style={{ color: S.text }}>{c.platform}</span>
-                <div className="flex-1 h-2 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}>
+                <div className="flex-1 h-2 rounded-full" style={{ backgroundColor: 'var(--ad-border)' }}>
                   <div className="h-2 rounded-full"
                     style={{ width: `${(c.roi / 10) * 100}%`, backgroundColor: S.accent, opacity: 0.85 }} />
                 </div>

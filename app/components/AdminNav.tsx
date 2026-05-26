@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { FEATURES, type FeatureKey } from '@/lib/features'
+import AdminThemeToggle from '@/app/components/AdminThemeToggle'
 
 interface NavLink {
   href: string; icon: string; label: string; exact?: boolean; feature?: FeatureKey
@@ -19,6 +20,7 @@ const NAV_LINKS: NavLink[] = [
   { href: '/admin/operaciones',     icon: 'operaciones',      label: 'Operaciones',         feature: 'operaciones' },
   { href: '/admin/tv',              icon: 'tv',               label: 'Pantallas Digitales', feature: 'tv' },
   { href: '/admin',                 icon: 'loyalty',          label: 'Fidelización',        exact: true },
+  { href: '/admin/sellar',          icon: 'scan',             label: 'Sellar visitas' },
   { href: '/admin/tarjetas',        icon: 'card',             label: 'Tarjetas' },
   { href: '/admin/reviews',         icon: 'reviews',          label: 'Reseñas' },
   { href: '/admin/automatizaciones',icon: 'automatizaciones', label: 'Automatizaciones IA', feature: 'automatizaciones' },
@@ -48,6 +50,7 @@ const ICONS: Record<string, string> = {
   recipes:          '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
   card:             '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/>',
   reviews:          '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  scan:             '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="21" y2="14"/><line x1="14" y1="18" x2="18" y2="18"/><line x1="14" y1="21" x2="21" y2="21"/>',
   logout:           '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
 }
 
@@ -84,37 +87,43 @@ export default function AdminNav() {
   }
 
   const S = {
-    sidebar:   { backgroundColor: '#060911', borderRight: '1px solid rgba(255,255,255,0.07)' },
-    card:      { backgroundColor: '#0e1225', border: '1px solid rgba(255,255,255,0.07)' },
-    navActive: { backgroundColor: '#00e676', color: '#000' },
-    navHover:  { backgroundColor: 'rgba(255,255,255,0.04)' },
-    text:      { color: '#eef2f7' },
-    sub:       { color: '#6b7a94' },
-    accent:    { color: '#00e676' },
-    border:    { borderColor: 'rgba(255,255,255,0.07)' },
+    sidebar:   { backgroundColor: 'var(--ad-sidebar)', borderRight: '1px solid var(--ad-border)' },
+    card:      { backgroundColor: 'var(--ad-card)', border: '1px solid var(--ad-border)' },
+    navActive: { backgroundColor: 'var(--ad-accent)', color: '#000' },
+    navHover:  { backgroundColor: 'var(--ad-overlay)' },
+    text:      { color: 'var(--ad-text)' },
+    sub:       { color: 'var(--ad-sub)' },
+    accent:    { color: 'var(--ad-accent)' },
+    border:    { borderColor: 'var(--ad-border)' },
   }
 
   return (
     <>
+      {/* ===== Logo agencia + toggle de tema (fijo, esquina superior derecha) ===== */}
+      <div className="fixed top-5 right-[250px] z-[100] flex items-center gap-3">
+        <img src="/L_agencia/logo_singular.svg" alt="Singular" className="ad-logo h-8 w-auto pointer-events-none" />
+        <AdminThemeToggle />
+      </div>
+
       {/* ===== TOPBAR mobile ===== */}
       <div className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3"
-        style={{ backgroundColor: '#060911', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        style={{ backgroundColor: 'var(--ad-sidebar)', borderBottom: '1px solid var(--ad-border)' }}>
         <button type="button" onClick={() => setOpen(true)} className="flex items-center gap-2.5">
           <div className="flex flex-col gap-1">
             {[0,1,2].map(i => (
-              <span key={i} className="block h-0.5 rounded-full w-5" style={{ backgroundColor: '#eef2f7' }} />
+              <span key={i} className="block h-0.5 rounded-full w-5" style={{ backgroundColor: 'var(--ad-text)' }} />
             ))}
           </div>
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg,#00e676,#06b6d4)' }}>
+              style={{ background: 'linear-gradient(135deg,var(--ad-accent),#06b6d4)' }}>
               <img src="/logo.png" alt="" className="w-5 h-5 object-contain" />
             </div>
             <span className="font-bold text-sm" style={S.text}>Admin</span>
           </div>
         </button>
         <button type="button" onClick={logout} className="text-xs px-3 py-1.5 rounded-lg font-medium"
-          style={{ backgroundColor: '#0e1225', color: '#6b7a94', border: '1px solid rgba(255,255,255,0.07)' }}>
+          style={{ backgroundColor: 'var(--ad-card)', color: 'var(--ad-sub)', border: '1px solid var(--ad-border)' }}>
           Salir
         </button>
       </div>
@@ -124,7 +133,7 @@ export default function AdminNav() {
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center relative flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg,#00e676,#06b6d4)' }}>
+            style={{ background: 'linear-gradient(135deg,var(--ad-accent),#06b6d4)' }}>
             <img src="/logo.png" alt="" className="w-7 h-7 object-contain" />
           </div>
           <div>
@@ -142,12 +151,12 @@ export default function AdminNav() {
               <a key={link.href} href={enabled ? link.href : undefined}
                 onClick={enabled ? undefined : e => e.preventDefault()}
                 className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all"
-                style={active ? S.navActive : { color: '#6b7a94', opacity: enabled ? 1 : 0.4, cursor: enabled ? 'pointer' : 'not-allowed' }}>
+                style={active ? S.navActive : { color: 'var(--ad-sub)', opacity: enabled ? 1 : 0.4, cursor: enabled ? 'pointer' : 'not-allowed' }}>
                 <NavIcon name={link.icon} />
                 <span className="flex-1">{link.label}</span>
                 {!enabled && (
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                    style={{ backgroundColor: 'rgba(0,230,118,0.15)', color: '#00e676' }}>PRO</span>
+                    style={{ backgroundColor: 'rgba(0,230,118,0.15)', color: 'var(--ad-accent)' }}>PRO</span>
                 )}
               </a>
             )
@@ -155,9 +164,9 @@ export default function AdminNav() {
         </nav>
 
         {/* Footer */}
-        <div className="p-3" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="p-3" style={{ borderTop: '1px solid var(--ad-border)' }}>
           <div className="flex items-center gap-3 p-2 rounded-lg mb-1"
-            style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+            style={{ backgroundColor: 'var(--ad-overlay)' }}>
             <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm"
               style={{ background: 'linear-gradient(135deg,#7c3aed,#4f6ef7)', color: '#fff' }}>A</div>
             <div>
@@ -167,7 +176,7 @@ export default function AdminNav() {
           </div>
           <button type="button" onClick={logout}
             className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all"
-            style={{ color: '#6b7a94' }}>
+            style={{ color: 'var(--ad-sub)' }}>
             <NavIcon name="logout" />
             <span>Cerrar sesión</span>
           </button>
@@ -182,10 +191,10 @@ export default function AdminNav() {
         <aside className={`relative w-64 h-full flex flex-col shadow-2xl transform transition-transform duration-250 ease-out ${open ? 'translate-x-0' : '-translate-x-full'}`}
           style={S.sidebar}>
           <div className="flex items-center justify-between px-5 py-4"
-            style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            style={{ borderBottom: '1px solid var(--ad-border)' }}>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg,#00e676,#06b6d4)' }}>
+                style={{ background: 'linear-gradient(135deg,var(--ad-accent),#06b6d4)' }}>
                 <img src="/logo.png" alt="" className="w-6 h-6 object-contain" />
               </div>
               <div>
@@ -195,7 +204,7 @@ export default function AdminNav() {
             </div>
             <button type="button" onClick={() => setOpen(false)}
               className="w-7 h-7 rounded-full flex items-center justify-center text-lg"
-              style={{ backgroundColor: 'rgba(255,255,255,0.06)', color: '#6b7a94' }}>×</button>
+              style={{ backgroundColor: 'var(--ad-overlay)', color: 'var(--ad-sub)' }}>×</button>
           </div>
 
           <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto">
@@ -206,22 +215,22 @@ export default function AdminNav() {
                 <a key={link.href} href={enabled ? link.href : undefined}
                   onClick={enabled ? (() => setOpen(false)) : (e => e.preventDefault())}
                   className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium"
-                  style={active ? S.navActive : { color: '#6b7a94', opacity: enabled ? 1 : 0.4 }}>
+                  style={active ? S.navActive : { color: 'var(--ad-sub)', opacity: enabled ? 1 : 0.4 }}>
                   <NavIcon name={link.icon} />
                   <span className="flex-1">{link.label}</span>
                   {!enabled && (
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                      style={{ backgroundColor: 'rgba(0,230,118,0.15)', color: '#00e676' }}>PRO</span>
+                      style={{ backgroundColor: 'rgba(0,230,118,0.15)', color: 'var(--ad-accent)' }}>PRO</span>
                   )}
                 </a>
               )
             })}
           </nav>
 
-          <div className="p-3" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="p-3" style={{ borderTop: '1px solid var(--ad-border)' }}>
             <button type="button" onClick={logout}
               className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium"
-              style={{ color: '#6b7a94' }}>
+              style={{ color: 'var(--ad-sub)' }}>
               <NavIcon name="logout" />
               <span>Cerrar sesión</span>
             </button>

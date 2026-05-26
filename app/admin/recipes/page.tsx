@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {
-  bg: '#080b16', card: '#0e1225', accent: '#00e676',
-  text: '#eef2f7', sub: '#6b7a94', border: 'rgba(255,255,255,0.07)',
+  bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
+  text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)',
 }
 
 interface Recipe {
@@ -154,7 +154,7 @@ export default function AdminRecipesPage() {
   }
 
   return (
-    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <AdminNav />
 
       {/* Input oculto para subir imagen directo desde tarjeta */}
@@ -173,10 +173,17 @@ export default function AdminRecipesPage() {
             <h1 className="text-xl font-black" style={{ color: S.text }}>Recetario</h1>
             <p className="text-xs mt-0.5" style={{ color: S.sub }}>{recipes.length} receta{recipes.length !== 1 ? 's' : ''} en total</p>
           </div>
-          <button onClick={openNew} className="text-sm px-4 py-2 rounded-xl font-bold"
-            style={{ backgroundColor: S.accent, color: '#000' }}>
-            + Nueva receta
-          </button>
+          <div className="flex gap-2">
+            <a href="/resetas" target="_blank" rel="noopener noreferrer"
+              className="text-sm px-4 py-2 rounded-xl font-bold"
+              style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }}>
+              Ver recetario ↗
+            </a>
+            <button onClick={openNew} className="text-sm px-4 py-2 rounded-xl font-bold"
+              style={{ backgroundColor: S.accent, color: '#000' }}>
+              + Nueva receta
+            </button>
+          </div>
         </div>
 
         {/* Buscar */}

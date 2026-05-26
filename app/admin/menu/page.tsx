@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {
-  bg: '#080b16', card: '#0e1225', accent: '#00e676',
-  text: '#eef2f7', sub: '#6b7a94', border: 'rgba(255,255,255,0.07)',
+  bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
+  text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)',
 }
 
 const CATEGORIES = ['Platillos', 'Bebidas', 'Postres', 'Ensaladas', 'Entradas', 'Especiales']
@@ -86,7 +86,7 @@ export default function AdminMenuPage() {
   const inpStyle = { backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }
 
   return (
-    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <AdminNav />
       <div className="max-w-[1200px] mx-auto p-4 space-y-4">
 
@@ -114,7 +114,7 @@ export default function AdminMenuPage() {
                   {item.imageUrl && <img src={item.imageUrl} alt={item.name} className="w-10 h-10 rounded-xl object-cover shrink-0" />}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold truncate" style={{ color: S.text }}>{item.name}</p>
-                    <div className="h-1.5 rounded-full mt-1 overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}>
+                    <div className="h-1.5 rounded-full mt-1 overflow-hidden" style={{ backgroundColor: 'var(--ad-border)' }}>
                       <div className="h-full rounded-full" style={{ width: `${((item.likes ?? 0) / maxLikes) * 100}%`, backgroundColor: '#f472b6' }} />
                     </div>
                   </div>

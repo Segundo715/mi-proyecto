@@ -3,8 +3,8 @@
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {
-  bg: '#080b16', card: '#0e1225', accent: '#00e676',
-  text: '#eef2f7', sub: '#6b7a94', border: 'rgba(255,255,255,0.07)',
+  bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
+  text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)',
 }
 
 const HOURS_DATA = [800,400,200,100,1200,3500,8200,12400,9800,15600,22400,24580,18200]
@@ -26,12 +26,12 @@ const KPIS = [
   { label: 'Tickets promedio', value: '$320',    delta: '↑ 8.7% vs ayer',  icon: '🧾', iconBg: 'rgba(34,197,94,.12)',  iconColor: '#4ade80', spark: [8,10,9,12,11,14,13,15,14,16],  sc: '#4ade80' },
   { label: 'Clientes nuevos',  value: '128',     delta: '↑ 15.4% vs ayer', icon: '👥', iconBg: 'rgba(59,130,246,.12)', iconColor: '#60a5fa', spark: [5,8,6,10,9,14,12,16,15,18],   sc: '#60a5fa' },
   { label: 'Reservaciones',    value: '42',      delta: '↑ 12.6% vs ayer', icon: '📅', iconBg: 'rgba(168,85,247,.12)', iconColor: '#c084fc', spark: [3,5,4,6,5,8,7,9,8,10],       sc: '#c084fc' },
-  { label: 'ROI de campañas',  value: '4.2x',    delta: '↑ 22.1% vs ayer', icon: '📈', iconBg: 'rgba(0,230,118,.12)', iconColor: '#00e676', spark: [2,3,2.5,3.5,3,4,3.8,4.2,4,4.5], sc: '#00e676' },
+  { label: 'ROI de campañas',  value: '4.2x',    delta: '↑ 22.1% vs ayer', icon: '📈', iconBg: 'rgba(0,230,118,.12)', iconColor: 'var(--ad-accent)', spark: [2,3,2.5,3.5,3,4,3.8,4.2,4,4.5], sc: 'var(--ad-accent)' },
 ]
 
 export default function AdminDashboardPage() {
   return (
-    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <AdminNav />
       <div className="max-w-[1200px] mx-auto p-4 space-y-4">
 
@@ -58,7 +58,7 @@ export default function AdminDashboardPage() {
           <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
             <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
               <span className="font-bold text-sm" style={{ color: S.text }}>Ventas</span>
-              <span className="text-xs px-2 py-1 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: S.sub }}>Hoy ▾</span>
+              <span className="text-xs px-2 py-1 rounded-lg" style={{ backgroundColor: 'var(--ad-overlay)', color: S.sub }}>Hoy ▾</span>
             </div>
             <div className="px-5 py-4">
               <p className="text-2xl font-black" style={{ color: S.text }}>$24,580</p>
@@ -95,7 +95,7 @@ export default function AdminDashboardPage() {
                       <span className="text-xs w-8 text-right" style={{ color: S.sub }}>{f.pct}%</span>
                     </div>
                   </div>
-                  <div className="h-2 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                  <div className="h-2 rounded-full" style={{ backgroundColor: 'var(--ad-overlay)' }}>
                     <div className="h-2 rounded-full" style={{ width: `${f.pct}%`, background: f.bar }} />
                   </div>
                 </div>
@@ -138,7 +138,7 @@ export default function AdminDashboardPage() {
             </div>
             <div className="px-5 py-4 space-y-4">
               {[
-                { logo: 'Ⓜ', bg: '#1877f2', name: 'Campaña Verano',   platform: 'Meta Ads',    roi: '3.8x', spend: '$1,250', bar: 72, bc: '#00e676' },
+                { logo: 'Ⓜ', bg: '#1877f2', name: 'Campaña Verano',   platform: 'Meta Ads',    roi: '3.8x', spend: '$1,250', bar: 72, bc: 'var(--ad-accent)' },
                 { logo: '♪', bg: '#000',     name: 'Promo 2x1 Sushi', platform: 'TikTok Ads',  roi: '5.2x', spend: '$950',  bar: 85, bc: '#a855f7' },
                 { logo: 'G', bg: '#ea4335',  name: 'Búsqueda Nicho',  platform: 'Google Ads',  roi: '2.9x', spend: '$780',  bar: 58, bc: '#4f6ef7' },
               ].map(c => (
@@ -159,7 +159,7 @@ export default function AdminDashboardPage() {
                       <p>Gasto <strong style={{ color: S.text }}>{c.spend}</strong></p>
                     </div>
                   </div>
-                  <div className="h-1.5 rounded-full ml-12" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                  <div className="h-1.5 rounded-full ml-12" style={{ backgroundColor: 'var(--ad-overlay)' }}>
                     <div className="h-1.5 rounded-full" style={{ width: `${c.bar}%`, backgroundColor: c.bc }} />
                   </div>
                 </div>

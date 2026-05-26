@@ -3,8 +3,8 @@
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {
-  bg: '#080b16', card: '#0e1225', accent: '#00e676',
-  text: '#eef2f7', sub: '#6b7a94', border: 'rgba(255,255,255,0.07)',
+  bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
+  text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)',
 }
 
 const PRED_REAL = [24580, 21800, null, null, null, null, null]
@@ -16,7 +16,7 @@ const PRED_MAX  = 39000
 
 export default function AdminEstadisticasPage() {
   return (
-    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <AdminNav />
       <div className="max-w-[1200px] mx-auto p-4 space-y-4">
 

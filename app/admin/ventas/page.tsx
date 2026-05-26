@@ -3,8 +3,8 @@
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {
-  bg: '#080b16', card: '#0e1225', accent: '#00e676',
-  text: '#eef2f7', sub: '#6b7a94', border: 'rgba(255,255,255,0.07)',
+  bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
+  text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)',
 }
 
 const SALES =[18200,22400,19800,24100,21500,26300,23700,28900,25200,30100,27400,32500,29800,34200,31600,36400,33800,38200,35600,40100,37500,42300,39700,44500,41900,46800,44200,49100,46500,51300]
@@ -12,7 +12,7 @@ const MAX_S = Math.max(...SALES)
 
 export default function AdminVentasPage() {
   return (
-    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <AdminNav />
       <div className="max-w-[1200px] mx-auto p-4 space-y-4">
 

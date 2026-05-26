@@ -16,12 +16,12 @@ interface Order {
 }
 
 const S = {
-  bg:     '#080b16',
-  card:   '#0e1225',
-  accent: '#00e676',
-  text:   '#eef2f7',
-  sub:    '#6b7a94',
-  border: 'rgba(255,255,255,0.07)',
+  bg:     'var(--ad-bg)',
+  card:   'var(--ad-card)',
+  accent: 'var(--ad-accent)',
+  text:   'var(--ad-text)',
+  sub:    'var(--ad-sub)',
+  border: 'var(--ad-border)',
 }
 
 const STATUS_CONFIG: Record<Order['status'], {
@@ -96,7 +96,7 @@ export default function OrdersPage() {
   const maxCount = chartData[0]?.[1] ?? 1
 
   return (
-    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <AdminNav />
 
       {/* Sub-tabs */}
@@ -129,11 +129,11 @@ export default function OrdersPage() {
               <div className="space-y-4">
                 {[1, 2].map(i => (
                   <div key={i} className="rounded-2xl overflow-hidden animate-pulse" style={{ backgroundColor: S.card }}>
-                    <div className="h-12" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
+                    <div className="h-12" style={{ backgroundColor: 'var(--ad-overlay)' }} />
                     <div className="p-4 space-y-3">
-                      <div className="h-4 rounded-full w-2/3" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
-                      <div className="h-3 rounded-full w-1/2" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
-                      <div className="h-10 rounded-xl mt-4" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
+                      <div className="h-4 rounded-full w-2/3" style={{ backgroundColor: 'var(--ad-overlay)' }} />
+                      <div className="h-3 rounded-full w-1/2" style={{ backgroundColor: 'var(--ad-overlay)' }} />
+                      <div className="h-10 rounded-xl mt-4" style={{ backgroundColor: 'var(--ad-overlay)' }} />
                     </div>
                   </div>
                 ))}
@@ -203,7 +203,7 @@ export default function OrdersPage() {
 
                     {/* Items */}
                     <div className="rounded-xl p-3 space-y-1.5"
-                      style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: `1px solid ${S.border}` }}>
+                      style={{ backgroundColor: 'var(--ad-overlay)', border: `1px solid ${S.border}` }}>
                       {order.items.map((item, i) => (
                         <div key={i} className="flex justify-between text-sm">
                           <span style={{ color: S.text }}>

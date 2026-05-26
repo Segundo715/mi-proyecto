@@ -4,12 +4,12 @@ import { useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {
-  bg:     '#080b16',
-  card:   '#0e1225',
-  accent: '#00e676',
-  text:   '#eef2f7',
-  sub:    '#6b7a94',
-  border: 'rgba(255,255,255,0.07)',
+  bg:     'var(--ad-bg)',
+  card:   'var(--ad-card)',
+  accent: 'var(--ad-accent)',
+  text:   'var(--ad-text)',
+  sub:    'var(--ad-sub)',
+  border: 'var(--ad-border)',
 }
 
 interface InventoryItem {
@@ -64,7 +64,7 @@ export default function AdminProduccionPage() {
   }
 
   return (
-    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <AdminNav />
 
       <div className="max-w-3xl mx-auto p-4 space-y-5">
@@ -88,7 +88,7 @@ export default function AdminProduccionPage() {
               className="px-4 py-1.5 rounded-full text-xs font-bold transition-colors"
               style={filter === f.key
                 ? { backgroundColor: S.accent, color: '#000' }
-                : { backgroundColor: 'rgba(255,255,255,0.06)', color: S.sub }}>
+                : { backgroundColor: 'var(--ad-overlay)', color: S.sub }}>
               {f.label}
             </button>
           ))}
@@ -122,7 +122,7 @@ export default function AdminProduccionPage() {
                             style={{ backgroundColor: st.bg, color: st.color }}>{st.label}</span>
                         </div>
                       </div>
-                      <div className="h-1.5 rounded-full mb-2" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}>
+                      <div className="h-1.5 rounded-full mb-2" style={{ backgroundColor: 'var(--ad-border)' }}>
                         <div className="h-1.5 rounded-full transition-all"
                           style={{ width: `${pct}%`, backgroundColor: item.status === 'ok' ? S.accent : st.color }} />
                       </div>

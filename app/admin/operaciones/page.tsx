@@ -4,8 +4,8 @@ import { useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {
-  bg: '#080b16', card: '#0e1225', accent: '#00e676',
-  text: '#eef2f7', sub: '#6b7a94', border: 'rgba(255,255,255,0.07)',
+  bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
+  text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)',
 }
 
 const SALON = [
@@ -30,7 +30,7 @@ const TERRAZA = [
 ]
 
 const TABLE_STYLE: Record<string, { border: string; textColor: string; bg: string }> = {
-  free:     { border: 'rgba(0,230,118,.3)',  textColor: '#00e676', bg: 'rgba(0,230,118,.05)'  },
+  free:     { border: 'rgba(0,230,118,.3)',  textColor: 'var(--ad-accent)', bg: 'rgba(0,230,118,.05)'  },
   occupied: { border: 'rgba(239,68,68,.3)',  textColor: '#f87171', bg: 'rgba(239,68,68,.05)'  },
   billing:  { border: 'rgba(251,191,36,.3)', textColor: '#fbbf24', bg: 'rgba(251,191,36,.05)' },
 }
@@ -48,7 +48,7 @@ export default function AdminOperacionesPage() {
   const [tab, setTab] = useState<Tab>('mesas')
 
   return (
-    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <AdminNav />
       <div className="max-w-[1200px] mx-auto p-4 space-y-4">
 
@@ -79,7 +79,7 @@ export default function AdminOperacionesPage() {
         {tab === 'mesas' && (
           <div className="space-y-4">
             <div className="flex gap-4 flex-wrap">
-              {[['#00e676','Libre'],['#ef4444','Ocupada'],['#fbbf24','Cuenta']].map(([c,l]) => (
+              {[['var(--ad-accent)','Libre'],['#ef4444','Ocupada'],['#fbbf24','Cuenta']].map(([c,l]) => (
                 <div key={l} className="flex items-center gap-2 text-sm" style={{ color: S.sub }}>
                   <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: c }} />{l}
                 </div>
@@ -160,7 +160,7 @@ export default function AdminOperacionesPage() {
                 ],
               },
               {
-                title: '✅ Listos (3)', color: '#00e676',
+                title: '✅ Listos (3)', color: 'var(--ad-accent)',
                 items: [
                   { icon: '🍛', bg: 'rgba(0,230,118,.1)', text: '#1245 — Orden completa', sub: 'Mesa 10 · listo 2 min' },
                   { icon: '🛵', bg: 'rgba(0,230,118,.1)', text: '#1246 — Delivery listo', sub: 'Esperando rider'        },
