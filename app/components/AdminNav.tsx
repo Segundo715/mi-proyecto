@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { FEATURES, type FeatureKey } from '@/lib/features'
 import AdminThemeToggle from '@/app/components/AdminThemeToggle'
 import { useBrand } from '@/app/components/BrandProvider'
@@ -30,7 +30,11 @@ const NAV_LINKS: NavLink[] = [
   { href: '/admin/estadisticas',    icon: 'analytics',        label: 'Analytics',           feature: 'analytics' },
   { href: '/admin/reportes',        icon: 'reportes',         label: 'Reportes',            feature: 'reportes' },
   { href: '/admin/configuracion',   icon: 'settings',         label: 'Configuración',       feature: 'configuracion' },
+  { href: '/admin/navegador',       icon: 'navbar',           label: 'Navegador' },
 ]
+
+const ORDER_KEY = 'admin_nav_order'
+const DRAG_THRESHOLD = 8
 
 const ICONS: Record<string, string> = {
   home:             '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
@@ -53,6 +57,7 @@ const ICONS: Record<string, string> = {
   reviews:          '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
   scan:             '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="21" y2="14"/><line x1="14" y1="18" x2="18" y2="18"/><line x1="14" y1="21" x2="21" y2="21"/>',
   logout:           '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+  navbar:           '<rect x="3" y="14" width="18" height="7" rx="2"/><circle cx="8" cy="17.5" r="1"/><circle cx="12" cy="17.5" r="1"/><circle cx="16" cy="17.5" r="1"/><path d="M12 3v8M8 7l4-4 4 4"/>',
 }
 
 function NavIcon({ name }: { name: string }) {
@@ -78,14 +83,28 @@ function contrastText(hex: string): string {
   return lum > 0.6 ? '#000' : '#fff'
 }
 
+function normalizeOrder(saved: string[], ids: string[]) {
+  return [...saved.filter(id => ids.includes(id)), ...ids.filter(id => !saved.includes(id))]
+}
+
 export default function AdminNav() {
   const router = useRouter()
   const [pathname, setPathname] = useState('')
   const [open, setOpen] = useState(false)
+  const [order, setOrder] = useState<string[]>([])
+  const [draggingHref, setDraggingHref] = useState<string | null>(null)
+  const dragRef = useRef<{ href: string; startX: number; startY: number; dragging: boolean } | null>(null)
+  const suppressClickRef = useRef(false)
   const brand = useBrand()
 
   useEffect(() => {
-    setPathname(window.location.pathname)
+    queueMicrotask(() => {
+      setPathname(window.location.pathname)
+      try {
+        const saved = JSON.parse(localStorage.getItem(ORDER_KEY) ?? '[]')
+        if (Array.isArray(saved)) setOrder(saved.map(String))
+      } catch {}
+    })
   }, [])
 
   const brandName = brand.name || 'NICHO'
@@ -104,6 +123,77 @@ export default function AdminNav() {
   function isActive(href: string, exact?: boolean) {
     if (exact) return pathname === href
     return pathname.startsWith(href)
+  }
+
+  const orderedLinks = useMemo(() => {
+    const ids = NAV_LINKS.map(link => link.href)
+    const normalized = normalizeOrder(order, ids)
+    const linksByHref = new Map(NAV_LINKS.map(link => [link.href, link]))
+    return normalized.map(href => linksByHref.get(href)).filter(Boolean) as NavLink[]
+  }, [order])
+
+  function moveLink(fromHref: string, toHref: string) {
+    if (fromHref === toHref) return
+    const allIds = NAV_LINKS.map(link => link.href)
+
+    setOrder(prev => {
+      const ids = normalizeOrder(prev, allIds)
+      const fromIndex = ids.indexOf(fromHref)
+      const toIndex = ids.indexOf(toHref)
+      if (fromIndex < 0 || toIndex < 0) return prev
+
+      const next = [...ids]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      localStorage.setItem(ORDER_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  function startDrag(href: string, e: React.PointerEvent<HTMLElement>) {
+    e.preventDefault()
+    dragRef.current = { href, startX: e.clientX, startY: e.clientY, dragging: false }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  function updateDrag(e: React.PointerEvent<HTMLElement>) {
+    e.preventDefault()
+    const drag = dragRef.current
+    if (!drag) return
+
+    const distance = Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY)
+    if (!drag.dragging && distance > DRAG_THRESHOLD) {
+      drag.dragging = true
+      suppressClickRef.current = true
+      setDraggingHref(drag.href)
+    }
+    if (!drag.dragging) return
+
+    const list = e.currentTarget.closest<HTMLElement>('[data-admin-nav-list]')
+    if (!list) return
+
+    const items = Array.from(list.querySelectorAll<HTMLElement>('[data-admin-nav-href]'))
+    const targetIndex = items.findIndex(item => {
+      const rect = item.getBoundingClientRect()
+      return e.clientY < rect.top + rect.height / 2
+    })
+    const insertIndex = targetIndex === -1 ? items.length - 1 : targetIndex
+    const targetHref = items[insertIndex]?.dataset.adminNavHref
+    if (targetHref && targetHref !== drag.href) moveLink(drag.href, targetHref)
+  }
+
+  function endDrag() {
+    dragRef.current = null
+    setDraggingHref(null)
+    window.setTimeout(() => {
+      suppressClickRef.current = false
+    }, 0)
+  }
+
+  function cancelIfDragging(e: React.MouseEvent<HTMLElement>) {
+    if (!suppressClickRef.current) return
+    e.preventDefault()
+    e.stopPropagation()
   }
 
   const S = {
@@ -162,15 +252,25 @@ export default function AdminNav() {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto" style={navVars}>
-          {NAV_LINKS.map(link => {
+        <nav data-admin-nav-list className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto" style={navVars}>
+          {orderedLinks.map(link => {
             const active = isActive(link.href, link.exact)
             const enabled = isEnabled(link.feature)
+            const isDragging = draggingHref === link.href
             return (
-              <a key={link.href} href={enabled ? link.href : undefined}
-                onClick={enabled ? undefined : e => e.preventDefault()}
-                className={`ad-navlink flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all${active ? ' is-active' : ''}`}
-                style={active ? navActive : { color: 'var(--ad-sub)', opacity: enabled ? 1 : 0.4, cursor: enabled ? 'pointer' : 'not-allowed' }}>
+              <a key={link.href}
+                data-admin-nav-href={link.href}
+                draggable={false}
+                href={enabled ? link.href : undefined}
+                onPointerDown={e => startDrag(link.href, e)}
+                onPointerMove={updateDrag}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+                onClick={e => { cancelIfDragging(e); if (!enabled) e.preventDefault() }}
+                className={`ad-navlink flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all touch-none select-none${active ? ' is-active' : ''}`}
+                style={active
+                  ? { ...navActive, transform: isDragging ? 'scale(1.03)' : 'none', cursor: 'grab' }
+                  : { color: 'var(--ad-sub)', opacity: enabled ? (isDragging ? 0.82 : 1) : 0.4, cursor: enabled ? 'grab' : 'not-allowed', transform: isDragging ? 'scale(1.03)' : 'none' }}>
                 <NavIcon name={link.icon} />
                 <span className="flex-1">{link.label}</span>
                 {!enabled && (
@@ -226,15 +326,27 @@ export default function AdminNav() {
               style={{ backgroundColor: 'var(--ad-overlay)', color: 'var(--ad-sub)' }}>×</button>
           </div>
 
-          <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto" style={navVars}>
-            {NAV_LINKS.map(link => {
+          <nav data-admin-nav-list className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto" style={navVars}>
+            {orderedLinks.map(link => {
               const active = isActive(link.href, link.exact)
               const enabled = isEnabled(link.feature)
+              const isDragging = draggingHref === link.href
               return (
-                <a key={link.href} href={enabled ? link.href : undefined}
-                  onClick={enabled ? (() => setOpen(false)) : (e => e.preventDefault())}
-                  className={`ad-navlink flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium${active ? ' is-active' : ''}`}
-                  style={active ? navActive : { color: 'var(--ad-sub)', opacity: enabled ? 1 : 0.4 }}>
+                <a key={link.href}
+                  data-admin-nav-href={link.href}
+                  draggable={false}
+                  href={enabled ? link.href : undefined}
+                  onPointerDown={e => startDrag(link.href, e)}
+                  onPointerMove={updateDrag}
+                  onPointerUp={endDrag}
+                  onPointerCancel={endDrag}
+                  onClick={enabled
+                    ? (e => { cancelIfDragging(e); if (!suppressClickRef.current) setOpen(false) })
+                    : (e => { cancelIfDragging(e); e.preventDefault() })}
+                  className={`ad-navlink flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium touch-none select-none${active ? ' is-active' : ''}`}
+                  style={active
+                    ? { ...navActive, transform: isDragging ? 'scale(1.03)' : 'none', cursor: 'grab' }
+                    : { color: 'var(--ad-sub)', opacity: enabled ? (isDragging ? 0.82 : 1) : 0.4, transform: isDragging ? 'scale(1.03)' : 'none', cursor: enabled ? 'grab' : 'not-allowed' }}>
                   <NavIcon name={link.icon} />
                   <span className="flex-1">{link.label}</span>
                   {!enabled && (

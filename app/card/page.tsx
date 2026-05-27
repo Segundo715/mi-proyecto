@@ -38,6 +38,7 @@ export default function CardPage() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [cfg, setCfg] = useState<CafeConfig>(DEFAULT_CAFE)
+  const [flipped, setFlipped] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -143,75 +144,128 @@ export default function CardPage() {
   const visits = customer?.visits ?? 0
   const earned = visits >= cfg.goal
   const lightColor = `color-mix(in srgb, ${cfg.color} 55%, #fff)`
+  const cardGradient = `linear-gradient(135deg, color-mix(in srgb, ${cfg.color} 25%, #000) 0%, ${cfg.color} 60%, ${lightColor} 100%)`
+
+  // Estilos compartidos por las dos caras de la tarjeta (flip 3D)
+  const faceStyle: React.CSSProperties = {
+    backfaceVisibility: 'hidden',
+    WebkitBackfaceVisibility: 'hidden',
+    background: cardGradient,
+  }
 
   return (
     <div className="min-h-screen pb-24" style={{ backgroundColor: '#000' }}>
       <div className="flex flex-col items-center px-4 pt-6">
-        {/* ── TARJETA ── */}
-        <div className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl mb-4"
-          style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${cfg.color} 25%, #000) 0%, ${cfg.color} 60%, ${lightColor} 100%)` }}>
+        {/* ── TARJETA QUE GIRA ── */}
+        <div className="w-full max-w-sm" style={{ perspective: '1600px' }}>
+          <div role="button" tabIndex={0}
+            onClick={() => setFlipped(f => !f)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFlipped(f => !f) } }}
+            aria-label="Girar tarjeta"
+            className="relative w-full transition-transform duration-700 ease-out cursor-pointer"
+            style={{
+              transformStyle: 'preserve-3d',
+              transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+              height: '460px',
+            }}>
 
-          {/* Logo + marca */}
-          <div className="flex items-center justify-between px-5 pt-5 pb-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={cfg.logo} alt="Logo" className="h-10 w-auto object-contain" />
-            {cfg.brandLogo
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={cfg.brandLogo} alt="Marca" className="h-8 w-auto object-contain" />
-              : <span className="text-white font-black text-base tracking-wide">{cfg.brandText}</span>}
-          </div>
+            {/* ───────── CARA FRONTAL (diseño original) ───────── */}
+            <div className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl flex flex-col" style={faceStyle}>
+              {/* Logo + marca */}
+              <div className="flex items-center justify-between px-5 pt-5 pb-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={cfg.logo} alt="Logo" className="h-10 w-auto object-contain" />
+                {cfg.brandLogo
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={cfg.brandLogo} alt="Marca" className="h-8 w-auto object-contain" />
+                  : <span className="text-white font-black text-base tracking-wide">{cfg.brandText}</span>}
+              </div>
 
-          {/* Imagen con sellos superpuestos */}
-          <div className="relative" style={{ height: '170px' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={cfg.image} alt=""
-              className="w-full h-full object-cover" />
-            {/* Sellos encima de la imagen */}
-            <div className="absolute inset-0 flex items-center justify-center gap-3 px-6">
-              {Array.from({ length: cfg.goal }).map((_, i) => {
-                const filled = i < visits
-                return (
-                  <div key={i}
-                    className="flex-1 aspect-square rounded-full flex items-center justify-center border-2 transition-all"
-                    style={{
-                      backgroundColor: filled ? cfg.color : 'rgba(255,255,255,0.18)',
-                      borderColor: filled ? 'white' : 'rgba(255,255,255,0.45)',
-                      backdropFilter: 'blur(3px)',
-                      boxShadow: filled ? `0 0 14px ${cfg.color}` : 'none',
-                    }}>
-                    {filled && <RewardIcon name={cfg.icon} className="w-3/4 h-3/4" style={{ color: cfg.iconColor }} />}
-                  </div>
-                )
-              })}
+              {/* Imagen con sellos superpuestos */}
+              <div className="relative" style={{ height: '170px' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={cfg.image} alt="" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 flex items-center justify-center gap-3 px-6">
+                  {Array.from({ length: cfg.goal }).map((_, i) => {
+                    const filled = i < visits
+                    return (
+                      <div key={i}
+                        className="flex-1 aspect-square rounded-full flex items-center justify-center border-2 transition-all"
+                        style={{
+                          backgroundColor: filled ? cfg.color : 'rgba(255,255,255,0.18)',
+                          borderColor: filled ? 'white' : 'rgba(255,255,255,0.45)',
+                          backdropFilter: 'blur(3px)',
+                          boxShadow: filled ? `0 0 14px ${cfg.color}` : 'none',
+                        }}>
+                        {filled && <RewardIcon name={cfg.icon} className="w-3/4 h-3/4" style={{ color: cfg.iconColor }} />}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Oferta + contador sellos */}
+              <div className="flex items-start gap-3 px-5 py-4"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-black uppercase tracking-widest" style={{ color: lightColor }}>Oferta de recompensa</p>
+                  <p className="text-white text-sm font-semibold mt-0.5 inline-flex items-center gap-1.5">
+                    Cada {cfg.goal} visitas: {cfg.reward}
+                    <RewardIcon name={cfg.icon} size={15} style={{ color: cfg.iconColor }} />
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-xs font-black uppercase tracking-widest" style={{ color: lightColor }}>Sellos · Premios</p>
+                  <p className="text-white text-sm font-black mt-0.5">
+                    {visits}/{cfg.goal} · {earned ? '1' : '0'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Pista para girar */}
+              <div className="flex items-center justify-center gap-1.5 pb-4 mt-auto text-white/80 text-xs font-semibold">
+                <span>Toca para ver tu código</span>
+                <span aria-hidden className="text-base leading-none">↻</span>
+              </div>
             </div>
-          </div>
 
-          {/* Oferta + contador sellos */}
-          <div className="flex items-start gap-3 px-5 py-4"
-            style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-black uppercase tracking-widest" style={{ color: lightColor }}>Oferta de recompensa</p>
-              <p className="text-white text-sm font-semibold mt-0.5 inline-flex items-center gap-1.5">
-                Cada {cfg.goal} visitas: {cfg.reward}
-                <RewardIcon name={cfg.icon} size={15} style={{ color: cfg.iconColor }} />
-              </p>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-xs font-black uppercase tracking-widest" style={{ color: lightColor }}>Sellos · Premios</p>
-              <p className="text-white text-sm font-black mt-0.5">
-                {visits}/{cfg.goal} · {earned ? '1' : '0'}
-              </p>
-            </div>
-          </div>
+            {/* ───────── CARA TRASERA: QR + nombre del titular ───────── */}
+            <div className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+              style={{ ...faceStyle, transform: 'rotateY(180deg)' }}>
+              {/* Logo centrado arriba */}
+              <div className="flex justify-center pt-4 pb-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={cfg.logo} alt="Logo" className="h-9 w-auto object-contain" />
+              </div>
 
-          {/* QR */}
-          <div className="mx-5 mb-5 bg-white rounded-2xl p-4 flex flex-col items-center">
-            <QRCode value={customer!.id} size={110} style={{ height: 'auto', maxWidth: '200px', width: '100%' }} />
-            <p className="text-xs mt-2.5 font-semibold text-center" style={{ color: cfg.color }}>
-              {earned ? `🎉 ¡${cfg.reward}! Muéstraselo al cajero` : 'Muestra este QR al empleado'}
-            </p>
+              {/* Cinta magnética (decorativa, sin función) */}
+              <div aria-hidden className="w-full h-11" style={{ backgroundColor: '#000' }} />
+
+              {/* Nombre grande pegado a la orilla */}
+              <p className="text-white text-3xl font-black leading-tight px-5 pt-4 truncate">{customer?.name}</p>
+
+              {/* QR centrado con el aviso justo encima */}
+              <div className="flex-1 flex flex-col items-center justify-center px-5">
+                <p className="text-sm font-semibold text-center text-white mb-3">
+                  {earned ? `🎉 ¡${cfg.reward}! Muéstraselo al cajero` : 'Muestra este QR al empleado'}
+                </p>
+                <div className="bg-white rounded-2xl p-4 flex flex-col items-center w-full max-w-[230px]">
+                  <QRCode value={customer!.id} size={150} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
+                </div>
+              </div>
+
+              {/* Pista para girar */}
+              <div className="flex items-center justify-center gap-1.5 pb-4 text-white/80 text-xs font-semibold">
+                <span aria-hidden className="text-base leading-none">↻</span>
+                <span>Toca para volver</span>
+              </div>
+            </div>
           </div>
         </div>
+
+        <p className="text-xs text-center max-w-sm mt-4" style={{ color: '#666' }}>
+          Toca la tarjeta para girarla.
+        </p>
       </div>
 
       <CustomerNav active="card" />

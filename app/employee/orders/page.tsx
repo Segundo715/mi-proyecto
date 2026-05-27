@@ -16,12 +16,12 @@ interface Order {
 }
 
 const S = {
-  bg:     '#080b16',
-  card:   '#0e1225',
-  accent: '#00e676',
-  text:   '#eef2f7',
-  sub:    '#6b7a94',
-  border: 'rgba(255,255,255,0.07)',
+  bg:     'var(--ad-bg)',
+  card:   'var(--ad-card)',
+  accent: 'var(--ad-accent)',
+  text:   'var(--ad-text)',
+  sub:    'var(--ad-sub)',
+  border: 'var(--ad-border)',
 }
 
 const STATUS_CONFIG: Record<Order['status'], { label: string; headerBg: string; cardBorderColor: string; step: number }> = {
@@ -86,7 +86,7 @@ export default function EmployeeOrdersPage() {
   const delivered = orders.filter(o => o.status === 'delivered')
 
   return (
-    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <EmployeeNav />
 
       <div className="max-w-2xl mx-auto p-4 space-y-4">
@@ -100,7 +100,7 @@ export default function EmployeeOrdersPage() {
           </h1>
           <button type="button" onClick={load}
             className="text-xs px-3 py-1.5 rounded-full font-semibold"
-            style={{ backgroundColor: 'rgba(0,230,118,0.1)', color: S.accent, border: '1px solid rgba(0,230,118,0.3)' }}>
+            style={{ backgroundColor: 'var(--ad-overlay)', color: S.accent, border: `1px solid ${S.border}` }}>
             ↻ Actualizar
           </button>
         </div>
@@ -109,10 +109,10 @@ export default function EmployeeOrdersPage() {
           <div className="space-y-4">
             {[1, 2].map(i => (
               <div key={i} className="rounded-2xl overflow-hidden animate-pulse" style={{ backgroundColor: S.card }}>
-                <div className="h-12" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
+                <div className="h-12" style={{ backgroundColor: 'var(--ad-overlay)' }} />
                 <div className="p-4 space-y-3">
-                  <div className="h-4 rounded-full w-2/3" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
-                  <div className="h-10 rounded-xl mt-4" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
+                  <div className="h-4 rounded-full w-2/3" style={{ backgroundColor: 'var(--ad-overlay)' }} />
+                  <div className="h-10 rounded-xl mt-4" style={{ backgroundColor: 'var(--ad-overlay)' }} />
                 </div>
               </div>
             ))}
@@ -172,7 +172,7 @@ export default function EmployeeOrdersPage() {
                 </div>
 
                 <div className="rounded-xl p-3 space-y-1.5"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: `1px solid ${S.border}` }}>
+                  style={{ backgroundColor: 'var(--ad-overlay)', border: `1px solid ${S.border}` }}>
                   {order.items.map((item, i) => (
                     <div key={i} className="flex justify-between text-sm">
                       <span style={{ color: S.text }}>

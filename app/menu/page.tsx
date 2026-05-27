@@ -28,7 +28,16 @@ const STATUS_MSG: Record<Order['status'], { text: string; sub: string; emoji: st
   delivered: { text: 'Pedido entregado',        sub: '¡Buen provecho!',         emoji: '🎉' },
 }
 
+const STATUS_STEPS: { status: Order['status']; label: string }[] = [
+  { status: 'pending', label: 'Recibido' },
+  { status: 'preparing', label: 'Preparando' },
+  { status: 'ready', label: 'Listo' },
+  { status: 'delivered', label: 'Entregado' },
+]
+
 const MY_ORDERS_KEY = 'my_order_ids'
+const ORDER_POLL_MS = 5000
+const DELIVERED_VISIBLE_MS = 30000
 const INPUT = 'w-full border border-[#B90F45]/40 rounded-2xl px-4 py-3 text-white bg-[#1a1a1a] placeholder-gray-500 focus:outline-none focus:border-[#B90F45] transition-colors'
 
 export default function MenuPage() {
@@ -42,6 +51,7 @@ export default function MenuPage() {
   const [slide, setSlide] = useState(0)
   const [myOrders, setMyOrders] = useState<Order[]>([])
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const deliveredCleanupRef = useRef<Set<string>>(new Set())
 
   const [favorites, setFavorites] = useState<string[]>([])
   const [openCategory, setOpenCategory] = useState<string | null>(null)
@@ -57,6 +67,74 @@ export default function MenuPage() {
   const [orderSubmitting, setOrderSubmitting] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
 
+  function getStoredOrderIds(): string[] {
+    try {
+      return JSON.parse(localStorage.getItem(MY_ORDERS_KEY) ?? '[]')
+    } catch {
+      return []
+    }
+  }
+
+  function setStoredOrderIds(ids: string[]) {
+    localStorage.setItem(MY_ORDERS_KEY, JSON.stringify(ids))
+  }
+
+  function stopOrderPolling() {
+    if (!pollRef.current) return
+    clearInterval(pollRef.current)
+    pollRef.current = null
+  }
+
+  function startOrderPolling() {
+    if (pollRef.current) return
+    pollRef.current = setInterval(() => {
+      if (!document.hidden) pollMyOrders()
+    }, ORDER_POLL_MS)
+  }
+
+  async function pollMyOrders() {
+    const ids = getStoredOrderIds()
+    if (ids.length === 0) {
+      setMyOrders([])
+      stopOrderPolling()
+      return
+    }
+
+    try {
+      const res = await fetch('/api/orders')
+      if (!res.ok) return
+
+      const all: Order[] = await res.json()
+      const mine = all.filter(o => ids.includes(o.id))
+      const deliveredIds = mine.filter(o => o.status === 'delivered').map(o => o.id)
+      const active = mine.filter(o => o.status !== 'delivered')
+
+      setMyOrders(mine)
+
+      if (deliveredIds.length > 0) {
+        const idsToClean = deliveredIds.filter(id => !deliveredCleanupRef.current.has(id))
+        idsToClean.forEach(id => deliveredCleanupRef.current.add(id))
+
+        if (idsToClean.length > 0) {
+          setTimeout(() => {
+            const latestIds = getStoredOrderIds()
+            const remaining = latestIds.filter(id => !idsToClean.includes(id))
+            setStoredOrderIds(remaining)
+            setMyOrders(prev => prev.filter(order => !idsToClean.includes(order.id)))
+            idsToClean.forEach(id => deliveredCleanupRef.current.delete(id))
+            if (remaining.length === 0) stopOrderPolling()
+          }, DELIVERED_VISIBLE_MS)
+        }
+      }
+
+      if (active.length > 0) {
+        startOrderPolling()
+      } else {
+        stopOrderPolling()
+      }
+    } catch {}
+  }
+
   useEffect(() => {
     if (FEATURES.favorites.enabled) {
       setFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? '[]'))
@@ -64,11 +142,25 @@ export default function MenuPage() {
     fetch('/api/menu').then(r => r.ok ? r.json() : []).then((d: MenuItem[]) => {
       setItems(d)
       setLoadingMenu(false)
-      if (d.length > 0) setOpenCategory(d[0].category)
+      // Los desplegables arrancan cerrados (openCategory se queda en null)
     }).catch(() => setLoadingMenu(false))
     pollMyOrders()
-    pollRef.current = setInterval(pollMyOrders, 10000)
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
+    if (getStoredOrderIds().length > 0) startOrderPolling()
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        stopOrderPolling()
+      } else {
+        pollMyOrders()
+        if (getStoredOrderIds().length > 0) startOrderPolling()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility)
+      stopOrderPolling()
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -89,23 +181,6 @@ export default function MenuPage() {
     const id = setInterval(() => setSlide(s => (s + 1) % carousel.length), 4000)
     return () => clearInterval(id)
   }, [carousel.length])
-
-  async function pollMyOrders() {
-    const ids: string[] = JSON.parse(localStorage.getItem(MY_ORDERS_KEY) ?? '[]')
-    if (ids.length === 0) return
-    try {
-      const res = await fetch('/api/orders')
-      if (!res.ok) return
-      const all: Order[] = await res.json()
-      const mine = all.filter(o => ids.includes(o.id))
-      const delivered = mine.filter(o => o.status === 'delivered')
-      if (delivered.length > 0) {
-        const remaining = ids.filter(id => !delivered.some(o => o.id === id))
-        setTimeout(() => localStorage.setItem(MY_ORDERS_KEY, JSON.stringify(remaining)), 30000)
-      }
-      setMyOrders(mine)
-    } catch {}
-  }
 
   function likeItem(item: MenuItem) {
     // Un solo voto por platillo: si ya votó, no hace nada
@@ -201,9 +276,10 @@ export default function MenuPage() {
       })
       if (res.ok) {
         const order: Order = await res.json()
-        const ids: string[] = JSON.parse(localStorage.getItem(MY_ORDERS_KEY) ?? '[]')
-        localStorage.setItem(MY_ORDERS_KEY, JSON.stringify([...ids, order.id]))
+        const ids = getStoredOrderIds()
+        setStoredOrderIds([...ids, order.id])
         setMyOrders(prev => [...prev, order])
+        startOrderPolling()
         setCart([])
         resetOrderForm()
         setOrderSuccess(true)
@@ -275,16 +351,53 @@ export default function MenuPage() {
 
       {/* Banners de estado de pedidos */}
       {myOrders.length > 0 && (
-        <div className="px-4 pt-3 space-y-2" style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div className="px-4 pt-3 space-y-3" style={{ maxWidth: '800px', margin: '0 auto' }}>
           {myOrders.map(order => {
             const s = STATUS_MSG[order.status]
+            const currentStep = STATUS_STEPS.findIndex(step => step.status === order.status)
             return (
-              <div key={order.id} className="border rounded-xl px-4 py-3 flex items-center gap-3"
-                style={{ backgroundColor: '#0d0d0d', borderColor: '#B90F45' }}>
-                <span className="text-2xl shrink-0">{s.emoji}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm text-white">{s.text}</p>
-                  <p className="text-xs text-gray-400">{s.sub} · {order.items.map(i => `${i.quantity}× ${i.name}`).join(', ')}</p>
+              <div key={order.id} className="rounded-xl px-4 py-4">
+                <div className="mb-4 flex items-start gap-3">
+                  <img src={logo} alt="" className="mt-0.5 h-7 w-7 shrink-0 object-contain" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-white">{s.text}</p>
+                    <p className="text-xs text-gray-400">{s.sub} · {order.items.map(i => `${i.quantity}× ${i.name}`).join(', ')}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-4 items-start gap-1">
+                  {STATUS_STEPS.map((step, index) => {
+                    const isDone = index <= currentStep
+                    const isCurrent = index === currentStep
+
+                    return (
+                      <div key={step.status} className="relative flex flex-col items-center text-center">
+                        {index > 0 && (
+                          <span
+                            className="absolute right-1/2 top-4 h-0.5 w-full -translate-y-1/2"
+                            style={{ backgroundColor: index <= currentStep ? '#B90F45' : 'rgba(255,255,255,0.16)' }}
+                          />
+                        )}
+                        <span
+                          className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-black"
+                          style={{
+                            backgroundColor: isDone ? '#B90F45' : '#171717',
+                            borderColor: isDone ? '#B90F45' : 'rgba(255,255,255,0.24)',
+                            color: isDone ? '#fff' : '#9ca3af',
+                            boxShadow: isCurrent ? '0 0 0 4px rgba(185,15,69,0.22)' : 'none',
+                          }}
+                        >
+                          {isDone ? '✓' : index + 1}
+                        </span>
+                        <span
+                          className="mt-2 text-[11px] font-bold leading-tight"
+                          style={{ color: isDone ? '#fff' : '#6b7280' }}
+                        >
+                          {step.label}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )
@@ -353,7 +466,10 @@ export default function MenuPage() {
                     className="w-full flex items-center justify-between px-3 py-3 text-white font-bold text-base"
                     style={{ backgroundColor: isOpen ? hoverColor : btnColor, borderTop: '1px solid #1a1a1a' }}>
                     <span>{category}</span>
-                    <span style={{ fontSize: '18px' }}>{isOpen ? '∧' : '∨'}</span>
+                    <svg className="shrink-0 mr-10" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points={isOpen ? '6 15 12 9 18 15' : '6 9 12 15 18 9'} />
+                    </svg>
                   </button>
 
                   {isOpen && (
@@ -397,7 +513,10 @@ export default function MenuPage() {
                                   </span>
                                 </span>
                               )}
-                              <span className="shrink-0" style={{ fontSize: '18px' }}>{isItemOpen ? '∧' : '∨'}</span>
+                              <svg className="shrink-0 mr-14" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points={isItemOpen ? '6 15 12 9 18 15' : '6 9 12 15 18 9'} />
+                              </svg>
                             </button>
                             {isItemOpen && <ItemDetail item={item} />}
                           </div>
@@ -433,6 +552,9 @@ export default function MenuPage() {
         <div className="fixed inset-0 z-[60] bg-black/80 flex items-start justify-center backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-b-3xl p-6 pt-5 pb-8 space-y-4 max-h-[90vh] overflow-y-auto"
             style={{ backgroundColor: '#0d0d0d' }}>
+            <div className="flex justify-center">
+              <img src={logo} alt="" style={{ width: '34px', height: '34px', objectFit: 'contain' }} />
+            </div>
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-black text-white">Tu pedido</h2>
               <button type="button" onClick={resetOrderForm}
@@ -482,12 +604,21 @@ export default function MenuPage() {
                 {
                   type: 'restaurante' as OrderType, label: 'En restaurante',
                   // Cubiertos (tenedor + cuchillo)
-                  path: 'M3 2v7c0 1.1.9 2 2 2a2 2 0 0 0 2-2V2M5 2v9M5 11v11M16 2v20M16 13h3a1 1 0 0 0 1-1c0-5-2-10-4-10',
+                  icon: <path d="M3 2v7c0 1.1.9 2 2 2a2 2 0 0 0 2-2V2M5 2v9M5 11v11M16 2v20M16 13h3a1 1 0 0 0 1-1c0-5-2-10-4-10" />,
                 },
                 {
                   type: 'domicilio' as OrderType, label: 'A domicilio',
-                  // Bolsa de entrega
-                  path: 'M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4ZM3 6h18M16 10a4 4 0 0 1-8 0',
+                  // Motoneta / scooter
+                  icon: (
+                    <>
+                      <circle cx="6" cy="18" r="2.5" />
+                      <circle cx="18" cy="18" r="2.5" />
+                      <path d="M8.5 18h6.5l2-9h-2.5" />
+                      <path d="M13 9h3" />
+                      <path d="M17 9l1 6.5" />
+                      <path d="M4 12h2.5a3.5 3.5 0 0 1 3.5 3.5v.5" />
+                    </>
+                  ),
                 },
               ]).map(opt => {
                 const active = orderType === opt.type
@@ -500,8 +631,8 @@ export default function MenuPage() {
                       border: `1.5px solid ${active ? hoverColor : '#333'}`,
                     }}>
                     <svg viewBox="0 0 24 24" width="26" height="26" fill="none"
-                      stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d={opt.path} />
+                      stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                      {opt.icon}
                     </svg>
                     {opt.label}
                   </button>
@@ -541,8 +672,25 @@ export default function MenuPage() {
                   <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Forma de pago *</label>
                   <div className="grid grid-cols-2 gap-3">
                     {([
-                      { method: 'stripe' as PayMethod, icon: '💳', label: 'Stripe' },
-                      { method: 'deposito' as PayMethod, icon: '🏦', label: 'Depósito' },
+                      {
+                        method: 'stripe' as PayMethod, label: 'Stripe',
+                        // Logo oficial de Stripe (no se duplica el texto)
+                        icon: <img src="/stripe.svg" alt="Stripe" className="h-5 w-auto" style={{ filter: 'brightness(1.4)' }} />,
+                        showLabel: false,
+                      },
+                      {
+                        method: 'deposito' as PayMethod, label: 'Depósito',
+                        // Tarjeta
+                        icon: (
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
+                            stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="2" y="5" width="20" height="14" rx="2.5" />
+                            <line x1="2" y1="10" x2="22" y2="10" />
+                            <line x1="6" y1="15" x2="10" y2="15" />
+                          </svg>
+                        ),
+                        showLabel: true,
+                      },
                     ]).map(opt => {
                       const active = payMethod === opt.method
                       return (
@@ -553,7 +701,7 @@ export default function MenuPage() {
                             color: '#fff',
                             border: `1.5px solid ${active ? hoverColor : '#333'}`,
                           }}>
-                          <span>{opt.icon}</span>{opt.label}
+                          {opt.icon}{opt.showLabel && opt.label}
                         </button>
                       )
                     })}
@@ -571,7 +719,7 @@ export default function MenuPage() {
               <button type="button" onClick={submitOrder} disabled={orderSubmitting || !canSubmit}
                 className="w-full text-white font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors"
                 style={{ backgroundColor: '#B90F45' }}>
-                {orderSubmitting ? 'Enviando...' : '✅ Confirmar pedido'}
+                {orderSubmitting ? 'Enviando...' : 'Confirmar pedido'}
               </button>
             )}
 

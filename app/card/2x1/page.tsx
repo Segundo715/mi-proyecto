@@ -37,6 +37,7 @@ export default function Card2x1Page() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [cfg, setCfg] = useState<PromoConfig>(DEFAULT_2X1)
+  const [flipped, setFlipped] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -144,73 +145,134 @@ export default function Card2x1Page() {
 
   const redeemed = (customer?.visits ?? 0) >= 1
   const lightColor = `color-mix(in srgb, ${cfg.color} 55%, #fff)`
+  const cardGradient = `linear-gradient(135deg, color-mix(in srgb, ${cfg.color} 25%, #000) 0%, ${cfg.color} 60%, ${lightColor} 100%)`
+
+  // Estilos compartidos por las dos caras de la tarjeta (flip 3D)
+  const faceStyle: React.CSSProperties = {
+    backfaceVisibility: 'hidden',
+    WebkitBackfaceVisibility: 'hidden',
+    background: cardGradient,
+  }
 
   return (
     <div className="min-h-screen pb-24" style={{ backgroundColor: '#000' }}>
       <div className="flex flex-col items-center px-4 pt-6">
-        {/* ── TARJETA ── */}
-        <div className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl mb-4"
-          style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${cfg.color} 25%, #000) 0%, ${cfg.color} 60%, ${lightColor} 100%)` }}>
+        {/* ── TARJETA QUE GIRA ── */}
+        <div className="w-full max-w-sm" style={{ perspective: '1600px' }}>
+          <div role="button" tabIndex={0}
+            onClick={() => setFlipped(f => !f)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFlipped(f => !f) } }}
+            aria-label="Girar tarjeta"
+            className="relative w-full transition-transform duration-700 ease-out cursor-pointer"
+            style={{
+              transformStyle: 'preserve-3d',
+              transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+              height: '655px',
+            }}>
 
-          {/* Logo + marca */}
-          <div className="flex items-center justify-between px-5 pt-5 pb-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={cfg.logo} alt="Logo" className="h-10 w-auto object-contain" />
-            {cfg.brandLogo
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={cfg.brandLogo} alt="Marca" className="h-8 w-auto object-contain" />
-              : <span className="text-white font-black text-base tracking-wide">{cfg.brandText}</span>}
-          </div>
+            {/* ───────── CARA FRONTAL ───────── */}
+            <div className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl flex flex-col" style={faceStyle}>
+              {/* Logo + marca */}
+              <div className="flex items-center justify-between px-5 pt-5 pb-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={cfg.logo} alt="Logo" className="h-10 w-auto object-contain" />
+                {cfg.brandLogo
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={cfg.brandLogo} alt="Marca" className="h-8 w-auto object-contain" />
+                  : <span className="text-white font-black text-base tracking-wide">{cfg.brandText}</span>}
+              </div>
 
-          {/* Imagen con badge 2×1 (sin sellos) */}
-          <div className="relative" style={{ height: '170px' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={cfg.image} alt="" className="w-full h-full object-cover" />
-            {/* Velo + badge */}
-            <div className="absolute inset-0 flex items-center justify-center"
-              style={{ background: 'rgba(0,0,0,0.32)' }}>
-              <div className="flex items-center gap-3 px-5 py-3 rounded-2xl"
-                style={{ backgroundColor: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.35)', backdropFilter: 'blur(4px)' }}>
-                <RewardIcon name={cfg.icon} size={34} style={{ color: '#fff' }} />
-                <span className="text-white font-black text-4xl leading-none tracking-tight">2×1</span>
+              {/* Imagen (proporción 4:5) */}
+              <div className="relative w-full aspect-[4/5]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={cfg.image} alt="" className="w-full h-full object-cover" />
+              </div>
+
+              {/* Promoción + estado (un solo escaneo) */}
+              <div className="flex items-start gap-3 px-5 py-4"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-black uppercase tracking-widest" style={{ color: lightColor }}>Promoción</p>
+                  <p className="text-white text-sm font-semibold mt-0.5 inline-flex items-center gap-1.5">
+                    {cfg.reward}
+                    <RewardIcon name={cfg.icon} size={15} style={{ color: cfg.iconColor }} />
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-xs font-black uppercase tracking-widest" style={{ color: lightColor }}>Canje</p>
+                  <p className="text-white text-sm font-black mt-0.5">{redeemed ? 'Usado' : '1 escaneo'}</p>
+                </div>
+              </div>
+
+              {/* Pista para girar */}
+              <div className="flex items-center justify-center gap-1.5 pb-4 mt-auto text-white/80 text-xs font-semibold">
+                <span>Toca para ver tu código</span>
+                <span aria-hidden className="text-base leading-none">↻</span>
               </div>
             </div>
-            {/* Estado canjeado */}
-            {redeemed && (
-              <div className="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wide"
-                style={{ backgroundColor: 'rgba(0,0,0,0.55)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)' }}>
-                ✓ Canjeado
+
+            {/* ───────── CARA TRASERA: QR + nombre ───────── */}
+            <div className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+              style={{ ...faceStyle, transform: 'rotateY(180deg)' }}>
+              {/* Logo centrado arriba */}
+              <div className="flex justify-center pt-4 pb-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={cfg.logo} alt="Logo" className="h-9 w-auto object-contain" />
               </div>
-            )}
-          </div>
 
-          {/* Promoción + estado (un solo escaneo) */}
-          <div className="flex items-start gap-3 px-5 py-4"
-            style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-black uppercase tracking-widest" style={{ color: lightColor }}>Promoción</p>
-              <p className="text-white text-sm font-semibold mt-0.5 inline-flex items-center gap-1.5">
-                {cfg.reward}
-                <RewardIcon name={cfg.icon} size={15} style={{ color: cfg.iconColor }} />
-              </p>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-xs font-black uppercase tracking-widest" style={{ color: lightColor }}>Canje</p>
-              <p className="text-white text-sm font-black mt-0.5">{redeemed ? 'Usado' : '1 escaneo'}</p>
-            </div>
-          </div>
+              {/* Cinta magnética (decorativa, sin función) */}
+              <div aria-hidden className="w-full h-11" style={{ backgroundColor: '#000' }} />
 
-          {/* QR */}
-          <div className="mx-5 mb-5 bg-white rounded-2xl p-4 flex flex-col items-center"
-            style={{ opacity: redeemed ? 0.55 : 1 }}>
-            <QRCode value={customer!.id} size={110} style={{ height: 'auto', maxWidth: '200px', width: '100%' }} />
-            <p className="text-xs mt-2.5 font-semibold text-center" style={{ color: cfg.color }}>
-              {redeemed ? '🎉 ¡2×1 canjeado! Gracias por tu visita' : 'Muestra este QR al empleado para tu 2×1'}
-            </p>
+              {/* Nombre grande pegado a la orilla */}
+              <p className="text-white text-3xl font-black leading-tight px-5 pt-4 truncate">{customer?.name}</p>
+
+              {/* Badge 2×1 (cambia al canjear) */}
+              <div className="mx-5 mt-4 relative rounded-2xl flex items-center justify-center gap-3 py-3 transition-all"
+                style={redeemed
+                  ? { backgroundColor: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.2)' }
+                  : { backgroundColor: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.4)' }}>
+                <RewardIcon name={cfg.icon} size={32}
+                  style={{ color: redeemed ? 'rgba(255,255,255,0.45)' : '#fff' }} />
+                <span className="font-black text-4xl leading-none tracking-tight transition-all"
+                  style={redeemed
+                    ? { color: 'rgba(255,255,255,0.45)', textDecoration: 'line-through' }
+                    : { color: '#fff' }}>
+                  2×1
+                </span>
+                {redeemed && (
+                  <span className="absolute -right-1 -top-2 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide -rotate-6"
+                    style={{ backgroundColor: '#fff', color: cfg.color, boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+                    ✓ Canjeado
+                  </span>
+                )}
+              </div>
+
+              {/* QR con el aviso justo encima (cerca del badge) */}
+              <div className="flex flex-col items-center px-5 mt-4">
+                <p className="text-sm font-semibold text-center text-white mb-3">
+                  {redeemed ? '🎉 ¡2×1 canjeado! Gracias por tu visita' : 'Muestra este QR al empleado para tu 2×1'}
+                </p>
+                <div className="bg-white rounded-2xl p-4 flex flex-col items-center w-full max-w-[230px]">
+                  <QRCode value={customer!.id} size={150} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
+                </div>
+              </div>
+
+              {/* Pie: términos y pista para girar */}
+              <div className="mt-auto flex flex-col items-center gap-2 pb-4">
+                <a href="/terminos" onClick={e => e.stopPropagation()}
+                  className="text-white/70 text-xs font-semibold underline underline-offset-2 hover:text-white transition-colors">
+                  Términos y condiciones
+                </a>
+                <div className="flex items-center justify-center gap-1.5 text-white/80 text-xs font-semibold">
+                  <span aria-hidden className="text-base leading-none">↻</span>
+                  <span>Toca para volver</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <p className="text-xs text-center max-w-sm" style={{ color: '#666' }}>
+        <p className="text-xs text-center max-w-sm mt-4" style={{ color: '#666' }}>
           Cupón de un solo uso. Válido para una compra 2×1 en {cfg.brandText || 'el local'}.
         </p>
       </div>

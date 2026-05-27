@@ -1,7 +1,9 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
+import AdminThemeToggle from '@/app/components/AdminThemeToggle'
+import { useBrand } from '@/app/components/BrandProvider'
 
 interface NavLink {
   href: string; icon: string; label: string; exact?: boolean
@@ -34,17 +36,29 @@ function NavIcon({ name }: { name: string }) {
   )
 }
 
+function contrastText(hex: string): string {
+  const m = /^#([0-9a-fA-F]{6})$/.exec(hex)
+  if (!m) return '#000'
+  const n = parseInt(m[1], 16)
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return lum > 0.6 ? '#000' : '#fff'
+}
+
 export default function EmployeeNav() {
   const router = useRouter()
   const [pathname, setPathname] = useState('')
   const [open, setOpen] = useState(false)
   const [empName, setEmpName] = useState('')
+  const brand = useBrand()
 
   useEffect(() => {
-    setPathname(window.location.pathname)
-    const cookies = document.cookie.split(';')
-    const nameCookie = cookies.find(c => c.trim().startsWith('employee_name='))
-    if (nameCookie) setEmpName(decodeURIComponent(nameCookie.split('=')[1].trim()))
+    queueMicrotask(() => {
+      setPathname(window.location.pathname)
+      const cookies = document.cookie.split(';')
+      const nameCookie = cookies.find(c => c.trim().startsWith('employee_name='))
+      if (nameCookie) setEmpName(decodeURIComponent(nameCookie.split('=')[1].trim()))
+    })
   }, [])
 
   async function logout() {
@@ -57,62 +71,70 @@ export default function EmployeeNav() {
     return pathname.startsWith(href)
   }
 
+  const brandName = brand.name || 'NICHO'
+  const brandLogo = brand.logo || '/logo.png'
+  const accentColor = brand.accent || 'var(--ad-accent)'
+  const accentText = contrastText(brand.accent)
+  const navActive = { backgroundColor: accentColor, color: accentText }
+  const navVars = { '--ad-nav-hover': accentColor, '--ad-nav-hover-text': accentText } as CSSProperties
+
   const S = {
-    sidebar:   { backgroundColor: '#060911', borderRight: '1px solid rgba(255,255,255,0.07)' },
-    navActive: { backgroundColor: '#00e676', color: '#000' },
-    text:      { color: '#eef2f7' },
-    sub:       { color: '#6b7a94' },
-    accent:    { color: '#00e676' },
-    border:    { borderColor: 'rgba(255,255,255,0.07)' },
+    sidebar: { backgroundColor: 'var(--ad-sidebar)', borderRight: '1px solid var(--ad-border)' },
+    text:    { color: 'var(--ad-text)' },
+    sub:     { color: 'var(--ad-sub)' },
   }
 
   return (
     <>
+      <div className="hidden md:flex fixed top-5 right-[250px] z-[100] items-center gap-3">
+        <img src="/L_agencia/logo_singular.svg" alt="Singular" className="ad-logo h-6 w-auto pointer-events-none" />
+        <AdminThemeToggle />
+      </div>
+
       {/* ===== TOPBAR mobile ===== */}
       <div className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3"
-        style={{ backgroundColor: '#060911', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        style={{ backgroundColor: 'var(--ad-sidebar)', borderBottom: '1px solid var(--ad-border)' }}>
         <button type="button" onClick={() => setOpen(true)} className="flex items-center gap-2.5">
           <div className="flex flex-col gap-1">
             {[0, 1, 2].map(i => (
-              <span key={i} className="block h-0.5 rounded-full w-5" style={{ backgroundColor: '#eef2f7' }} />
+              <span key={i} className="block h-0.5 rounded-full w-5" style={{ backgroundColor: 'var(--ad-text)' }} />
             ))}
           </div>
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg,#00e676,#06b6d4)' }}>
-              <img src="/logo.png" alt="" className="w-5 h-5 object-contain" />
+              style={{ background: 'linear-gradient(135deg,var(--ad-accent),#06b6d4)' }}>
+              <img src={brandLogo} alt="" className="w-5 h-5 object-contain" />
             </div>
-            <span className="font-bold text-sm" style={S.text}>Empleado</span>
+            <span className="font-bold text-sm" style={S.text}>{brandName}</span>
           </div>
         </button>
-        <button type="button" onClick={logout} className="text-xs px-3 py-1.5 rounded-lg font-medium"
-          style={{ backgroundColor: '#0e1225', color: '#6b7a94', border: '1px solid rgba(255,255,255,0.07)' }}>
-          Salir
-        </button>
+        <div className="flex items-center gap-2">
+          <img src="/L_agencia/logo_singular.svg" alt="Singular" className="ad-logo h-6 w-auto" />
+          <AdminThemeToggle />
+        </div>
       </div>
 
       {/* ===== SIDEBAR desktop ===== */}
       <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 z-40 w-[240px]" style={S.sidebar}>
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center relative flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg,#00e676,#06b6d4)' }}>
-            <img src="/logo.png" alt="" className="w-7 h-7 object-contain" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center relative flex-shrink-0 overflow-hidden">
+            <img src={brandLogo} alt="" className="w-full h-full object-contain" />
           </div>
           <div>
-            <div className="font-extrabold text-base tracking-wide" style={S.text}>NICHO</div>
+            <div className="font-extrabold text-base tracking-wide" style={S.text}>{brandName}</div>
             <div className="text-[11px] uppercase tracking-widest font-semibold" style={S.sub}>Empleado</div>
           </div>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto">
+        <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto" style={navVars}>
           {NAV_LINKS.map(link => {
             const active = isActive(link.href, link.exact)
             return (
               <a key={link.href} href={link.href}
-                className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all"
-                style={active ? S.navActive : { color: '#6b7a94' }}>
+                className={`ad-navlink flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all${active ? ' is-active' : ''}`}
+                style={active ? navActive : { color: 'var(--ad-sub)' }}>
                 <NavIcon name={link.icon} />
                 <span className="flex-1">{link.label}</span>
               </a>
@@ -121,11 +143,11 @@ export default function EmployeeNav() {
         </nav>
 
         {/* Footer */}
-        <div className="p-3" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="p-3" style={{ borderTop: '1px solid var(--ad-border)' }}>
           <div className="flex items-center gap-3 p-2 rounded-lg mb-1"
-            style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+            style={{ backgroundColor: 'var(--ad-overlay)' }}>
             <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm"
-              style={{ background: 'linear-gradient(135deg,#0f7940,#0ea564)', color: '#fff' }}>
+              style={{ background: 'linear-gradient(135deg,var(--ad-accent),#06b6d4)', color: accentText }}>
               {empName ? empName.charAt(0).toUpperCase() : 'E'}
             </div>
             <div>
@@ -135,7 +157,7 @@ export default function EmployeeNav() {
           </div>
           <button type="button" onClick={logout}
             className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all"
-            style={{ color: '#6b7a94' }}>
+            style={{ color: 'var(--ad-sub)' }}>
             <NavIcon name="logout" />
             <span>Cerrar sesión</span>
           </button>
@@ -150,30 +172,30 @@ export default function EmployeeNav() {
         <aside className={`relative w-64 h-full flex flex-col shadow-2xl transform transition-transform duration-250 ease-out ${open ? 'translate-x-0' : '-translate-x-full'}`}
           style={S.sidebar}>
           <div className="flex items-center justify-between px-5 py-4"
-            style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            style={{ borderBottom: '1px solid var(--ad-border)' }}>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg,#00e676,#06b6d4)' }}>
-                <img src="/logo.png" alt="" className="w-6 h-6 object-contain" />
+                style={{ background: 'linear-gradient(135deg,var(--ad-accent),#06b6d4)' }}>
+                <img src={brandLogo} alt="" className="w-6 h-6 object-contain" />
               </div>
               <div>
-                <div className="font-extrabold text-sm" style={S.text}>NICHO</div>
+                <div className="font-extrabold text-sm" style={S.text}>{brandName}</div>
                 <div className="text-[10px] uppercase tracking-widest" style={S.sub}>Empleado</div>
               </div>
             </div>
             <button type="button" onClick={() => setOpen(false)}
               className="w-7 h-7 rounded-full flex items-center justify-center text-lg"
-              style={{ backgroundColor: 'rgba(255,255,255,0.06)', color: '#6b7a94' }}>×</button>
+              style={{ backgroundColor: 'var(--ad-overlay)', color: 'var(--ad-sub)' }}>×</button>
           </div>
 
-          <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto">
+          <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto" style={navVars}>
             {NAV_LINKS.map(link => {
               const active = isActive(link.href, link.exact)
               return (
                 <a key={link.href} href={link.href}
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium"
-                  style={active ? S.navActive : { color: '#6b7a94' }}>
+                  className={`ad-navlink flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium${active ? ' is-active' : ''}`}
+                  style={active ? navActive : { color: 'var(--ad-sub)' }}>
                   <NavIcon name={link.icon} />
                   <span className="flex-1">{link.label}</span>
                 </a>
@@ -181,10 +203,10 @@ export default function EmployeeNav() {
             })}
           </nav>
 
-          <div className="p-3" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="p-3" style={{ borderTop: '1px solid var(--ad-border)' }}>
             <button type="button" onClick={logout}
               className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium"
-              style={{ color: '#6b7a94' }}>
+              style={{ color: 'var(--ad-sub)' }}>
               <NavIcon name="logout" />
               <span>Cerrar sesión</span>
             </button>

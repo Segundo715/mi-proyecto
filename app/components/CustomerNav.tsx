@@ -1,53 +1,84 @@
 'use client'
 
-import { FEATURES } from '@/lib/features'
+import { useEffect, useState } from 'react'
+import { FEATURES, type FeatureKey } from '@/lib/features'
 
-type IconProps = { className?: string }
-
-function MenuIcon({ className }: IconProps) {
-  return (
-    <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 3v7a3 3 0 0 0 3 3v8M6 3v7M9 3v7M18 3c-1.5 1-2 3-2 6s.5 4 2 5v7" />
-    </svg>
-  )
+// Iconos integrados (markup interno del <svg>) para los botones por defecto.
+export const BUILTIN_ICONS: Record<string, string> = {
+  menu:   '<path d="M3 3v7a3 3 0 0 0 3 3v8M6 3v7M9 3v7M18 3c-1.5 1-2 3-2 6s.5 4 2 5v7" />',
+  review: '<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.2l5.9-.9z" />',
+  card:   '<path d="M4 8h12v5a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z" /><path d="M16 9h2a2 2 0 0 1 0 4h-2" /><path d="M7 2v2M10 2v2M13 2v2" />',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5M21 12H9" />',
 }
 
-function ReviewIcon({ className }: IconProps) {
-  return (
-    <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.2l5.9-.9z" />
-    </svg>
-  )
+// Qué botones por defecto están sujetos a una feature (lock PRO).
+const TAB_FEATURE: Record<string, FeatureKey> = { card: 'loyaltyCard' }
+
+// ── Config editable desde /admin/navegador (clave de settings: customer_nav) ──
+export interface NavTab {
+  id: string      // id estable; los de fábrica son 'menu' | 'review' | 'card'
+  label: string
+  href: string
+  icon: string    // URL de imagen subida; vacío = usa el icono integrado del id
+}
+export interface NavConfig {
+  bg: string; border: string; accent: string; inactive: string; radius: number
+  tabs: NavTab[]
+  showLogout: boolean
+}
+export const DEFAULT_NAV: NavConfig = {
+  bg: '#0d0d0d', border: '#1a1a1a', accent: '#B90F45', inactive: '#6b7280', radius: 9999,
+  tabs: [
+    { id: 'menu',   label: 'Menú',    href: '/menu',   icon: '' },
+    { id: 'review', label: 'Reseñas', href: '/review', icon: '' },
+    { id: 'card',   label: 'Tarjeta', href: '/card',   icon: '' },
+  ],
+  showLogout: true,
 }
 
-function CardIcon({ className }: IconProps) {
-  return (
-    <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 8h12v5a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z" />
-      <path d="M16 9h2a2 2 0 0 1 0 4h-2" />
-      <path d="M7 2v2M10 2v2M13 2v2" />
-    </svg>
-  )
+// Acepta config nueva (tabs) y migra la antigua (labels) sin romper nada.
+export function normalizeNavConfig(v: unknown): NavConfig {
+  const o = (v ?? {}) as Record<string, unknown>
+  let tabs: NavTab[]
+  if (Array.isArray(o.tabs)) {
+    tabs = (o.tabs as Partial<NavTab>[])
+      .filter(t => t && typeof t.href === 'string')
+      .map((t, i) => ({
+        id: String(t!.id ?? `tab${i}`),
+        label: String(t!.label ?? ''),
+        href: String(t!.href ?? '/'),
+        icon: String(t!.icon ?? ''),
+      }))
+  } else {
+    const labels = (o.labels ?? {}) as Record<string, string>
+    tabs = DEFAULT_NAV.tabs.map(t => ({ ...t, label: labels[t.id] ?? t.label }))
+  }
+  return {
+    bg: typeof o.bg === 'string' ? o.bg : DEFAULT_NAV.bg,
+    border: typeof o.border === 'string' ? o.border : DEFAULT_NAV.border,
+    accent: typeof o.accent === 'string' ? o.accent : DEFAULT_NAV.accent,
+    inactive: typeof o.inactive === 'string' ? o.inactive : DEFAULT_NAV.inactive,
+    radius: typeof o.radius === 'number' ? o.radius : DEFAULT_NAV.radius,
+    tabs: tabs.length ? tabs : DEFAULT_NAV.tabs,
+    showLogout: o.showLogout !== false,
+  }
 }
 
-function LogoutIcon({ className }: IconProps) {
-  return (
-    <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <path d="M16 17l5-5-5-5M21 12H9" />
-    </svg>
-  )
+function TabIcon({ icon, builtin, className }: { icon: string; builtin?: string; className?: string }) {
+  if (icon) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={icon} alt="" className={className} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+  }
+  const inner = builtin ? BUILTIN_ICONS[builtin] : undefined
+  if (inner) {
+    return (
+      <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        dangerouslySetInnerHTML={{ __html: inner }} />
+    )
+  }
+  return <span className={`rounded-full border-2 border-current ${className ?? ''}`} style={{ width: 18, height: 18 }} />
 }
-
-const TABS = [
-  { href: '/menu',   label: 'Menú',    Icon: MenuIcon,   key: 'menu',   feature: undefined },
-  { href: '/review', label: 'Reseñas', Icon: ReviewIcon, key: 'review', feature: undefined },
-  { href: '/card',    label: 'Tarjeta', Icon: CardIcon,   key: 'card',   feature: 'loyaltyCard' as const },
-] as const
 
 function logout() {
   localStorage.removeItem('loyalty_id')
@@ -56,42 +87,61 @@ function logout() {
   window.location.href = '/loyalty'
 }
 
-export default function CustomerNav({ active }: { active: 'menu' | 'review' | 'card' }) {
+export default function CustomerNav({ active }: { active?: string }) {
+  const [cfg, setCfg] = useState<NavConfig>(DEFAULT_NAV)
+  const [pathname, setPathname] = useState('')
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setPathname(window.location.pathname)
+      localStorage.removeItem('customer_nav_order')
+    })
+    fetch('/api/settings?key=customer_nav')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.value) { try { setCfg(normalizeNavConfig(JSON.parse(d.value))) } catch {} } })
+      .catch(() => {})
+  }, [])
+
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-[100] rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.5)] overflow-hidden max-w-lg mx-auto"
-      style={{ backgroundColor: '#0d0d0d', border: '1px solid #1a1a1a' }}>
+    <div className="fixed bottom-4 left-4 right-4 z-[100] shadow-[0_8px_24px_rgba(0,0,0,0.5)] overflow-hidden max-w-lg mx-auto"
+      style={{ backgroundColor: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: `${cfg.radius}px` }}>
       <div className="flex">
-        {TABS.map(t => {
-          const isActive = active === t.key
-          const locked = t.feature ? !FEATURES[t.feature].enabled : false
-          const color = isActive && !locked ? 'text-[#B90F45]' : 'text-[#6b7280]'
+        {cfg.tabs.map(tab => {
+          const feat = TAB_FEATURE[tab.id]
+          const locked = feat ? !FEATURES[feat].enabled : false
+          const isActive = !locked && (tab.id === active || (!!pathname && tab.href !== '/' && pathname.startsWith(tab.href)))
+          const col = isActive ? cfg.accent : cfg.inactive
+
           return (
-            <a key={t.key} href={locked ? undefined : t.href}
+            <a key={tab.id} href={locked ? undefined : tab.href}
               onClick={locked ? e => e.preventDefault() : undefined}
-              className={`group flex-1 py-2.5 flex flex-col items-center gap-0.5 relative transition-colors ${locked ? '' : 'hover:[&_*]:text-[#B90F45]'} ${color}`}
-              style={{ opacity: locked ? 0.4 : 1, cursor: locked ? 'not-allowed' : 'pointer' }}
+              className="flex-1 py-2.5 flex flex-col items-center gap-0.5 relative transition-colors"
+              style={{ color: col, opacity: locked ? 0.4 : 1, cursor: locked ? 'not-allowed' : 'pointer' }}
             >
-              {isActive && !locked && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full" style={{ backgroundColor: '#B90F45' }} />
+              {isActive && (
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full" style={{ backgroundColor: cfg.accent }} />
               )}
-              <t.Icon className={`transition-transform ${isActive && !locked ? 'scale-110' : ''}`} />
-              <span className="text-xs font-bold">{t.label}</span>
+              <TabIcon icon={tab.icon} builtin={tab.id}
+                className={`transition-transform ${isActive ? 'scale-110' : ''}`} />
+              <span className="text-xs font-bold">{tab.label}</span>
               {locked && (
                 <span className="absolute -top-0.5 right-1/4 text-[9px] text-white font-black px-1 rounded-full leading-tight"
-                  style={{ backgroundColor: '#B90F45' }}>
+                  style={{ backgroundColor: cfg.accent }}>
                   PRO
                 </span>
               )}
             </a>
           )
         })}
-        <button type="button" onClick={logout}
-          className="group flex-1 py-2.5 flex flex-col items-center gap-0.5 transition-colors text-[#6b7280] hover:[&_*]:text-[#B90F45]"
-          style={{ cursor: 'pointer' }}
-        >
-          <LogoutIcon />
-          <span className="text-xs font-bold">Salir</span>
-        </button>
+        {cfg.showLogout && (
+          <button type="button" onClick={logout}
+            className="flex-1 py-2.5 flex flex-col items-center gap-0.5 transition-colors"
+            style={{ color: cfg.inactive, cursor: 'pointer' }}
+          >
+            <TabIcon icon="" builtin="logout" />
+            <span className="text-xs font-bold">Salir</span>
+          </button>
+        )}
       </div>
     </div>
   )

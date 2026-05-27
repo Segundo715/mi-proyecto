@@ -38,6 +38,7 @@ export default function CardPremiumPage() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [cfg, setCfg] = useState<PremiumConfig>(DEFAULT_PREMIUM)
+  const [flipped, setFlipped] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -146,61 +147,112 @@ export default function CardPremiumPage() {
 
   const lightColor = `color-mix(in srgb, ${cfg.color} 55%, #fff)`
   const perks = cfg.perks.length ? cfg.perks : [cfg.reward]
+  const cardGradient = `linear-gradient(135deg, color-mix(in srgb, ${cfg.color} 25%, #000) 0%, ${cfg.color} 60%, ${lightColor} 100%)`
+
+  // Estilos compartidos por las dos caras de la tarjeta (flip 3D)
+  const faceStyle: React.CSSProperties = {
+    backfaceVisibility: 'hidden',
+    WebkitBackfaceVisibility: 'hidden',
+    background: cardGradient,
+  }
 
   return (
     <div className="min-h-screen pb-24" style={{ backgroundColor: '#000' }}>
       <div className="flex flex-col items-center px-4 pt-6">
-        {/* ── TARJETA ── */}
-        <div className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl mb-4"
-          style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${cfg.color} 25%, #000) 0%, ${cfg.color} 60%, ${lightColor} 100%)` }}>
+        {/* ── TARJETA QUE GIRA ── */}
+        <div className="w-full max-w-sm" style={{ perspective: '1600px' }}>
+          <div role="button" tabIndex={0}
+            onClick={() => setFlipped(f => !f)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFlipped(f => !f) } }}
+            aria-label="Girar tarjeta"
+            className="relative w-full transition-transform duration-700 ease-out cursor-pointer"
+            style={{
+              transformStyle: 'preserve-3d',
+              transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+              height: '480px',
+            }}>
 
-          {/* Logo + marca */}
-          <div className="flex items-center justify-between px-5 pt-5 pb-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={cfg.logo} alt="Logo" className="h-10 w-auto object-contain" />
-            {cfg.brandLogo
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={cfg.brandLogo} alt="Marca" className="h-8 w-auto object-contain" />
-              : <span className="text-white font-black text-base tracking-wide">{cfg.brandText}</span>}
-          </div>
+            {/* ───────── CARA FRONTAL ───────── */}
+            <div className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl flex flex-col" style={faceStyle}>
+              {/* Logo + marca */}
+              <div className="flex items-center justify-between px-5 pt-5 pb-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={cfg.logo} alt="Logo" className="h-10 w-auto object-contain" />
+                {cfg.brandLogo
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={cfg.brandLogo} alt="Marca" className="h-8 w-auto object-contain" />
+                  : <span className="text-white font-black text-base tracking-wide">{cfg.brandText}</span>}
+              </div>
 
-          {/* Imagen con badge PREMIUM */}
-          <div className="relative" style={{ height: '150px' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={cfg.image} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.35)' }}>
-              <div className="flex items-center gap-2.5 px-5 py-3 rounded-2xl"
-                style={{ backgroundColor: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.35)', backdropFilter: 'blur(4px)' }}>
-                <RewardIcon name={cfg.icon} size={30} style={{ color: '#fff' }} />
-                <span className="text-white font-black text-2xl leading-none tracking-widest">PREMIUM</span>
+              {/* Imagen con badge PREMIUM */}
+              <div className="relative" style={{ height: '150px' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={cfg.image} alt="" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.35)' }}>
+                  <div className="flex items-center gap-2.5 px-5 py-3 rounded-2xl"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.35)', backdropFilter: 'blur(4px)' }}>
+                    <RewardIcon name={cfg.icon} size={30} style={{ color: '#fff' }} />
+                    <span className="text-white font-black text-2xl leading-none tracking-widest">PREMIUM</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Beneficios incluidos */}
+              <div className="px-5 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+                <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: lightColor }}>Tu versión Premium incluye</p>
+                <div className="space-y-2">
+                  {perks.map((perk, i) => (
+                    <div key={i} className="flex items-center gap-2.5">
+                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black shrink-0"
+                        style={{ backgroundColor: '#fff', color: cfg.color }}>✓</span>
+                      <span className="text-white text-sm font-semibold">{perk}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pista para girar */}
+              <div className="flex items-center justify-center gap-1.5 pb-4 mt-auto text-white/80 text-xs font-semibold">
+                <span>Toca para ver tu código</span>
+                <span aria-hidden className="text-base leading-none">↻</span>
+              </div>
+            </div>
+
+            {/* ───────── CARA TRASERA: QR + nombre ───────── */}
+            <div className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+              style={{ ...faceStyle, transform: 'rotateY(180deg)' }}>
+              {/* Logo centrado arriba */}
+              <div className="flex justify-center pt-4 pb-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={cfg.logo} alt="Logo" className="h-9 w-auto object-contain" />
+              </div>
+
+              {/* Cinta magnética (decorativa, sin función) */}
+              <div aria-hidden className="w-full h-11" style={{ backgroundColor: '#000' }} />
+
+              {/* Nombre grande pegado a la orilla */}
+              <p className="text-white text-3xl font-black leading-tight px-5 pt-4 truncate">{customer?.name}</p>
+
+              {/* QR centrado con el aviso justo encima */}
+              <div className="flex-1 flex flex-col items-center justify-center px-5">
+                <p className="text-sm font-semibold text-center text-white mb-3">
+                  Muestra este QR al empleado para tus beneficios Premium
+                </p>
+                <div className="bg-white rounded-2xl p-4 flex flex-col items-center w-full max-w-[230px]">
+                  <QRCode value={customer!.id} size={150} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
+                </div>
+              </div>
+
+              {/* Pista para girar */}
+              <div className="flex items-center justify-center gap-1.5 pb-4 text-white/80 text-xs font-semibold">
+                <span aria-hidden className="text-base leading-none">↻</span>
+                <span>Toca para volver</span>
               </div>
             </div>
           </div>
-
-          {/* Beneficios incluidos */}
-          <div className="px-5 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
-            <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: lightColor }}>Tu versión Premium incluye</p>
-            <div className="space-y-2">
-              {perks.map((perk, i) => (
-                <div key={i} className="flex items-center gap-2.5">
-                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black shrink-0"
-                    style={{ backgroundColor: '#fff', color: cfg.color }}>✓</span>
-                  <span className="text-white text-sm font-semibold">{perk}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* QR */}
-          <div className="mx-5 mb-5 bg-white rounded-2xl p-4 flex flex-col items-center">
-            <QRCode value={customer!.id} size={110} style={{ height: 'auto', maxWidth: '200px', width: '100%' }} />
-            <p className="text-xs mt-2.5 font-semibold text-center" style={{ color: cfg.color }}>
-              Muestra este QR al empleado para tus beneficios Premium
-            </p>
-          </div>
         </div>
 
-        <p className="text-xs text-center max-w-sm" style={{ color: '#666' }}>
+        <p className="text-xs text-center max-w-sm mt-4" style={{ color: '#666' }}>
           Versión Premium de {cfg.brandText || 'el local'}. Beneficios sujetos a disponibilidad.
         </p>
       </div>
