@@ -2,6 +2,12 @@
 
 import { useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import FloorPlanEditor from '@/components/floor-plan/FloorPlanEditor'
+import ServiceView from '@/components/service/ServiceView'
+import GuestProfiles from '@/components/guests/GuestProfiles'
+import TimelineView from '@/components/timeline/TimelineView'
+import SpendAlerts from '@/components/spend/SpendAlerts'
+import ShiftPlanner from '@/components/shifts/ShiftPlanner'
 
 const S = {
   bg:     'var(--ad-bg)',
@@ -49,6 +55,7 @@ function KPI({ label, value, sub, color }: { label: string; value: string; sub?:
 export default function AdminReservacionesPage() {
   const [reservations, setReservations] = useState<Reservation[]>(DEMO)
   const [showForm, setShowForm] = useState(false)
+  const [tab, setTab] = useState<'reservas' | 'plano' | 'servicio' | 'perfiles' | 'timeline' | 'consumo' | 'turnos'>('reservas')
   const [form, setForm] = useState({ name: '', time: '', guests: '2', phone: '', notes: '' })
 
   const confirmed = reservations.filter(r => r.status === 'confirmed').length
@@ -77,6 +84,54 @@ export default function AdminReservacionesPage() {
     <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <AdminNav />
 
+      {/* Selector de vista */}
+      <div className="w-full px-4 pt-4">
+        <div className="flex gap-2 flex-wrap">
+          {([
+            ['reservas', 'Reservaciones'],
+            ['servicio', 'Servicio'],
+            ['plano', 'Plano de mesas'],
+            ['perfiles', 'Perfiles'],
+            ['timeline', 'Timeline'],
+            ['consumo', 'Consumo'],
+            ['turnos', 'Turnos'],
+          ] as const).map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)}
+              className="px-4 py-2 rounded-full text-sm font-semibold transition"
+              style={tab === key
+                ? { backgroundColor: S.accent, color: '#000' }
+                : { backgroundColor: S.card, color: S.sub, border: `1px solid ${S.border}` }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tab === 'plano' ? (
+        <div className="w-full px-4 pb-4">
+          <FloorPlanEditor />
+        </div>
+      ) : tab === 'servicio' ? (
+        <div className="w-full px-4 pb-4">
+          <ServiceView />
+        </div>
+      ) : tab === 'perfiles' ? (
+        <div className="w-full px-4 pb-4">
+          <GuestProfiles />
+        </div>
+      ) : tab === 'timeline' ? (
+        <div className="w-full px-4 pb-4">
+          <TimelineView />
+        </div>
+      ) : tab === 'consumo' ? (
+        <div className="w-full px-4 pb-4">
+          <SpendAlerts />
+        </div>
+      ) : tab === 'turnos' ? (
+        <div className="w-full px-4 pb-4">
+          <ShiftPlanner />
+        </div>
+      ) : (
       <div className="max-w-3xl mx-auto p-4 space-y-5">
         <div className="flex items-center justify-between pt-1">
           <h1 className="text-xl font-black" style={{ color: S.text }}>Reservaciones</h1>
@@ -182,6 +237,7 @@ export default function AdminReservacionesPage() {
           })}
         </div>
       </div>
+      )}
     </div>
   )
 }
