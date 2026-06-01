@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useBrand } from './BrandProvider'
+import type { FeatureKey } from '@/lib/features'
 
 const ROUTE_FEATURE: Record<string, string> = {
   '/admin/analytics':       'analytics',
@@ -28,7 +29,7 @@ export default function FeatureGuard() {
 
   useEffect(() => {
     const feature = ROUTE_FEATURE[pathname]
-    if (feature && features[feature] === false) {
+    if (feature && features[feature as FeatureKey] === false) {
       router.replace('/admin')
     }
   }, [pathname, features, router])
