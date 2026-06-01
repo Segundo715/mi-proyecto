@@ -1,6 +1,7 @@
 import { getSetting } from '@/lib/settingsDb'
 import { getFeatureFlags } from '@/lib/features'
 import BrandProvider from '@/app/components/BrandProvider'
+import FeatureGuard from '@/app/components/FeatureGuard'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,7 +33,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <>
       <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       <style dangerouslySetInnerHTML={{ __html: SCROLL_CSS }} />
-      <BrandProvider value={{ name, logo, accent, features }}>{children}</BrandProvider>
+      <BrandProvider value={{ name, logo, accent, features }}>
+        <FeatureGuard />
+        {children}
+      </BrandProvider>
     </>
   )
 }
