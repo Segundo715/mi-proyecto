@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { FEATURES, type FeatureKey } from '@/lib/features'
+import type { FeatureKey } from '@/lib/features'
 import AdminThemeToggle from '@/app/components/AdminThemeToggle'
 import { useBrand } from '@/app/components/BrandProvider'
 
@@ -68,9 +68,9 @@ function NavIcon({ name }: { name: string }) {
   )
 }
 
-function isEnabled(feature?: FeatureKey) {
+function isEnabled(features: Partial<Record<FeatureKey, boolean>> | undefined, feature?: FeatureKey) {
   if (!feature) return true
-  return FEATURES[feature].enabled
+  return features?.[feature] ?? true
 }
 
 // Texto negro o blanco según la luminancia del color de fondo, para que contraste.
@@ -255,7 +255,7 @@ export default function AdminNav() {
         <nav data-admin-nav-list className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto" style={navVars}>
           {orderedLinks.map(link => {
             const active = isActive(link.href, link.exact)
-            const enabled = isEnabled(link.feature)
+            const enabled = isEnabled(brand.features, link.feature)
             const isDragging = draggingHref === link.href
             return (
               <a key={link.href}
@@ -329,7 +329,7 @@ export default function AdminNav() {
           <nav data-admin-nav-list className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto" style={navVars}>
             {orderedLinks.map(link => {
               const active = isActive(link.href, link.exact)
-              const enabled = isEnabled(link.feature)
+              const enabled = isEnabled(brand.features, link.feature)
               const isDragging = draggingHref === link.href
               return (
                 <a key={link.href}

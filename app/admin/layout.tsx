@@ -1,4 +1,5 @@
 import { getSetting } from '@/lib/settingsDb'
+import { getFeatureFlags } from '@/lib/features'
 import BrandProvider from '@/app/components/BrandProvider'
 
 // Aplica el tema guardado (data-admin-theme) antes de pintar, para evitar
@@ -8,10 +9,11 @@ const THEME_INIT = `try{var t=localStorage.getItem('admin_theme')||'dark';docume
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // Se leen en el servidor para que el nombre/logo/color del menú lateral
   // estén presentes desde el primer render (sin parpadeo al recargar).
-  const [name, logo, accent] = await Promise.all([
+  const [name, logo, accent, features] = await Promise.all([
     getSetting('restaurant_name'),
     getSetting('profile_logo'),
     getSetting('sidebar_accent'),
+    getFeatureFlags(),
   ])
 
   // Color del scrollbar = color seleccionado en configuración (fallback al acento del tema).
@@ -28,7 +30,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <>
       <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       <style dangerouslySetInnerHTML={{ __html: SCROLL_CSS }} />
-      <BrandProvider value={{ name, logo, accent }}>{children}</BrandProvider>
+      <BrandProvider value={{ name, logo, accent, features }}>{children}</BrandProvider>
     </>
   )
 }
