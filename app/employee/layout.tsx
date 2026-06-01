@@ -2,6 +2,8 @@ import { getSetting } from '@/lib/settingsDb'
 import { getFeatureFlags } from '@/lib/features'
 import BrandProvider from '@/app/components/BrandProvider'
 
+export const dynamic = 'force-dynamic'
+
 const THEME_INIT = `try{var t=localStorage.getItem('admin_theme')||'dark';document.documentElement.setAttribute('data-admin-theme',t);}catch(e){}`
 
 export default async function EmployeeLayout({ children }: { children: React.ReactNode }) {
