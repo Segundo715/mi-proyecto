@@ -39,11 +39,6 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const secret = req.headers.get('x-superadmin-secret')
-  if (secret !== process.env.SUPERADMIN_SECRET) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401, headers: CORS })
-  }
-
   const flags = await req.json()
   const { error } = await adminClient()
     .from('settings')
