@@ -1,13 +1,15 @@
 import { getSetting } from '@/lib/settingsDb'
+import { getFeatureFlags } from '@/lib/features'
 import BrandProvider from '@/app/components/BrandProvider'
 
 const THEME_INIT = `try{var t=localStorage.getItem('admin_theme')||'dark';document.documentElement.setAttribute('data-admin-theme',t);}catch(e){}`
 
 export default async function EmployeeLayout({ children }: { children: React.ReactNode }) {
-  const [name, logo, accent] = await Promise.all([
+  const [name, logo, accent, features] = await Promise.all([
     getSetting('restaurant_name'),
     getSetting('profile_logo'),
     getSetting('sidebar_accent'),
+    getFeatureFlags(),
   ])
 
   const scroll = /^#[0-9a-fA-F]{6}$/.test(accent) ? accent : '#00e676'
@@ -22,7 +24,7 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
     <>
       <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       <style dangerouslySetInnerHTML={{ __html: SCROLL_CSS }} />
-      <BrandProvider value={{ name, logo, accent }}>{children}</BrandProvider>
+      <BrandProvider value={{ name, logo, accent, features }}>{children}</BrandProvider>
     </>
   )
 }
