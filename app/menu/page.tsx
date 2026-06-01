@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import CustomerNav from '../components/CustomerNav'
@@ -22,10 +22,10 @@ interface Order {
 }
 
 const STATUS_MSG: Record<Order['status'], { text: string; sub: string; emoji: string }> = {
-  pending:   { text: 'Pedido recibido',        sub: 'En espera de preparación', emoji: '🕐' },
-  preparing: { text: '¡Lo están preparando!',  sub: 'Tu pedido está en cocina', emoji: '🍳' },
-  ready:     { text: '¡Tu pedido está listo!', sub: 'Pasa a recogerlo',         emoji: '✅' },
-  delivered: { text: 'Pedido entregado',        sub: '¡Buen provecho!',         emoji: '🎉' },
+  pending:   { text: 'Pedido recibido',        sub: 'En espera de preparaciÃ³n', emoji: 'ðŸ•' },
+  preparing: { text: 'Â¡Lo estÃ¡n preparando!',  sub: 'Tu pedido estÃ¡ en cocina', emoji: 'ðŸ³' },
+  ready:     { text: 'Â¡Tu pedido estÃ¡ listo!', sub: 'Pasa a recogerlo',         emoji: 'âœ…' },
+  delivered: { text: 'Pedido entregado',        sub: 'Â¡Buen provecho!',         emoji: 'ðŸŽ‰' },
 }
 
 const STATUS_STEPS: { status: Order['status']; label: string }[] = [
@@ -136,7 +136,7 @@ export default function MenuPage() {
   }
 
   useEffect(() => {
-    if (FEATURES.favorites.enabled) {
+    if (true) {
       setFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? '[]'))
     }
     fetch('/api/menu').then(r => r.ok ? r.json() : []).then((d: MenuItem[]) => {
@@ -175,7 +175,7 @@ export default function MenuPage() {
       })
   }, [])
 
-  // Auto-rotación del carrusel
+  // Auto-rotaciÃ³n del carrusel
   useEffect(() => {
     if (carousel.length <= 1) return
     const id = setInterval(() => setSlide(s => (s + 1) % carousel.length), 4000)
@@ -183,12 +183,12 @@ export default function MenuPage() {
   }, [carousel.length])
 
   function likeItem(item: MenuItem) {
-    // Un solo voto por platillo: si ya votó, no hace nada
+    // Un solo voto por platillo: si ya votÃ³, no hace nada
     if (favorites.includes(item.id)) return
     const next = [...favorites, item.id]
     setFavorites(next)
     localStorage.setItem(FAVORITES_KEY, JSON.stringify(next))
-    // Actualización optimista del contador en pantalla
+    // ActualizaciÃ³n optimista del contador en pantalla
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, likes: (i.likes ?? 0) + 1 } : i))
     fetch(`/api/menu/${item.id}/like`, { method: 'POST' }).catch(() => {})
   }
@@ -230,21 +230,21 @@ export default function MenuPage() {
   const cartTotal = cart.reduce((s, c) => s + c.item.price * c.qty, 0)
   const cartCount = cart.reduce((s, c) => s + c.qty, 0)
 
-  // ¿Puede confirmarse el pedido según el tipo y los campos llenados?
+  // Â¿Puede confirmarse el pedido segÃºn el tipo y los campos llenados?
   const canSubmit =
     !!orderType && !!orderName.trim() &&
     (orderType === 'restaurante' || (!!orderAddress.trim() && !!payMethod))
 
   // Resumen del pedido que se guarda en el campo `notes` (la tabla no tiene
-  // columnas para tipo/domicilio/pago, así que se codifican aquí).
+  // columnas para tipo/domicilio/pago, asÃ­ que se codifican aquÃ­).
   function buildOrderNotes(): string {
     const lines: string[] = []
     if (orderType === 'restaurante') {
-      lines.push('🍽 En restaurante')
+      lines.push('ðŸ½ En restaurante')
     } else if (orderType === 'domicilio') {
-      lines.push('🛵 A domicilio')
+      lines.push('ðŸ›µ A domicilio')
       if (orderAddress.trim()) lines.push(`Domicilio: ${orderAddress.trim()}`)
-      lines.push(`Pago: ${payMethod === 'stripe' ? 'Stripe (pendiente de cobro)' : 'Depósito'}`)
+      lines.push(`Pago: ${payMethod === 'stripe' ? 'Stripe (pendiente de cobro)' : 'DepÃ³sito'}`)
     }
     return lines.join('\n')
   }
@@ -253,7 +253,7 @@ export default function MenuPage() {
     if (!canSubmit) return
 
     // TODO: cuando se integre el checkout real de Stripe, si payMethod === 'stripe'
-    // redirigir aquí a la sesión de pago antes de (o en lugar de) crear el pedido.
+    // redirigir aquÃ­ a la sesiÃ³n de pago antes de (o en lugar de) crear el pedido.
 
     setOrderSubmitting(true)
     try {
@@ -319,7 +319,7 @@ export default function MenuPage() {
           <div className="flex items-center justify-center gap-3 pb-3">
             <button type="button" onClick={() => changeQty(item.id, -1)}
               className="text-white font-black text-lg w-8 h-8 rounded flex items-center justify-center"
-              style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>−</button>
+              style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>âˆ’</button>
             <span className="text-white font-bold w-6 text-center">{inCart.qty}</span>
             <button type="button" onClick={() => changeQty(item.id, 1)}
               className="text-white font-black text-lg w-8 h-8 rounded flex items-center justify-center"
@@ -344,7 +344,7 @@ export default function MenuPage() {
         <div className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
           <div className="text-white font-bold px-6 py-3.5 rounded-2xl shadow-xl flex items-center gap-2"
             style={{ backgroundColor: '#B90F45' }}>
-            ✅ ¡Pedido enviado! Lo prepararemos pronto.
+            âœ… Â¡Pedido enviado! Lo prepararemos pronto.
           </div>
         </div>
       )}
@@ -361,7 +361,7 @@ export default function MenuPage() {
                   <img src={logo} alt="" className="mt-0.5 h-7 w-7 shrink-0 object-contain" />
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm text-white">{s.text}</p>
-                    <p className="text-xs text-gray-400">{s.sub} · {order.items.map(i => `${i.quantity}× ${i.name}`).join(', ')}</p>
+                    <p className="text-xs text-gray-400">{s.sub} Â· {order.items.map(i => `${i.quantity}Ã— ${i.name}`).join(', ')}</p>
                   </div>
                 </div>
 
@@ -387,7 +387,7 @@ export default function MenuPage() {
                             boxShadow: isCurrent ? '0 0 0 4px rgba(185,15,69,0.22)' : 'none',
                           }}
                         >
-                          {isDone ? '✓' : index + 1}
+                          {isDone ? 'âœ“' : index + 1}
                         </span>
                         <span
                           className="mt-2 text-[11px] font-bold leading-tight"
@@ -439,7 +439,7 @@ export default function MenuPage() {
         </div>
       )}
 
-      {/* Menú acordeón */}
+      {/* MenÃº acordeÃ³n */}
       <div className="mx-auto" style={{ maxWidth: '800px' }}>
         {loadingMenu ? (
           <div className="space-y-px">
@@ -449,15 +449,15 @@ export default function MenuPage() {
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-16 text-gray-500">
-            <p className="text-5xl mb-3">🍽</p>
-            <p className="font-semibold text-lg text-white">El menú aún no está disponible</p>
+            <p className="text-5xl mb-3">ðŸ½</p>
+            <p className="font-semibold text-lg text-white">El menÃº aÃºn no estÃ¡ disponible</p>
           </div>
         ) : (
           <>
             {categories.map(category => {
               const catItems = grouped[category]
               const isOpen = openCategory === category
-              // Cuando otra categoría está abierta, ocultar esta
+              // Cuando otra categorÃ­a estÃ¡ abierta, ocultar esta
               if (openCategory !== null && !isOpen) return null
 
               return (
@@ -492,8 +492,8 @@ export default function MenuPage() {
                                 {item.name}
                                 {!item.available && <span className="ml-1 text-xs text-red-300">(Agotado)</span>}
                               </span>
-                              {/* Me encanta: ícono plano + contador (un voto por platillo) */}
-                              {FEATURES.favorites.enabled && (
+                              {/* Me encanta: Ã­cono plano + contador (un voto por platillo) */}
+                              {true && (
                                 <span
                                   role="button"
                                   aria-label="Me encanta"
@@ -532,7 +532,7 @@ export default function MenuPage() {
         )}
       </div>
 
-      {/* Botón flotante del carrito */}
+      {/* BotÃ³n flotante del carrito */}
       <div className="fixed z-40" style={{ bottom: '72px', right: '20px' }}>
         <button type="button" onClick={() => cartCount > 0 && setShowOrder(true)}
           className="relative flex items-center justify-center rounded-full shadow-2xl transition-transform active:scale-95"
@@ -547,7 +547,7 @@ export default function MenuPage() {
         </button>
       </div>
 
-      {/* Modal del pedido — baja desde arriba para no quedar tapado por el nav */}
+      {/* Modal del pedido â€” baja desde arriba para no quedar tapado por el nav */}
       {showOrder && (
         <div className="fixed inset-0 z-[60] bg-black/80 flex items-start justify-center backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-b-3xl p-6 pt-5 pb-8 space-y-4 max-h-[90vh] overflow-y-auto"
@@ -559,7 +559,7 @@ export default function MenuPage() {
               <h2 className="text-lg font-black text-white">Tu pedido</h2>
               <button type="button" onClick={resetOrderForm}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-lg"
-                style={{ backgroundColor: '#1a1a1a' }}>×</button>
+                style={{ backgroundColor: '#1a1a1a' }}>Ã—</button>
             </div>
 
             {/* Items con notas por platillo */}
@@ -575,7 +575,7 @@ export default function MenuPage() {
                     <div className="flex items-center gap-2 shrink-0">
                       <button type="button" onClick={() => changeQty(c.item.id, -1)}
                         className="w-8 h-8 rounded-full font-bold text-lg flex items-center justify-center text-white"
-                        style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>−</button>
+                        style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>âˆ’</button>
                       <span className="font-black text-white w-4 text-center text-sm">{c.qty}</span>
                       <button type="button" onClick={() => changeQty(c.item.id, 1)}
                         className="w-8 h-8 rounded-full font-bold text-lg flex items-center justify-center text-white"
@@ -587,7 +587,7 @@ export default function MenuPage() {
                   </div>
                   <input type="text" value={c.notes ?? ''}
                     onChange={e => setItemNotes(c.item.id, e.target.value)}
-                    placeholder="Nota para este platillo (sin cebolla, término...)"
+                    placeholder="Nota para este platillo (sin cebolla, tÃ©rmino...)"
                     className="w-full border border-[#B90F45]/30 rounded-xl px-3 py-2 text-xs text-white bg-[#1a1a1a] placeholder-gray-500 focus:outline-none focus:border-[#B90F45] transition-colors" />
                 </div>
               ))}
@@ -640,13 +640,13 @@ export default function MenuPage() {
               })}
             </div>
 
-            {/* Campos según el tipo elegido */}
+            {/* Campos segÃºn el tipo elegido */}
             {orderType === 'restaurante' && (
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Tu nombre *</label>
                   <input type="text" value={orderName} onChange={e => setOrderName(e.target.value)}
-                    placeholder="Ej. María" className={INPUT} />
+                    placeholder="Ej. MarÃ­a" className={INPUT} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Mesa (opcional)</label>
@@ -661,12 +661,12 @@ export default function MenuPage() {
                 <div>
                   <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Tu nombre *</label>
                   <input type="text" value={orderName} onChange={e => setOrderName(e.target.value)}
-                    placeholder="Ej. María" className={INPUT} />
+                    placeholder="Ej. MarÃ­a" className={INPUT} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Domicilio *</label>
                   <input type="text" value={orderAddress} onChange={e => setOrderAddress(e.target.value)}
-                    placeholder="Calle, número, colonia, referencias" className={INPUT} />
+                    placeholder="Calle, nÃºmero, colonia, referencias" className={INPUT} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Forma de pago *</label>
@@ -679,7 +679,7 @@ export default function MenuPage() {
                         showLabel: false,
                       },
                       {
-                        method: 'deposito' as PayMethod, label: 'Depósito',
+                        method: 'deposito' as PayMethod, label: 'DepÃ³sito',
                         // Tarjeta
                         icon: (
                           <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
@@ -708,7 +708,7 @@ export default function MenuPage() {
                   </div>
                   {payMethod === 'stripe' && (
                     <p className="text-xs mt-1.5" style={{ color: '#777' }}>
-                      💡 El cobro con Stripe se habilitará próximamente; por ahora se registra como pendiente.
+                      ðŸ’¡ El cobro con Stripe se habilitarÃ¡ prÃ³ximamente; por ahora se registra como pendiente.
                     </p>
                   )}
                 </div>
@@ -725,7 +725,7 @@ export default function MenuPage() {
 
             {!orderType && (
               <p className="text-center text-xs" style={{ color: '#777' }}>
-                Elige cómo quieres tu pedido para continuar.
+                Elige cÃ³mo quieres tu pedido para continuar.
               </p>
             )}
           </div>
