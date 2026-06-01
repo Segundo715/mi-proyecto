@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FEATURES, type FeatureKey } from '@/lib/features'
+import type { FeatureKey } from '@/lib/features'
 
 // Iconos integrados (markup interno del <svg>) para los botones por defecto.
 export const BUILTIN_ICONS: Record<string, string> = {
@@ -108,7 +108,7 @@ export default function CustomerNav({ active }: { active?: string }) {
       <div className="flex">
         {cfg.tabs.map(tab => {
           const feat = TAB_FEATURE[tab.id]
-          const locked = feat ? !FEATURES[feat].enabled : false
+          const locked = false
           const isActive = !locked && (tab.id === active || (!!pathname && tab.href !== '/' && pathname.startsWith(tab.href)))
           const col = isActive ? cfg.accent : cfg.inactive
 
