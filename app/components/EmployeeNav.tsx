@@ -7,16 +7,16 @@ import { useBrand } from '@/app/components/BrandProvider'
 import type { FeatureKey } from '@/lib/features'
 
 interface NavLink {
-  href: string; icon: string; label: string; exact?: boolean; feature?: FeatureKey
+  href: string; icon: string; label: string; exact?: boolean; feature?: FeatureKey; empModule?: string
 }
 
 const NAV_LINKS: NavLink[] = [
-  { href: '/employee',           icon: 'loyalty',  label: 'Fidelización', exact: true },
-  { href: '/employee/orders',    icon: 'orders',   label: 'Pedidos',      feature: 'orders' },
-  { href: '/employee/menu',      icon: 'menu',     label: 'Menú',         feature: 'menu' },
-  { href: '/employee/recipes',   icon: 'recipes',  label: 'Recetario',    feature: 'produccion' },
-  { href: '/employee/customers', icon: 'users',    label: 'Clientes',     feature: 'customers' },
-  { href: '/employee/tv',        icon: 'tv',       label: 'Pantalla TV',  feature: 'tv' },
+  { href: '/employee',           icon: 'loyalty',  label: 'Fidelización', exact: true,              empModule: 'emp_fidelizacion' },
+  { href: '/employee/orders',    icon: 'orders',   label: 'Pedidos',      feature: 'orders',         empModule: 'emp_pedidos'       },
+  { href: '/employee/menu',      icon: 'menu',     label: 'Menú',         feature: 'menu',           empModule: 'emp_menu_ver'      },
+  { href: '/employee/recipes',   icon: 'recipes',  label: 'Recetario',    feature: 'produccion',     empModule: 'emp_recetario'     },
+  { href: '/employee/customers', icon: 'users',    label: 'Clientes',     feature: 'customers',      empModule: 'emp_clientes_ver'  },
+  { href: '/employee/tv',        icon: 'tv',       label: 'Pantalla TV',  feature: 'tv',             empModule: 'emp_pantalla_tv'   },
 ]
 
 const ICONS: Record<string, string> = {
@@ -51,6 +51,7 @@ export default function EmployeeNav() {
   const [pathname, setPathname] = useState('')
   const [open, setOpen] = useState(false)
   const [empName, setEmpName] = useState('')
+  const [empPerms, setEmpPerms] = useState<Record<string, boolean>>({})
   const brand = useBrand()
 
   useEffect(() => {
@@ -60,7 +61,17 @@ export default function EmployeeNav() {
       const nameCookie = cookies.find(c => c.trim().startsWith('employee_name='))
       if (nameCookie) setEmpName(decodeURIComponent(nameCookie.split('=')[1].trim()))
     })
+    fetch('/api/permissions')
+      .then(r => r.json())
+      .then(d => setEmpPerms(d.employee ?? {}))
+      .catch(() => {})
   }, [])
+
+  function isEnabled(link: NavLink): boolean {
+    if (link.feature && brand.features[link.feature] === false) return false
+    if (link.empModule && empPerms[link.empModule] === false) return false
+    return true
+  }
 
   async function logout() {
     await fetch('/api/employee/auth', { method: 'DELETE' })
@@ -132,7 +143,7 @@ export default function EmployeeNav() {
         <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto" style={navVars}>
           {NAV_LINKS.map(link => {
             const active = isActive(link.href, link.exact)
-            const enabled = link.feature ? (brand.features?.[link.feature] ?? true) : true
+            const enabled = isEnabled(link)
             return (
               <a key={link.href} href={enabled ? link.href : undefined}
                 onClick={!enabled ? e => e.preventDefault() : undefined}
