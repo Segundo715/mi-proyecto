@@ -1,8 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { FeatureKey } from '@/lib/features'
-
 // Iconos integrados (markup interno del <svg>) para los botones por defecto.
 export const BUILTIN_ICONS: Record<string, string> = {
   menu:   '<path d="M3 3v7a3 3 0 0 0 3 3v8M6 3v7M9 3v7M18 3c-1.5 1-2 3-2 6s.5 4 2 5v7" />',
@@ -11,8 +9,12 @@ export const BUILTIN_ICONS: Record<string, string> = {
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5M21 12H9" />',
 }
 
-// Qué botones por defecto están sujetos a una feature (lock PRO).
-const TAB_FEATURE: Record<string, FeatureKey> = { card: 'loyaltyCard' }
+// Mapeo de tab ID → módulo de usuario en Supabase
+const TAB_USER_MODULE: Record<string, string> = {
+  menu:   'usr_menu',
+  review: 'usr_resenas',
+  card:   'usr_tarjeta',
+}
 
 // ── Config editable desde /admin/navegador (clave de settings: customer_nav) ──
 export interface NavTab {
@@ -90,6 +92,7 @@ function logout() {
 export default function CustomerNav({ active }: { active?: string }) {
   const [cfg, setCfg] = useState<NavConfig>(DEFAULT_NAV)
   const [pathname, setPathname] = useState('')
+  const [userPerms, setUserPerms] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -100,6 +103,10 @@ export default function CustomerNav({ active }: { active?: string }) {
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.value) { try { setCfg(normalizeNavConfig(JSON.parse(d.value))) } catch {} } })
       .catch(() => {})
+    fetch('/api/permissions')
+      .then(r => r.json())
+      .then(d => setUserPerms(d.user ?? {}))
+      .catch(() => {})
   }, [])
 
   return (
@@ -107,8 +114,8 @@ export default function CustomerNav({ active }: { active?: string }) {
       style={{ backgroundColor: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: `${cfg.radius}px` }}>
       <div className="flex">
         {cfg.tabs.map(tab => {
-          const feat = TAB_FEATURE[tab.id]
-          const locked = false
+          const userModule = TAB_USER_MODULE[tab.id]
+          const locked = userModule ? userPerms[userModule] === false : false
           const isActive = !locked && (tab.id === active || (!!pathname && tab.href !== '/' && pathname.startsWith(tab.href)))
           const col = isActive ? cfg.accent : cfg.inactive
 
@@ -116,7 +123,7 @@ export default function CustomerNav({ active }: { active?: string }) {
             <a key={tab.id} href={locked ? undefined : tab.href}
               onClick={locked ? e => e.preventDefault() : undefined}
               className="flex-1 py-2.5 flex flex-col items-center gap-0.5 relative transition-colors"
-              style={{ color: col, opacity: locked ? 0.4 : 1, cursor: locked ? 'not-allowed' : 'pointer' }}
+              style={{ color: col, opacity: locked ? 0.4 : 1, cursor: locked ? 'not-allowed' : 'pointer', pointerEvents: locked ? 'none' : undefined }}
             >
               {isActive && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full" style={{ backgroundColor: cfg.accent }} />

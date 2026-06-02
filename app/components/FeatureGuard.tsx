@@ -71,17 +71,7 @@ export default function FeatureGuard() {
       return
     }
 
-    // Check user permissions (prefix match)
-    const userEntry = USER_ROUTE_MODULE.find(([prefix]) => pathname.startsWith(prefix))
-    if (userEntry) {
-      const [, userModule] = userEntry
-      fetch('/api/permissions')
-        .then(r => r.json())
-        .then((perms: { employee: Record<string, boolean>; user: Record<string, boolean> }) => {
-          if (perms.user[userModule] === false) router.replace('/bloqueado')
-        })
-        .catch(() => {})
-    }
+    // User routes: handled visually in CustomerNav (no redirect needed)
   }, [pathname, router])
 
   return null
