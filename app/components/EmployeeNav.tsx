@@ -146,9 +146,8 @@ export default function EmployeeNav() {
             const enabled = isEnabled(link)
             return (
               <a key={link.href} href={enabled ? link.href : undefined}
-                onClick={!enabled ? e => e.preventDefault() : undefined}
                 className={`ad-navlink flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all${active ? ' is-active' : ''}`}
-                style={active ? navActive : { color: 'var(--ad-sub)', opacity: enabled ? 1 : 0.4, cursor: enabled ? 'pointer' : 'not-allowed' }}>
+                style={active ? navActive : { color: 'var(--ad-sub)', opacity: enabled ? 1 : 0.4, cursor: enabled ? 'pointer' : 'not-allowed', pointerEvents: enabled ? undefined : 'none' }}>
                 <NavIcon name={link.icon} />
                 <span className="flex-1">{link.label}</span>
                 {!enabled && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(0,230,118,0.15)', color: 'var(--ad-accent)' }}>PRO</span>}

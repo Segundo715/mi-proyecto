@@ -270,7 +270,7 @@ export default function AdminNav() {
                 className={`ad-navlink flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all touch-none select-none${active ? ' is-active' : ''}`}
                 style={active
                   ? { ...navActive, transform: isDragging ? 'scale(1.03)' : 'none', cursor: 'grab' }
-                  : { color: 'var(--ad-sub)', opacity: enabled ? (isDragging ? 0.82 : 1) : 0.4, cursor: enabled ? 'grab' : 'not-allowed', transform: isDragging ? 'scale(1.03)' : 'none' }}>
+                  : { color: 'var(--ad-sub)', opacity: enabled ? (isDragging ? 0.82 : 1) : 0.4, cursor: enabled ? 'grab' : 'not-allowed', transform: isDragging ? 'scale(1.03)' : 'none', pointerEvents: enabled ? undefined : 'none' }}>
                 <NavIcon name={link.icon} />
                 <span className="flex-1">{link.label}</span>
                 {!enabled && (
