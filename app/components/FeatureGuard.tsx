@@ -31,15 +31,16 @@ const EMPLOYEE_ROUTE_MODULE: Record<string, string> = {
   '/employee/tv':        'emp_pantalla_tv',
 }
 
-// User module permissions
-const USER_ROUTE_MODULE: Record<string, string> = {
-  '/menu':      'usr_menu',
-  '/card':      'usr_tarjeta',
-  '/review':    'usr_resenas',
-  '/resena':    'usr_resenas',
-  '/registro':  'usr_registro_qr',
-  '/loyalty':   'usr_tarjeta',
-}
+// User module permissions — prefix matching (startsWith)
+const USER_ROUTE_MODULE: Array<[string, string]> = [
+  ['/menu',      'usr_menu'       ],
+  ['/card',      'usr_tarjeta'    ],
+  ['/loyalty',   'usr_tarjeta'    ],
+  ['/review',    'usr_resenas'    ],
+  ['/resena',    'usr_resenas'    ],
+  ['/registro',  'usr_registro_qr'],
+  ['/recetas',   'usr_menu'       ],
+]
 
 export default function FeatureGuard() {
   const pathname = usePathname()
@@ -70,9 +71,10 @@ export default function FeatureGuard() {
       return
     }
 
-    // Check user permissions
-    const userModule = USER_ROUTE_MODULE[pathname]
-    if (userModule) {
+    // Check user permissions (prefix match)
+    const userEntry = USER_ROUTE_MODULE.find(([prefix]) => pathname.startsWith(prefix))
+    if (userEntry) {
+      const [, userModule] = userEntry
       fetch('/api/permissions')
         .then(r => r.json())
         .then((perms: { employee: Record<string, boolean>; user: Record<string, boolean> }) => {
