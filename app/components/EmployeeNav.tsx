@@ -4,18 +4,19 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, type CSSProperties } from 'react'
 import AdminThemeToggle from '@/app/components/AdminThemeToggle'
 import { useBrand } from '@/app/components/BrandProvider'
+import type { FeatureKey } from '@/lib/features'
 
 interface NavLink {
-  href: string; icon: string; label: string; exact?: boolean
+  href: string; icon: string; label: string; exact?: boolean; feature?: FeatureKey
 }
 
 const NAV_LINKS: NavLink[] = [
   { href: '/employee',           icon: 'loyalty',  label: 'Fidelización', exact: true },
-  { href: '/employee/orders',    icon: 'orders',   label: 'Pedidos' },
-  { href: '/employee/menu',      icon: 'menu',     label: 'Menú' },
-  { href: '/employee/recipes',   icon: 'recipes',  label: 'Recetario' },
-  { href: '/employee/customers', icon: 'users',    label: 'Clientes' },
-  { href: '/employee/tv',        icon: 'tv',       label: 'Pantalla TV' },
+  { href: '/employee/orders',    icon: 'orders',   label: 'Pedidos',      feature: 'orders' },
+  { href: '/employee/menu',      icon: 'menu',     label: 'Menú',         feature: 'menu' },
+  { href: '/employee/recipes',   icon: 'recipes',  label: 'Recetario',    feature: 'produccion' },
+  { href: '/employee/customers', icon: 'users',    label: 'Clientes',     feature: 'customers' },
+  { href: '/employee/tv',        icon: 'tv',       label: 'Pantalla TV',  feature: 'tv' },
 ]
 
 const ICONS: Record<string, string> = {
@@ -131,12 +132,15 @@ export default function EmployeeNav() {
         <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto" style={navVars}>
           {NAV_LINKS.map(link => {
             const active = isActive(link.href, link.exact)
+            const enabled = link.feature ? (brand.features?.[link.feature] ?? true) : true
             return (
-              <a key={link.href} href={link.href}
+              <a key={link.href} href={enabled ? link.href : undefined}
+                onClick={!enabled ? e => e.preventDefault() : undefined}
                 className={`ad-navlink flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all${active ? ' is-active' : ''}`}
-                style={active ? navActive : { color: 'var(--ad-sub)' }}>
+                style={active ? navActive : { color: 'var(--ad-sub)', opacity: enabled ? 1 : 0.4, cursor: enabled ? 'pointer' : 'not-allowed' }}>
                 <NavIcon name={link.icon} />
                 <span className="flex-1">{link.label}</span>
+                {!enabled && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(0,230,118,0.15)', color: 'var(--ad-accent)' }}>PRO</span>}
               </a>
             )
           })}

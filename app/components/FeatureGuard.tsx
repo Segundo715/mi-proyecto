@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import type { FeatureKey } from '@/lib/features'
 
 const ROUTE_FEATURE: Record<string, string> = {
+  // Admin
   '/admin/analytics':        'analytics',
   '/admin/estadisticas':     'analytics',
   '/admin/marketing':        'marketing',
@@ -19,6 +20,17 @@ const ROUTE_FEATURE: Record<string, string> = {
   '/admin/produccion':       'produccion',
   '/admin/reportes':         'reportes',
   '/admin/configuracion':    'configuracion',
+  // Empleado
+  '/employee/orders':        'orders',
+  '/employee/menu':          'menu',
+  '/employee/customers':     'customers',
+  '/employee/tv':            'tv',
+  '/employee/recipes':       'produccion',
+  // Usuario
+  '/menu':                   'menu',
+  '/card':                   'loyaltyCard',
+  '/review':                 'reviews',
+  '/resena':                 'reviews',
 }
 
 export default function FeatureGuard() {
@@ -33,7 +45,9 @@ export default function FeatureGuard() {
       .then(r => r.json())
       .then((flags: Record<FeatureKey, boolean>) => {
         if (flags[feature as FeatureKey] === false) {
-          router.replace('/admin')
+          if (pathname.startsWith('/employee')) router.replace('/employee')
+          else if (pathname.startsWith('/admin')) router.replace('/admin')
+          else router.replace('/')
         }
       })
       .catch(() => {})
