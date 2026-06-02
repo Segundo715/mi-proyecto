@@ -26,13 +26,15 @@ export type FeatureKey = keyof typeof FEATURES
 export type FeatureFlags = Record<FeatureKey, boolean>
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {
-  const { data } = await supabase
-    .from('settings')
-    .select('value')
-    .eq('key', 'feature_flags')
-    .maybeSingle()
+  const rid = process.env.NEXT_PUBLIC_RESTAURANT_ID
+  const keys = rid ? [`feature_flags_${rid}`, 'feature_flags'] : ['feature_flags']
 
-  const overrides: Partial<FeatureFlags> = data?.value ? JSON.parse(data.value) : {}
+  let overrides: Partial<FeatureFlags> = {}
+  for (const key of keys) {
+    const { data } = await supabase.from('settings').select('value').eq('key', key).maybeSingle()
+    if (data?.value) { overrides = JSON.parse(data.value); break }
+  }
+
   return Object.fromEntries(
     Object.keys(FEATURES).map(k => [k, overrides[k as FeatureKey] ?? true])
   ) as FeatureFlags
