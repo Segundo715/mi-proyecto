@@ -15,5 +15,7 @@ export async function GET() {
     getPerms('employee_permissions'),
     getPerms('user_permissions'),
   ])
-  return Response.json({ employee, user })
+  return Response.json({ employee, user }, {
+    headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+  })
 }
