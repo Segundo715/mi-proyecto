@@ -78,7 +78,7 @@ export default function FeatureGuard() {
       fetch('/api/permissions')
         .then(r => r.json())
         .then((perms: { employee: Record<string, boolean>; user: Record<string, boolean> }) => {
-          if (perms.user[userModule] === false) router.replace('/')
+          if (perms.user[userModule] === false) router.replace('/bloqueado')
         })
         .catch(() => {})
     }
