@@ -34,12 +34,35 @@ function NavIcon({ name }: { name: string }) {
   )
 }
 
+// Mapeo link ID → feature flag ID
+const LINK_FEATURE: Record<string, string> = {
+  tpv:        'r3_tpv',
+  mesas:      'r3_mesas',
+  cocina:     'r3_cocina',
+  inventario: 'r3_inventario',
+  compras:    'r3_compras',
+  empleados:  'r3_empleados',
+  reportes:   'r3_reportes',
+}
+
 export default function Resta3Nav() {
   const router = useRouter()
   const [pathname, setPathname] = useState('')
   const [open, setOpen] = useState(false)
+  const [flags, setFlags] = useState<Record<string, boolean>>({})
 
-  useEffect(() => { setPathname(window.location.pathname) }, [])
+  useEffect(() => {
+    setPathname(window.location.pathname)
+    fetch('/api/resta3/features')
+      .then(r => r.json())
+      .then(d => setFlags(d))
+      .catch(() => {})
+  }, [])
+
+  function isEnabled(icon: string): boolean {
+    const fid = LINK_FEATURE[icon]
+    return fid ? (flags[fid] ?? true) : true
+  }
 
   async function logout() {
     await fetch('/api/resta3/auth', { method: 'DELETE' })
@@ -70,16 +93,18 @@ export default function Resta3Nav() {
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
         {LINKS.map(link => {
           const active = isActive(link.href, link.exact)
+          const enabled = isEnabled(link.icon)
           return (
-            <a key={link.href} href={link.href}
-              onClick={() => setOpen(false)}
+            <a key={link.href} href={enabled ? link.href : undefined}
+              onClick={enabled ? () => setOpen(false) : e => e.preventDefault()}
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all"
-              style={active
+              style={active && enabled
                 ? { background: 'linear-gradient(135deg,#f59e0b22,#d9770611)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)' }
-                : { color: '#64748b', border: '1px solid transparent' }}>
+                : { color: enabled ? '#64748b' : '#334155', border: '1px solid transparent', opacity: enabled ? 1 : 0.4, cursor: enabled ? 'pointer' : 'not-allowed', pointerEvents: enabled ? undefined : 'none' }}>
               <NavIcon name={link.icon} />
-              <span>{link.label}</span>
-              {active && <span className="ml-auto w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#f59e0b' }} />}
+              <span className="flex-1">{link.label}</span>
+              {!enabled && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}>PRO</span>}
+              {active && enabled && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#f59e0b' }} />}
             </a>
           )
         })}

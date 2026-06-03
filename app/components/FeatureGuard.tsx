@@ -31,16 +31,6 @@ const EMPLOYEE_ROUTE_MODULE: Record<string, string> = {
   '/employee/tv':        'emp_pantalla_tv',
 }
 
-// User module permissions — prefix matching (startsWith)
-const USER_ROUTE_MODULE: Array<[string, string]> = [
-  ['/menu',      'usr_menu'       ],
-  ['/card',      'usr_tarjeta'    ],
-  ['/loyalty',   'usr_tarjeta'    ],
-  ['/review',    'usr_resenas'    ],
-  ['/resena',    'usr_resenas'    ],
-  ['/registro',  'usr_registro_qr'],
-  ['/recetas',   'usr_menu'       ],
-]
 
 export default function FeatureGuard() {
   const pathname = usePathname()
@@ -68,6 +58,21 @@ export default function FeatureGuard() {
           if (perms.employee[empModule] === false) router.replace('/employee')
         })
         .catch(() => {})
+      return
+    }
+
+        // Check resta3 features
+    if (pathname.startsWith('/resta3/')) {
+      const segment = pathname.split('/')[2] // tpv, mesas, etc.
+      if (segment) {
+        const fid = `r3_${segment}`
+        fetch('/api/resta3/features')
+          .then(r => r.json())
+          .then((f: Record<string, boolean>) => {
+            if (f[fid] === false) router.replace('/resta3')
+          })
+          .catch(() => {})
+      }
       return
     }
 
