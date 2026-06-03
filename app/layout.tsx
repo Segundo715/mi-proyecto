@@ -40,7 +40,14 @@ export default function RootLayout({
       <head>
         <meta name="google" content="notranslate" />
       </head>
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <body
+        className="min-h-full flex flex-col"
+        suppressHydrationWarning
+        data-gramm="false"
+        data-gramm_editor="false"
+        data-enable-grammarly="false"
+        spellCheck="false"
+      >
         <FeatureGuard />{children}
       </body>
     </html>
