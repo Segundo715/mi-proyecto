@@ -78,7 +78,7 @@ export default function ResenaPage() {
 
   if (step === 'success') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor: '#0d0d0d' }}>
+      <div key="success" translate="no" className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor: '#0d0d0d' }}>
         <div className="w-full max-w-sm text-center space-y-6">
           <img src="/logo.png" alt="NICHO" className="h-24 w-auto mx-auto" />
           <div className="rounded-3xl p-8 space-y-4" style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>
@@ -100,7 +100,7 @@ export default function ResenaPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0d0d0d' }}>
+    <div key="form" translate="no" className="min-h-screen flex flex-col" style={{ backgroundColor: '#0d0d0d' }}>
 
       {/* Header rojo */}
       <div className="relative flex flex-col items-center pt-10 pb-6 px-4"

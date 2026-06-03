@@ -90,7 +90,7 @@ export default function RegistroPage() {
   // Pantalla de carga inicial
   if (step === 'checking') {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0d0d0d' }}>
+      <div key="checking" translate="no" className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0d0d0d' }}>
         <div className="text-center">
           <img src="/logo.png" alt="NICHO" className="h-20 w-auto mx-auto mb-4 animate-pulse" />
           <p className="text-sm" style={{ color: '#555' }}>Verificando...</p>
@@ -102,7 +102,7 @@ export default function RegistroPage() {
   // Ya registrado en este dispositivo
   if (step === 'already' && existingCard) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor: '#0d0d0d' }}>
+      <div key="already" translate="no" className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor: '#0d0d0d' }}>
         <div className="w-full max-w-sm text-center space-y-6">
           <img src="/logo.png" alt="NICHO" className="h-24 w-auto mx-auto" />
           <div className="rounded-3xl p-8 space-y-4" style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>
@@ -134,7 +134,7 @@ export default function RegistroPage() {
   // Registro exitoso
   if (step === 'success') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor: '#0d0d0d' }}>
+      <div key="success" translate="no" className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor: '#0d0d0d' }}>
         <div className="w-full max-w-sm text-center space-y-6">
           <img src="/logo.png" alt="NICHO" className="h-24 w-auto mx-auto" />
           <div className="rounded-3xl p-8 space-y-3" style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>
@@ -157,7 +157,7 @@ export default function RegistroPage() {
 
   // Formulario
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0d0d0d' }}>
+    <div key="form" translate="no" className="min-h-screen flex flex-col" style={{ backgroundColor: '#0d0d0d' }}>
       <div className="relative flex flex-col items-center pt-10 pb-6 px-4"
         style={{ background: 'linear-gradient(180deg, #B90F45 0%, #7a0a2e 70%, #0d0d0d 100%)' }}>
         <img src="/logo.png" alt="NICHO" className="h-20 w-auto mb-3" />
