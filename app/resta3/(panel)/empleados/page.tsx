@@ -6,94 +6,189 @@ import Resta3Nav from '@/app/components/Resta3Nav'
 const S = { bg: '#0a0d14', card: '#1a1d27', accent: '#f59e0b', text: '#f1f5f9', sub: '#64748b', border: 'rgba(245,158,11,0.1)' }
 
 interface Employee { id: string; name: string; createdAt: string }
+interface ShiftEntry { employeeId: string; role: string; shift: string; active: boolean }
 
-const ROLES: Record<string, string> = {}
+const ROLES = ['Mesero', 'Cocinero', 'Cajero', 'Gerente', 'Hostess', 'Bartender']
 const SHIFTS = ['Matutino 7-15h', 'Vespertino 15-23h', 'Nocturno 23-7h']
-const ROLE_LIST = ['Mesero', 'Cocinero', 'Cajero', 'Gerente', 'Hostess', 'Bartender']
+const COLORS = ['#f59e0b', '#3b82f6', '#22c55e', '#a855f7', '#ec4899', '#f97316']
 
 export default function EmpleadosPage() {
   const [employees, setEmployees] = useState<Employee[]>([])
+  const [shifts, setShifts] = useState<Record<string, ShiftEntry>>({})
   const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newPass, setNewPass] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
-  useEffect(() => {
-    fetch('/api/employee/auth').then(r => r.ok ? r.json() : [])
-      .then(d => { setEmployees(Array.isArray(d) ? d : []); setLoading(false) })
-      .catch(() => {
-        setLoading(false)
-        setEmployees([
-          { id: '1', name: 'Jesus', createdAt: new Date().toISOString() },
-          { id: '2', name: 'Eloy', createdAt: new Date().toISOString() },
-          { id: '3', name: 'admin123', createdAt: new Date().toISOString() },
-        ])
+  async function load() {
+    try {
+      const r = await fetch('/api/employee/auth', { method: 'GET' })
+      if (r.ok) {
+        const data = await r.json()
+        if (Array.isArray(data)) setEmployees(data)
+      }
+    } catch {}
+    const saved = localStorage.getItem('resta3_shifts')
+    if (saved) setShifts(JSON.parse(saved))
+    setLoading(false)
+  }
+
+  useEffect(() => { load() }, [])
+
+  function getShift(empId: string): ShiftEntry {
+    return shifts[empId] ?? { employeeId: empId, role: ROLES[0], shift: SHIFTS[0], active: true }
+  }
+
+  function updateShift(empId: string, patch: Partial<ShiftEntry>) {
+    const updated = { ...shifts, [empId]: { ...getShift(empId), ...patch } }
+    setShifts(updated)
+    localStorage.setItem('resta3_shifts', JSON.stringify(updated))
+  }
+
+  async function addEmployee() {
+    if (!newName.trim() || !newPass) { setError('Completa los campos'); return }
+    if (newPass.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
+    setSaving(true); setError('')
+    try {
+      const r = await fetch('/api/employee/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'register', name: newName.trim(), password: newPass }),
       })
-  }, [])
+      const d = await r.json()
+      if (r.ok) { setNewName(''); setNewPass(''); setShowForm(false); load() }
+      else setError(d.error ?? 'Error al crear')
+    } catch { setError('Error de conexión') }
+    setSaving(false)
+  }
 
-  const now = new Date()
+  const activeCount = employees.filter(e => getShift(e.id).active).length
 
   return (
     <div className="min-h-screen md:ml-[220px]" style={{ backgroundColor: S.bg }}>
       <Resta3Nav />
-      <div className="max-w-[900px] mx-auto p-4 space-y-5">
+      <div className="max-w-[900px] mx-auto p-4 space-y-4">
 
         <div className="flex items-center justify-between pt-1">
-          <h1 className="text-xl font-black" style={{ color: S.text }}>Empleados y Turnos</h1>
-          <span className="text-xs font-bold px-3 py-1.5 rounded-xl" style={{ backgroundColor: `${S.accent}18`, color: S.accent }}>
-            {employees.length} empleados
-          </span>
+          <div>
+            <h1 className="text-xl font-black" style={{ color: S.text }}>Empleados</h1>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>{employees.length} registrados · {activeCount} activos hoy</p>
+          </div>
+          <button onClick={() => setShowForm(true)}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl"
+            style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' }}>
+            + Agregar empleado
+          </button>
         </div>
 
-        {/* Turno actual */}
-        <div className="rounded-2xl p-5" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-          <p className="text-sm font-black mb-3" style={{ color: S.text }}>Turno activo — {now.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-          <div className="grid grid-cols-3 gap-3">
-            {SHIFTS.map(shift => (
-              <div key={shift} className="rounded-xl p-3 text-center" style={{ backgroundColor: '#0f1117', border: `1px solid ${S.border}` }}>
-                <p className="text-xs font-black" style={{ color: S.accent }}>{shift}</p>
-                <p className="text-2xl font-black mt-1" style={{ color: S.text }}>
-                  {Math.floor(Math.random() * 3) + 1}
-                </p>
-                <p className="text-xs" style={{ color: S.sub }}>activos</p>
+        {/* Stats turnos */}
+        <div className="grid grid-cols-3 gap-3">
+          {SHIFTS.map((shift, i) => {
+            const count = employees.filter(e => getShift(e.id).shift === shift && getShift(e.id).active).length
+            return (
+              <div key={shift} className="rounded-2xl p-3 text-center" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+                <p className="text-lg font-black" style={{ color: COLORS[i] }}>{count}</p>
+                <p className="text-[10px] font-bold mt-0.5" style={{ color: S.sub }}>{shift}</p>
               </div>
-            ))}
-          </div>
+            )
+          })}
         </div>
 
-        {/* Lista de empleados */}
-        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
-            <span className="font-bold text-sm" style={{ color: S.text }}>Plantilla</span>
+        {/* Lista */}
+        {loading ? (
+          <div className="text-center py-12 text-sm" style={{ color: S.sub }}>Cargando...</div>
+        ) : employees.length === 0 ? (
+          <div className="text-center py-12 rounded-2xl text-sm" style={{ color: S.sub, backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            Sin empleados registrados
           </div>
-
-          {loading ? (
-            <div className="p-8 text-center text-sm" style={{ color: S.sub }}>Cargando...</div>
-          ) : (
+        ) : (
+          <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
             <div className="divide-y" style={{ borderColor: S.border }}>
               {employees.map((emp, i) => {
-                const role = ROLE_LIST[i % ROLE_LIST.length]
-                const shift = SHIFTS[i % SHIFTS.length]
-                const colors = ['#f59e0b', '#3b82f6', '#22c55e', '#a855f7', '#ec4899', '#f97316']
-                const color = colors[i % colors.length]
+                const entry = getShift(emp.id)
+                const color = COLORS[i % COLORS.length]
                 return (
-                  <div key={emp.id} className="px-5 py-4 flex items-center gap-4">
+                  <div key={emp.id} className="px-4 py-4 flex items-center gap-4 flex-wrap">
+                    {/* Avatar */}
                     <div className="w-11 h-11 rounded-xl flex items-center justify-center font-black text-base shrink-0"
                       style={{ backgroundColor: `${color}18`, color }}>
                       {emp.name.charAt(0).toUpperCase()}
                     </div>
-                    <div className="flex-1 min-w-0">
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-[120px]">
                       <p className="font-bold" style={{ color: S.text }}>{emp.name}</p>
-                      <p className="text-xs" style={{ color: S.sub }}>{role} · {shift}</p>
+                      <p className="text-xs" style={{ color: S.sub }}>
+                        Desde {new Date(emp.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#22c55e' }} />
-                      <span className="text-xs font-bold" style={{ color: '#22c55e' }}>Activo</span>
-                    </div>
+
+                    {/* Rol */}
+                    <select value={entry.role} onChange={e => updateShift(emp.id, { role: e.target.value })}
+                      className="text-xs font-bold px-2 py-1.5 rounded-xl outline-none cursor-pointer"
+                      style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }}>
+                      {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+
+                    {/* Turno */}
+                    <select value={entry.shift} onChange={e => updateShift(emp.id, { shift: e.target.value })}
+                      className="text-xs font-bold px-2 py-1.5 rounded-xl outline-none cursor-pointer"
+                      style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }}>
+                      {SHIFTS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+
+                    {/* Activo toggle */}
+                    <button onClick={() => updateShift(emp.id, { active: !entry.active })}
+                      className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-xl transition-all"
+                      style={entry.active
+                        ? { backgroundColor: 'rgba(34,197,94,0.12)', color: '#22c55e' }
+                        : { backgroundColor: 'rgba(100,116,139,0.12)', color: S.sub }}>
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: entry.active ? '#22c55e' : S.sub }} />
+                      {entry.active ? 'Activo' : 'Inactivo'}
+                    </button>
                   </div>
                 )
               })}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
+
+      {/* Modal agregar empleado */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
+          <div className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-5 space-y-4"
+            style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            <div className="flex items-center justify-between">
+              <h2 className="font-black" style={{ color: S.text }}>Nuevo empleado</h2>
+              <button onClick={() => { setShowForm(false); setError('') }} style={{ color: S.sub }}>✕</button>
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Nombre</label>
+              <input value={newName} onChange={e => { setNewName(e.target.value); setError('') }}
+                placeholder="Nombre del empleado"
+                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+                style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Contraseña (mín. 6 caracteres)</label>
+              <input type="password" value={newPass} onChange={e => { setNewPass(e.target.value); setError('') }}
+                placeholder="••••••"
+                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+                style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+            </div>
+            {error && <p className="text-xs font-bold" style={{ color: '#f87171' }}>{error}</p>}
+            <button onClick={addEmployee} disabled={saving}
+              className="w-full py-3 rounded-xl font-black text-sm disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' }}>
+              {saving ? 'Creando...' : 'Crear empleado'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
