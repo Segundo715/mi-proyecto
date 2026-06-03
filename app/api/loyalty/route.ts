@@ -14,6 +14,6 @@ export async function POST(req: NextRequest) {
   const phone = (body.phone ?? '').trim()
   if (!name || !phone)
     return Response.json({ error: 'Nombre y teléfono requeridos' }, { status: 400 })
-  const card = await findOrCreate(name, phone)
-  return Response.json(card, { status: 201 })
+  const { card, isNew } = await findOrCreate(name, phone)
+  return Response.json(card, { status: isNew ? 201 : 200 })
 }

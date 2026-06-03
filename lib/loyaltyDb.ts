@@ -38,13 +38,18 @@ export async function getCard(id: string): Promise<LoyaltyCard | undefined> {
   return data ? toCard(data) : undefined
 }
 
-export async function findOrCreate(name: string, phone: string): Promise<LoyaltyCard> {
+export async function findByPhone(phone: string): Promise<LoyaltyCard | null> {
   const clean = phone.replace(/\D/g, '')
-  const { data: all } = await supabase.from('loyalty_cards').select('*').ilike('name', name)
-  const existing = (all ?? []).find((r: Record<string, unknown>) =>
+  const { data: all } = await supabase.from('loyalty_cards').select('*')
+  const found = (all ?? []).find((r: Record<string, unknown>) =>
     (r.phone as string).replace(/\D/g, '') === clean
   )
-  if (existing) return toCard(existing)
+  return found ? toCard(found) : null
+}
+
+export async function findOrCreate(name: string, phone: string): Promise<{ card: LoyaltyCard; isNew: boolean }> {
+  const existing = await findByPhone(phone)
+  if (existing) return { card: existing, isNew: false }
 
   const { data, error } = await supabase.from('loyalty_cards').insert({
     name: name.trim(),
@@ -55,7 +60,7 @@ export async function findOrCreate(name: string, phone: string): Promise<Loyalty
     stamps: [],
   }).select().single()
   if (error) throw error
-  return toCard(data)
+  return { card: toCard(data), isNew: true }
 }
 
 export async function addStamp(id: string): Promise<LoyaltyCard | null> {
