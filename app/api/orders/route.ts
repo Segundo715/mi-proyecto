@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getAllOrders, createOrder } from '@/lib/ordersDb'
 
+// GET sin auth: empleados y la cocina pueden leer los pedidos sin sesión de admin.
 export async function GET() {
   return Response.json(await getAllOrders())
 }

@@ -13,6 +13,7 @@ export interface Order {
   tableNumber?: string
   items: OrderItem[]
   total: number
+  // Flujo de estado: pending → preparing → ready → delivered
   status: 'pending' | 'preparing' | 'ready' | 'delivered'
   createdAt: string
   notes?: string

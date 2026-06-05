@@ -37,7 +37,9 @@ export async function createReview(data: Pick<Review, 'customerName' | 'rating' 
     customer_name: data.customerName,
     rating: data.rating,
     comment: data.comment,
+    // Rating ≤ 3 → reseña negativa (dispara alerta por email al admin).
     bad: data.rating <= 3,
+    // Rating ≥ 4 → se publica automáticamente en el menú público.
     published: data.rating >= 4,
   }).select().single()
   if (error) throw error

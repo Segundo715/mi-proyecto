@@ -5,7 +5,7 @@ export interface InventoryItem {
   name: string
   category: string
   stock: number
-  minStock: number
+  minStock: number // umbral mínimo: cuando stock < minStock, se muestra alerta en el panel
   unit: string
   cost: number
   updatedAt: string

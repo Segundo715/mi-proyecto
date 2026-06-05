@@ -32,12 +32,14 @@ const EMPLOYEE_ROUTE_MODULE: Record<string, string> = {
 }
 
 
+// Componente invisible que corre en el cliente después de cada navegación.
+// Si el SuperAdmin desactivó el módulo al que se intenta acceder, redirige al inicio.
 export default function FeatureGuard() {
   const pathname = usePathname()
   const router = useRouter()
 
   useEffect(() => {
-    // Check admin feature flags
+    // Verificar feature flags del admin
     const feature = ROUTE_FEATURE[pathname]
     if (feature) {
       fetch('/api/features')
@@ -49,7 +51,7 @@ export default function FeatureGuard() {
       return
     }
 
-    // Check employee permissions
+    // Verificar permisos del empleado
     const empModule = EMPLOYEE_ROUTE_MODULE[pathname]
     if (empModule) {
       fetch('/api/permissions')
@@ -61,9 +63,9 @@ export default function FeatureGuard() {
       return
     }
 
-        // Check resta3 features
+    // Verificar features de Resta3 (el segment de la URL coincide con el sufijo del flag)
     if (pathname.startsWith('/resta3/')) {
-      const segment = pathname.split('/')[2] // tpv, mesas, etc.
+      const segment = pathname.split('/')[2] // tpv, mesas, cocina, etc.
       if (segment) {
         const fid = `r3_${segment}`
         fetch('/api/resta3/features')
@@ -76,7 +78,7 @@ export default function FeatureGuard() {
       return
     }
 
-    // User routes: handled visually in CustomerNav (no redirect needed)
+    // Rutas de usuario/cliente: la visibilidad se maneja en CustomerNav, no con redirecciones.
   }, [pathname, router])
 
   return null

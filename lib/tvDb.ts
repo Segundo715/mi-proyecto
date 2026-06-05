@@ -31,12 +31,14 @@ export async function getAllSlides(): Promise<TVSlide[]> {
   return (data ?? []).map(toSlide)
 }
 
+// Solo las slides activas se muestran en la pantalla TV del restaurante.
 export async function getActiveSlides(): Promise<TVSlide[]> {
   const { data } = await supabase.from('tv_slides').select('*').eq('active', true).order('slide_order')
   return (data ?? []).map(toSlide)
 }
 
 export async function createSlide(data: Omit<TVSlide, 'id' | 'createdAt' | 'order'>): Promise<TVSlide> {
+  // El orden se asigna al final de la lista actual (0-based).
   const { count } = await supabase.from('tv_slides').select('*', { count: 'exact', head: true })
   const { data: row, error } = await supabase.from('tv_slides').insert({
     title: data.title,

@@ -11,6 +11,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const { id } = await ctx.params
   const data = await req.json()
   if (data.stockDelta !== undefined) {
+    // stockDelta: cambio relativo de stock (e.g., -2 = consumir 2 unidades).
+    // Math.max(0, ...) evita stock negativo.
     const { data: current } = await import('@/lib/supabase').then(m =>
       m.supabase.from('inventory').select('stock').eq('id', id).single()
     )

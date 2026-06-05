@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSession } from '@/lib/auth'
 import { createEmployee, authenticateEmployee } from '@/lib/employeeDb'
 
+// Login y registro del empleado. Mismo patrón que /api/auth pero con employee_session.
 export async function POST(req: NextRequest) {
   const { action, name, password } = await req.json()
 

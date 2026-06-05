@@ -8,11 +8,14 @@ export interface AdminUser {
   createdAt: string
 }
 
+// Incluye el nombre (en minúsculas) como sal para que dos admins con la misma
+// contraseña tengan hashes distintos. El secret agrega una segunda capa de sal global.
 function hashPassword(name: string, password: string): string {
   const secret = process.env.ADMIN_SECRET ?? 'dev-secret'
   return createHash('sha256').update(`${secret}:${name.toLowerCase()}:${password}`).digest('hex')
 }
 
+// Mapea la fila snake_case de Supabase al tipo camelCase de TypeScript.
 function toAdmin(row: Record<string, unknown>): AdminUser {
   return {
     id: row.id as string,
@@ -23,8 +26,9 @@ function toAdmin(row: Record<string, unknown>): AdminUser {
 }
 
 export async function createAdmin(name: string, password: string): Promise<AdminUser | null> {
+  // ilike → búsqueda case-insensitive: "Jesus" y "jesus" son el mismo admin.
   const { data: existing } = await supabase.from('admins').select('id').ilike('name', name).maybeSingle()
-  if (existing) return null
+  if (existing) return null // nombre duplicado
   const { data, error } = await supabase.from('admins').insert({
     name: name.trim(),
     password_hash: hashPassword(name, password),

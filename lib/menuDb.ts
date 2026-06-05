@@ -46,6 +46,7 @@ export async function createMenuItem(data: Omit<MenuItem, 'id' | 'createdAt'>): 
 }
 
 export async function updateMenuItem(id: string, data: Partial<Omit<MenuItem, 'id' | 'createdAt'>>): Promise<MenuItem | null> {
+  // Construimos el patch solo con los campos definidos para no sobreescribir con undefined.
   const patch: Record<string, unknown> = {}
   if (data.name !== undefined) patch.name = data.name
   if (data.description !== undefined) patch.description = data.description

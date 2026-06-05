@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { createHash } from 'node:crypto'
 
+// Registra cuándo se selló y cuántas visitas tenía el cliente en ese momento.
 export interface Stamp {
   timestamp: string
   visitsAfter: number
@@ -19,6 +20,7 @@ export interface Customer {
   passwordHash?: string
 }
 
+// Prefijo "customer:" separa el espacio de hashes de clientes del de admins/empleados.
 function hashPassword(name: string, password: string): string {
   return createHash('sha256').update(`customer:${name.toLowerCase()}:${password}`).digest('hex')
 }
@@ -70,6 +72,7 @@ export async function addStamp(id: string): Promise<Customer | null> {
   const { data: row } = await supabase.from('customers').select('*').eq('id', id).maybeSingle()
   if (!row) return null
   const c = toCustomer(row)
+  // Solo los clientes confirmados pueden acumular sellos. Máximo 5 sellos antes de canjear.
   if (!c.confirmed || c.visits >= 5) return c
   const newStamps = [...c.stamps, { timestamp: new Date().toISOString(), visitsAfter: c.visits + 1 }]
   const { data } = await supabase.from('customers')
@@ -120,6 +123,7 @@ export async function authenticateCustomer(name: string, password: string): Prom
 }
 
 export async function findOrCreateSimple(name: string, phone: string): Promise<Customer> {
+  // Normaliza teléfono eliminando guiones, espacios y paréntesis antes de comparar.
   const clean = phone.replace(/\D/g, '')
   const { data: all } = await supabase.from('customers').select('*').ilike('name', name)
   const existing = (all ?? []).find((r: Record<string, unknown>) =>

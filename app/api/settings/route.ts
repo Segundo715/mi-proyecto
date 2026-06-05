@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { getSetting, setSetting } from '@/lib/settingsDb'
 import { verifySession } from '@/lib/auth'
 
+// GET es público: los layouts y componentes del cliente necesitan leer nombre/logo sin sesión.
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get('key') ?? ''
   if (!key) return Response.json({ error: 'key requerido' }, { status: 400 })
@@ -9,6 +10,7 @@ export async function GET(req: NextRequest) {
   return Response.json({ key, value })
 }
 
+// POST requiere sesión de admin: solo el admin puede cambiar la configuración del restaurante.
 export async function POST(req: NextRequest) {
   if (!verifySession(req.cookies.get('admin_session')?.value))
     return Response.json({ error: 'No autorizado' }, { status: 401 })

@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
   const confirmedCustomers = customers.filter(c => c.confirmed)
 
   const totalStamps = cards.reduce((s, c) => s + c.visits, 0)
+  // Considera "canjeada" a toda tarjeta que fue reseteada a 0 después de acumular ≥ 5 sellos.
   const totalRedeemed = cards.filter(c => c.visits === 0 && c.stamps.length >= 5).length
 
   const deliveredOrders = orders.filter(o => o.status === 'delivered')
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
     ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
     : 0
 
+  // Construimos el histograma de los últimos 7 días con la clave formateada en español.
   const now = Date.now()
   const ordersPerDay: Record<string, { orders: number; revenue: number }> = {}
   for (let i = 6; i >= 0; i--) {

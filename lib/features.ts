@@ -1,5 +1,7 @@
 import { supabase } from './supabase'
 
+// Catálogo de todas las features del sistema.
+// El SuperAdmin activa/desactiva estos módulos por restaurante desde mi-superadmindrestaurante.
 export const FEATURES = {
   orders:          { label: 'Pedidos',           emoji: '📋' },
   menu:            { label: 'Menú',              emoji: '🍽' },
@@ -27,6 +29,8 @@ export type FeatureFlags = Record<FeatureKey, boolean>
 
 export async function getFeatureFlags(): Promise<FeatureFlags> {
   const rid = process.env.NEXT_PUBLIC_RESTAURANT_ID
+  // Primero buscamos flags específicos del restaurante; si no existen, usamos los globales.
+  // Esto permite configuraciones por restaurante sin afectar a los demás.
   const keys = rid ? [`feature_flags_${rid}`, 'feature_flags'] : ['feature_flags']
 
   let overrides: Partial<FeatureFlags> = {}
@@ -35,6 +39,7 @@ export async function getFeatureFlags(): Promise<FeatureFlags> {
     if (data?.value) { overrides = JSON.parse(data.value); break }
   }
 
+  // Si una feature no está en Supabase, se asume habilitada por defecto.
   return Object.fromEntries(
     Object.keys(FEATURES).map(k => [k, overrides[k as FeatureKey] ?? true])
   ) as FeatureFlags

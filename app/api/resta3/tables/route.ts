@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server'
 import { getAllTables, createTable } from '@/lib/tablesDb'
 import { verifySession } from '@/lib/auth'
 
+// GET sin auth: el salón necesita ver las mesas en tiempo real sin sesión.
+// POST requiere resta3_session (solo el admin de Resta3 crea mesas).
 export async function GET() {
   return Response.json(await getAllTables())
 }

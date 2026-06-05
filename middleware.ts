@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Verifica que la cookie de sesión sea auténtica recomputando el HMAC.
+// Formato del token: "<adminId>.<hmac_sha256(adminId)>"
+// Se usa Web Crypto API porque el middleware corre en Edge Runtime (no Node.js).
 async function verifySession(session: string | undefined): Promise<boolean> {
   if (!session) return false
   const dot = session.lastIndexOf('.')
@@ -24,12 +27,14 @@ async function verifySession(session: string | undefined): Promise<boolean> {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
+  // Protege todas las rutas /admin excepto la página de login.
   if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
     const session = req.cookies.get('admin_session')?.value
     if (!await verifySession(session))
       return NextResponse.redirect(new URL('/admin/login', req.url))
   }
 
+  // Protege todas las rutas /employee excepto la página de login.
   if (pathname.startsWith('/employee') && pathname !== '/employee/login') {
     const session = req.cookies.get('employee_session')?.value
     if (!await verifySession(session))
@@ -40,5 +45,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
+  // Solo ejecutamos el middleware en las rutas que realmente necesitan protección.
   matcher: ['/admin', '/admin/:path*', '/employee', '/employee/:path*'],
 }

@@ -18,6 +18,10 @@ export async function PATCH(
   const { id } = await ctx.params
   const { action } = await req.json()
 
+  // confirm: aprueba al cliente para que pueda acumular sellos.
+  // stamp: añade un sello (solo si está confirmado y tiene < 5 sellos).
+  // redeem: canjea la recompensa y resetea los sellos a 0.
+  // checkin: solicita que un empleado confirme la visita manualmente.
   if (action === 'confirm') {
     const c = await confirmCustomer(id)
     if (!c) return Response.json({ error: 'No encontrado' }, { status: 404 })

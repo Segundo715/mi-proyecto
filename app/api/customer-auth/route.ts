@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server'
 import { createCustomerAccount, authenticateCustomer } from '@/lib/db'
 
+// Autenticación de clientes (vista móvil de la tarjeta de lealtad).
+// Stateless: no usa cookies. El cliente guarda su objeto en localStorage.
 export async function POST(req: NextRequest) {
   const { action, name, password, phone, age } = await req.json()
 

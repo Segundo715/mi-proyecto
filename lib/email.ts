@@ -1,5 +1,8 @@
 import nodemailer from 'nodemailer'
 
+// Envía un alerta al correo del restaurante cuando llega una reseña negativa (rating ≤ 3).
+// Si las variables de entorno GMAIL_USER / GMAIL_APP_PASSWORD no están configuradas,
+// omite el envío silenciosamente para no romper el flujo de la reseña.
 export async function sendBadReviewEmail(review: {
   customerName: string
   rating: number

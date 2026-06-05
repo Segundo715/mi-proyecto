@@ -8,6 +8,8 @@ export interface EmployeeUser {
   createdAt: string
 }
 
+// Prefijo "emp:" separa los hashes de empleados de los de admins.
+// Así, aunque tengan el mismo nombre y contraseña, sus hashes son distintos.
 function hashPassword(name: string, password: string): string {
   const secret = process.env.ADMIN_SECRET ?? 'dev-secret'
   return createHash('sha256').update(`emp:${secret}:${name.toLowerCase()}:${password}`).digest('hex')

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { verifySession } from '@/lib/auth'
 import { listAdmins, createAdmin, deleteAdmin, countAdmins, getAdminById } from '@/lib/adminDb'
 
+// Gestión de perfiles de admin desde la vista de Configuración (solo admins autenticados).
 export async function GET(req: NextRequest) {
   if (!verifySession(req.cookies.get('admin_session')?.value))
     return Response.json({ error: 'No autorizado' }, { status: 401 })
@@ -31,6 +32,7 @@ export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id')
   if (!id) return Response.json({ error: 'id requerido' }, { status: 400 })
 
+  // Protecciones: no puedes borrarte a ti mismo ni dejar el sistema sin ningún admin.
   if (id === currentId)
     return Response.json({ error: 'No puedes eliminar tu propio perfil' }, { status: 400 })
 

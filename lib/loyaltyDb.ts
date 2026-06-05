@@ -24,6 +24,7 @@ function toCard(row: Record<string, unknown>): LoyaltyCard {
   }
 }
 
+// Las tarjetas expiran a los 90 días. Se renueva automáticamente en cada sello o canje.
 function expiryDate(): string {
   return new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
 }
@@ -39,6 +40,7 @@ export async function getCard(id: string): Promise<LoyaltyCard | undefined> {
 }
 
 export async function findByPhone(phone: string): Promise<LoyaltyCard | null> {
+  // Normaliza el teléfono eliminando caracteres no numéricos antes de comparar.
   const clean = phone.replace(/\D/g, '')
   const { data: all } = await supabase.from('loyalty_cards').select('*')
   const found = (all ?? []).find((r: Record<string, unknown>) =>
@@ -67,6 +69,7 @@ export async function addStamp(id: string): Promise<LoyaltyCard | null> {
   const { data: row } = await supabase.from('loyalty_cards').select('*').eq('id', id).maybeSingle()
   if (!row) return null
   const c = toCard(row)
+  // Tarjetas inactivas o con 5 sellos no acumulan más hasta que se canjeen.
   if (!c.active || c.visits >= 5) return c
   const newStamps = [...c.stamps, { timestamp: new Date().toISOString(), visitsAfter: c.visits + 1 }]
   const { data } = await supabase.from('loyalty_cards')
