@@ -1,9 +1,12 @@
 'use client'
 
 // Gestión de mesas: tap sobre mesa → modal para cambiar estado + nombre del cliente.
-// Persiste en Supabase (tabla tables) vía PATCH /api/resta3/tables/:id.
+// Pestaña "Plano" reutiliza FloorPlanEditor del admin (localStorage floor_plan_v1).
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import Resta3Nav from '@/app/components/Resta3Nav'
+
+const FloorPlanEditor = dynamic(() => import('@/components/floor-plan/FloorPlanEditor'), { ssr: false })
 
 const S = { bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)', text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)' }
 
@@ -18,13 +21,12 @@ const STATUS_CFG: Record<TableStatus, { label: string; color: string; bg: string
 }
 
 export default function MesasPage() {
+  const [tab, setTab] = useState<'mesas' | 'plano'>('mesas')
   const [tables, setTables] = useState<Table[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<TableStatus | 'todas'>('todas')
   const [zone, setZone] = useState('todas')
   const [saving, setSaving] = useState(false)
-
-  // Modal de acción
   const [modal, setModal] = useState<Table | null>(null)
   const [customerInput, setCustomerInput] = useState('')
   const [selectedStatus, setSelectedStatus] = useState<TableStatus>('libre')
@@ -73,7 +75,6 @@ export default function MesasPage() {
     (filter === 'todas' || t.status === filter) &&
     (zone === 'todas' || t.zone === zone)
   )
-
   const stats = {
     libre:     tables.filter(t => t.status === 'libre').length,
     ocupada:   tables.filter(t => t.status === 'ocupada').length,
@@ -85,8 +86,9 @@ export default function MesasPage() {
   return (
     <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <Resta3Nav />
-      <div className="max-w-[1000px] mx-auto p-4 space-y-4">
+      <div className="max-w-[1200px] mx-auto p-4 space-y-4">
 
+        {/* Header */}
         <div className="flex items-center justify-between pt-1">
           <div>
             <h1 className="text-xl font-black" style={{ color: S.text }}>Gestión de Mesas</h1>
@@ -97,67 +99,92 @@ export default function MesasPage() {
           </span>
         </div>
 
-        {/* Stats filtro */}
-        <div className="grid grid-cols-4 gap-2">
-          {(Object.entries(stats) as [TableStatus, number][]).map(([status, count]) => {
-            const cfg = STATUS_CFG[status]
-            return (
-              <button key={status} onClick={() => setFilter(filter === status ? 'todas' : status)}
-                className="rounded-xl p-3 text-center transition-all"
-                style={{ backgroundColor: filter === status ? cfg.bg : S.card, border: `1px solid ${filter === status ? cfg.border : S.border}` }}>
-                <p className="text-xl font-black" style={{ color: cfg.color }}>{count}</p>
-                <p className="text-[10px] font-bold mt-0.5" style={{ color: cfg.color }}>{cfg.label}</p>
-              </button>
-            )
-          })}
+        {/* Tabs */}
+        <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          {(['mesas', 'plano'] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+              style={tab === t ? { backgroundColor: S.accent, color: '#000' } : { color: S.sub, backgroundColor: 'transparent' }}>
+              {t === 'mesas' ? '🪑 Mesas' : '🗺️ Plano'}
+            </button>
+          ))}
         </div>
 
-        {/* Filtro zona */}
-        {zones.length > 2 && (
-          <div className="flex gap-2 flex-wrap">
-            {zones.map(z => (
-              <button key={z} onClick={() => setZone(z)}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold capitalize"
-                style={zone === z
-                  ? { backgroundColor: `${S.accent}22`, color: S.accent, border: `1px solid ${S.accent}44` }
-                  : { backgroundColor: S.card, color: S.sub, border: `1px solid ${S.border}` }}>
-                {z}
-              </button>
-            ))}
+        {/* Tab: Plano */}
+        {tab === 'plano' && (
+          <div className="rounded-2xl p-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            <FloorPlanEditor />
           </div>
         )}
 
-        {/* Plano */}
-        {loading ? (
-          <div className="text-center py-16 text-sm" style={{ color: S.sub }}>Cargando mesas...</div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {displayed.map(table => {
-              const cfg = STATUS_CFG[table.status]
-              return (
-                <button key={table.id} onClick={() => openModal(table)}
-                  className="rounded-2xl p-4 text-left transition-all hover:scale-[1.02] active:scale-95"
-                  style={{ backgroundColor: S.card, border: `2px solid ${cfg.border}` }}>
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="font-black text-sm" style={{ color: S.text }}>{table.label}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                      style={{ backgroundColor: cfg.bg, color: cfg.color }}>{cfg.label}</span>
-                  </div>
-                  <div className="flex items-center gap-1 mb-2 flex-wrap">
-                    {Array.from({ length: table.seats }).map((_, i) => (
-                      <div key={i} className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: table.status === 'ocupada' ? cfg.color : table.status === 'reservada' ? `${cfg.color}66` : 'rgba(255,255,255,0.1)' }} />
-                    ))}
-                    <span className="text-[10px] ml-1" style={{ color: S.sub }}>{table.seats}p</span>
-                  </div>
-                  {table.customer && <p className="text-xs font-bold truncate" style={{ color: S.text }}>{table.customer}</p>}
-                  {table.since && <p className="text-xs" style={{ color: S.sub }}>desde {table.since}</p>}
-                  <p className="text-[9px] mt-2" style={{ color: 'rgba(255,255,255,0.2)' }}>Toca para gestionar</p>
-                </button>
-              )
-            })}
+        {/* Tab: Mesas */}
+        {tab === 'mesas' && (
+          <div className="space-y-4">
+
+            {/* Stats / filtro */}
+            <div className="grid grid-cols-4 gap-2">
+              {(Object.entries(stats) as [TableStatus, number][]).map(([status, count]) => {
+                const cfg = STATUS_CFG[status]
+                return (
+                  <button key={status} onClick={() => setFilter(filter === status ? 'todas' : status)}
+                    className="rounded-xl p-3 text-center transition-all"
+                    style={{ backgroundColor: filter === status ? cfg.bg : S.card, border: `1px solid ${filter === status ? cfg.border : S.border}` }}>
+                    <p className="text-xl font-black" style={{ color: cfg.color }}>{count}</p>
+                    <p className="text-[10px] font-bold mt-0.5" style={{ color: cfg.color }}>{cfg.label}</p>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Filtro zona */}
+            {zones.length > 2 && (
+              <div className="flex gap-2 flex-wrap">
+                {zones.map(z => (
+                  <button key={z} onClick={() => setZone(z)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold capitalize"
+                    style={zone === z
+                      ? { backgroundColor: `${S.accent}22`, color: S.accent, border: `1px solid ${S.accent}44` }
+                      : { backgroundColor: S.card, color: S.sub, border: `1px solid ${S.border}` }}>
+                    {z}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Grid de mesas */}
+            {loading ? (
+              <div className="text-center py-16 text-sm" style={{ color: S.sub }}>Cargando mesas...</div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {displayed.map(table => {
+                  const cfg = STATUS_CFG[table.status]
+                  return (
+                    <button key={table.id} onClick={() => openModal(table)}
+                      className="rounded-2xl p-4 text-left transition-all hover:scale-[1.02] active:scale-95"
+                      style={{ backgroundColor: S.card, border: `2px solid ${cfg.border}` }}>
+                      <div className="flex items-start justify-between mb-3">
+                        <span className="font-black text-sm" style={{ color: S.text }}>{table.label}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                          style={{ backgroundColor: cfg.bg, color: cfg.color }}>{cfg.label}</span>
+                      </div>
+                      <div className="flex items-center gap-1 mb-2 flex-wrap">
+                        {Array.from({ length: table.seats }).map((_, i) => (
+                          <div key={i} className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: table.status === 'ocupada' ? cfg.color : table.status === 'reservada' ? `${cfg.color}66` : 'rgba(255,255,255,0.1)' }} />
+                        ))}
+                        <span className="text-[10px] ml-1" style={{ color: S.sub }}>{table.seats}p</span>
+                      </div>
+                      {table.customer && <p className="text-xs font-bold truncate" style={{ color: S.text }}>{table.customer}</p>}
+                      {table.since && <p className="text-xs" style={{ color: S.sub }}>desde {table.since}</p>}
+                      <p className="text-[9px] mt-2" style={{ color: 'rgba(255,255,255,0.2)' }}>Toca para gestionar</p>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
         )}
+
       </div>
 
       {/* Modal gestión de mesa */}
@@ -168,8 +195,6 @@ export default function MesasPage() {
           <div className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-5 space-y-4"
             style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}
             onClick={e => e.stopPropagation()}>
-
-            {/* Header */}
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="font-black text-lg" style={{ color: S.text }}>{modal.label}</h2>
@@ -177,8 +202,6 @@ export default function MesasPage() {
               </div>
               <button onClick={closeModal} style={{ color: S.sub }} className="text-xl">✕</button>
             </div>
-
-            {/* Nombre del cliente */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: S.sub }}>
                 Nombre del cliente / reserva
@@ -191,8 +214,6 @@ export default function MesasPage() {
                 style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}
               />
             </div>
-
-            {/* Seleccionar estado */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wide mb-2" style={{ color: S.sub }}>
                 Estado de la mesa
@@ -210,11 +231,9 @@ export default function MesasPage() {
                 ))}
               </div>
             </div>
-
-            {/* Botón aplicar */}
             <button onClick={applyChange} disabled={saving}
               className="w-full py-3.5 rounded-xl font-black text-sm disabled:opacity-50 transition-all"
-              style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' }}>
+              style={{ backgroundColor: S.accent, color: '#000' }}>
               {saving ? 'Guardando...' : `Aplicar cambio → ${STATUS_CFG[selectedStatus].label}`}
             </button>
           </div>
