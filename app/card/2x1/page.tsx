@@ -1,5 +1,7 @@
 'use client'
 
+// Tarjeta de promoción 2x1: cada stamp equivale a una consumición;
+// al llegar al umbral, el canje otorga el producto gratis.
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import CustomerNav from '@/app/components/CustomerNav'

@@ -1,4 +1,6 @@
 "use client"
+// Wrapper de lottie-react: carga el JSON desde /public/animations/<name>.json en cliente.
+// El prop transform permite inyectar colores o textos dinámicos antes de pasarlo a Lottie.
 import React, { useEffect, useMemo, useRef, useState } from "react"
 import Lottie, { type LottieRefCurrentProps } from "lottie-react"
 

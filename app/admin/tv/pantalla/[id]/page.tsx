@@ -1,4 +1,6 @@
 "use client"
+// Reproducción a pantalla completa para una TV física. Lee la pantalla por [id] desde
+// localStorage (misma clave que el dashboard TV); solo funciona en el mismo navegador donde fue creada.
 import React, { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import AnimationRenderer from "@/app/components/AnimationRenderer"

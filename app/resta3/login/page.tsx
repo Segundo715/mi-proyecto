@@ -1,5 +1,6 @@
 'use client'
 
+// Login de RESTA3: usa la misma tabla admins pero emite resta3_session (cookie independiente de admin_session).
 import { useState } from 'react'
 
 export default function Resta3LoginPage() {

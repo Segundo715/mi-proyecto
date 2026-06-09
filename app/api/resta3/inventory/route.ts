@@ -1,3 +1,4 @@
+// GET es público (dashboard puede leer sin sesión). POST requiere resta3_session.
 import { NextRequest } from 'next/server'
 import { getAllInventory, createInventoryItem } from '@/lib/inventoryDb'
 import { verifySession } from '@/lib/auth'

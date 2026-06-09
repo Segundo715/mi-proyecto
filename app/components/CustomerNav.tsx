@@ -1,5 +1,8 @@
 'use client'
 
+// Nav inferior del cliente: configuración completa viene de settings.customer_nav (JSON).
+// Los tabs, colores y radio se normalizan con normalizeNavConfig; cada tab puede habilitarse
+// por módulo de usuario (TAB_USER_MODULE) o mostrarse siempre si no tiene restricción.
 import { useEffect, useState } from 'react'
 // Iconos integrados (markup interno del <svg>) para los botones por defecto.
 export const BUILTIN_ICONS: Record<string, string> = {

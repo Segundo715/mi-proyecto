@@ -1,5 +1,7 @@
 'use client'
 
+// Panel de sellado para admin (misma UX que el empleado). El QR del negocio codifica
+// window.location.origin para que los clientes se registren escaneando.
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { QRScanner } from '../../components/QRScanner'

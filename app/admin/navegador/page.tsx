@@ -1,5 +1,7 @@
 'use client'
 
+// Editor visual del CustomerNav del cliente; persiste la config como JSON en settings (customer_nav).
+// Los botones "menu/review/card" tienen íconos SVG integrados (BUILTIN_ICONS) usados si no se sube imagen propia.
 import { useEffect, useRef, useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 import { DEFAULT_NAV, normalizeNavConfig, BUILTIN_ICONS, type NavConfig, type NavTab } from '@/app/components/CustomerNav'

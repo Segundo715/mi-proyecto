@@ -1,4 +1,6 @@
 "use client"
+// Modal para asignar y parametrizar animaciones en slides de TV admin.
+// Los campos editables se generan dinámicamente desde StandardFieldDef del registry.
 import React, { useEffect, useState } from "react"
 import AnimationRenderer from "./AnimationRenderer"
 import { ANIMATIONS, findAnimation } from "./animations/registry"

@@ -1,5 +1,7 @@
 'use client'
 
+// 4-5★ redirige al cliente a Google Reviews (no guarda nada localmente).
+// 1-3★ guarda en /api/reviews y dispara email de alerta al negocio.
 import { useState } from 'react'
 
 type Step = 'form' | 'success'

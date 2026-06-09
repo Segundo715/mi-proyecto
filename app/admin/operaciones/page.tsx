@@ -1,5 +1,6 @@
 'use client'
 
+// Vista de mesas y pedidos con KDS. Datos demo; pedidos reales con persistencia están en /admin/orders.
 import { useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 

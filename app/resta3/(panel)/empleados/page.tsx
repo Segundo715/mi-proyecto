@@ -1,5 +1,6 @@
 'use client'
 
+// Gestión de turnos de empleados. Estado en localStorage (no persiste en Supabase aún).
 import { useEffect, useState } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
 

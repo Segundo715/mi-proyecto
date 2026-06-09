@@ -1,5 +1,7 @@
 'use client'
 
+// html5-qrcode se importa dinámicamente dentro de useEffect (SSR-unsafe, lanza en Node).
+// didScanRef evita el doble disparo de onScan que ocurre en algunos navegadores móviles.
 import { useEffect, useRef } from 'react'
 
 interface Props {

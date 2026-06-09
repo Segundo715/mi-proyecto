@@ -1,5 +1,7 @@
 'use client'
 
+// Dashboard de fidelización con KPIs y distribución por tier.
+// Datos estáticos/demo — sirve como wireframe visual del módulo de lealtad.
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {

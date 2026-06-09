@@ -1,4 +1,7 @@
 "use client"
+// Dashboard de pantallas TV: sucursal → dispositivo → slides. El estado se persiste en
+// localStorage (pantalla_dashboard_v1); no usa Supabase. Con animación Lottie activa,
+// imagen/título/precio se ignoran en la reproducción.
 import React, { useState, useEffect, DragEvent } from "react"
 import AdminNav from "@/app/components/AdminNav"
 import AnimationRenderer from "@/app/components/AnimationRenderer"

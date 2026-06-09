@@ -1,3 +1,4 @@
+// GET es público (recetario del cliente). POST requiere admin_session.
 import { NextRequest } from 'next/server'
 import { getAllRecipes, createRecipe } from '@/lib/recipeDb'
 import { verifySession } from '@/lib/auth'

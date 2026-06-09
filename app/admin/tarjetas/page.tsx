@@ -1,5 +1,7 @@
 'use client'
 
+// Gestiona tarjetas de loyalty_cards (modelo nuevo, distinto de customers).
+// Las "Categorías de Rewards" se persisten en settings (reward_categories) y las consumen todas las variantes de /card/*.
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 import { RewardIcon, REWARD_ICON_KEYS, isCustomIcon } from '@/app/components/RewardIcon'

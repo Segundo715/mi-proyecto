@@ -1,3 +1,4 @@
+// Suspense wrapper obligatorio: ActivateClient usa useSearchParams(), que lanza en SSR sin él (Next.js 16 App Router).
 import { Suspense } from 'react'
 import ActivateClient from './ActivateClient'
 

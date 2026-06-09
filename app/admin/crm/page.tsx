@@ -1,5 +1,6 @@
 'use client'
 
+// Vista CRM con búsqueda local. Datos demo; el CRM real de clientes de lealtad está en /admin/customers.
 import { useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 

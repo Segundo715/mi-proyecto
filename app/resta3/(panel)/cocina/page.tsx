@@ -1,5 +1,7 @@
 'use client'
 
+// KDS de cocina: auto-refresca cada 10 s vía setInterval, AudioContext alerta cuando llega
+// pedido nuevo, badge de urgencia cuando el pedido supera el umbral de tiempo configurado.
 import { useState, useEffect, useRef } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
 

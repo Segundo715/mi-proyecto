@@ -1,3 +1,4 @@
+// Sube imágenes de branding (logo, favicon) a Supabase Storage bajo "settings/<uuid>.<ext>".
 import { NextRequest } from 'next/server'
 import { extname } from 'node:path'
 import { randomUUID } from 'node:crypto'

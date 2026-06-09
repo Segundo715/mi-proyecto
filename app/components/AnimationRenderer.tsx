@@ -1,4 +1,6 @@
 "use client"
+// Resuelve un animationId contra el registry y delega en LottiePlayer con los params correctos.
+// Algunas animaciones reajustan su layout según la orientación (horizontal/vertical) de la TV.
 import React, { useCallback } from "react"
 import LottiePlayer from "./LottiePlayer"
 import { findAnimation } from "./animations/registry"

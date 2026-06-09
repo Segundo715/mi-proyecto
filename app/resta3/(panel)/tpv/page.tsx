@@ -1,5 +1,7 @@
 'use client'
 
+// TPV / Caja: carga platillos de /api/menu, envía órdenes a /api/orders con método de pago y mesa.
+// El campo quantity (no qty) es requerido por el schema de ordersDb.
 import { useState, useEffect } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
 

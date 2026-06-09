@@ -1,5 +1,7 @@
 'use client'
 
+// CRUD de platillos + personalización del menú público (/menu): logo, colores y carrusel.
+// Imágenes se suben a Supabase Storage vía /api/menu/upload y /api/settings/upload.
 import { useState, useEffect, useRef } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 

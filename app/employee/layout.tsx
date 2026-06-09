@@ -1,3 +1,5 @@
+// Server component: misma estructura que admin/layout pero protege con employee_session cookie.
+// Lee settings en servidor para BrandProvider sin parpadeo.
 import { getSetting } from '@/lib/settingsDb'
 import { getFeatureFlags } from '@/lib/features'
 import BrandProvider from '@/app/components/BrandProvider'

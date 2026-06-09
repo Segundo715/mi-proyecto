@@ -1,5 +1,6 @@
 'use client'
 
+// Gestión de slides TV para el empleado: puede activar/desactivar slides pero no editar contenido.
 import { useState, useEffect } from 'react'
 import EmployeeNav from '@/app/components/EmployeeNav'
 

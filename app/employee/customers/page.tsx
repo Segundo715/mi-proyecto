@@ -1,5 +1,6 @@
 'use client'
 
+// Vista de clientes para el empleado: búsqueda y envío del link de activación por WhatsApp/SMS.
 import { useState, useEffect } from 'react'
 import EmployeeNav from '@/app/components/EmployeeNav'
 

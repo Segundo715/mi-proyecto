@@ -1,5 +1,6 @@
 'use client'
 
+// Pantalla de destino cuando FeatureGuard detecta que el módulo está deshabilitado en lib/features.ts.
 export default function Bloqueado() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', flexDirection: 'column', textAlign: 'center', padding: '24px', background: '#0a0a0a' }}>

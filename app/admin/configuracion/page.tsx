@@ -1,5 +1,7 @@
 'use client'
 
+// Gestiona branding del panel (restaurant_name, profile_logo, sidebar_accent) y cuentas de admin.
+// Lee admin_name desde la cookie legible para marcar "tú" y bloquear auto-eliminación.
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 

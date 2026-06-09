@@ -1,5 +1,6 @@
 'use client'
 
+// Vista de menú para el empleado: solo lectura con toggle de disponibilidad por platillo.
 import { useState, useEffect } from 'react'
 import EmployeeNav from '@/app/components/EmployeeNav'
 

@@ -1,5 +1,7 @@
 'use client'
 
+// Vista de cuenta del usuario: muestra historial de visitas y permite cerrar sesión.
+// Lee reward_categories desde /api/settings para evitar un fetch extra al montar.
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import CustomerNav from '@/app/components/CustomerNav'

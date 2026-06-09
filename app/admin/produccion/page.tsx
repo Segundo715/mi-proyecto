@@ -1,5 +1,7 @@
 'use client'
 
+// Inventario con alertas de stock crítico/bajo. Datos demo; el botón "Reordenar"
+// solo simula reabastecimiento en estado local (no persiste ni llama a ninguna API).
 import { useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 

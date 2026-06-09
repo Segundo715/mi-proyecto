@@ -1,5 +1,6 @@
 'use client'
 
+// Variante premium de la tarjeta de fidelidad: muestra tier Gold/Platinum según stamps.
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import CustomerNav from '@/app/components/CustomerNav'

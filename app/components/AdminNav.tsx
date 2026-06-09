@@ -1,5 +1,7 @@
 'use client'
 
+// Sidebar del administrador: el orden de los links se persiste en localStorage (admin_nav_order)
+// y es drag-reorderable. Los links con feature deshabilitada aparecen grises con badge "PRO".
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { FeatureKey } from '@/lib/features'

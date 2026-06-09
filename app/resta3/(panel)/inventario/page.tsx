@@ -1,5 +1,6 @@
 'use client'
 
+// Inventario CRUD conectado a Supabase (tabla inventory). Alerta visual cuando stock < minStock.
 import { useState, useEffect } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
 

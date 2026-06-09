@@ -1,5 +1,8 @@
 ﻿'use client'
 
+// Menú público con carrito y seguimiento de pedidos en tiempo real (polling cada 5 s,
+// pausado cuando la pestaña está oculta). Branding, carrusel y colores vienen de /api/settings.
+// Los pedidos entregados se eliminan del localStorage automáticamente tras 30 s.
 import { useState, useEffect, useRef } from 'react'
 import CustomerNav from '../components/CustomerNav'
 import { FEATURES } from '@/lib/features'

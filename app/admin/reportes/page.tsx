@@ -1,5 +1,7 @@
 'use client'
 
+// Lista de reportes disponibles para descarga. Los botones muestran un placeholder;
+// la generación real de PDF/Excel no está implementada aún.
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {

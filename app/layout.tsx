@@ -1,3 +1,5 @@
+// translate="no" y data-gramm* en <html>/<body> evitan que extensiones de traducción y Grammarly
+// muten el DOM fuera de React, lo que provocaba errores removeChild en producción.
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import FeatureGuard from "@/app/components/FeatureGuard";

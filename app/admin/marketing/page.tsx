@@ -1,5 +1,7 @@
 'use client'
 
+// Resumen de campañas publicitarias con ROI por canal.
+// Datos estáticos/demo; no conecta a Meta Ads, TikTok ni Google Ads.
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {

@@ -1,5 +1,7 @@
 'use client'
 
+// Cartelería para pantalla en sala: rota slides de /api/tv (15 s imagen, 30 s oferta).
+// Recarga el catálogo cada 30 s para reflejar cambios del admin sin recargar la página.
 import { useState, useEffect, useRef } from 'react'
 
 interface TVSlide {

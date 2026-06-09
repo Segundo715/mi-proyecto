@@ -1,5 +1,7 @@
 'use client'
 
+// Única vista que lee clientes reales de la BD (GET /api/customers).
+// Polling cada 10 s para detectar check-ins (requestedAt < 3 min) y notificarlos en tiempo real.
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 

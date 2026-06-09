@@ -1,5 +1,7 @@
 'use client'
 
+// Sidebar del empleado: cada link puede tener un empModule que controla su visibilidad
+// según los módulos habilitados para ese empleado en la tabla employees de Supabase.
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, type CSSProperties } from 'react'
 import AdminThemeToggle from '@/app/components/AdminThemeToggle'

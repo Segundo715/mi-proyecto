@@ -1,5 +1,6 @@
 'use client'
 
+// Gráfica SVG de predicción de ventas (banda de confianza + forecast). Datos demo; no conecta a fuente real.
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {

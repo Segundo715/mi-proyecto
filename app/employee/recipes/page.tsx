@@ -1,5 +1,6 @@
 'use client'
 
+// Recetario de solo lectura para el empleado: mismos datos que admin/recipes pero sin edición.
 import { useState, useEffect } from 'react'
 import EmployeeNav from '@/app/components/EmployeeNav'
 

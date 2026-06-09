@@ -1,3 +1,4 @@
+// Sube imágenes de slides TV a Supabase Storage bajo "tv/<uuid>.<ext>".
 import { NextRequest } from 'next/server'
 import { extname } from 'node:path'
 import { randomUUID } from 'node:crypto'

@@ -1,5 +1,7 @@
 'use client'
 
+// Tarjeta de fidelidad estándar. Usa loyalty_card_id en localStorage como identificador;
+// si no existe, redirige al flujo de registro (/registro).
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import CustomerNav from '@/app/components/CustomerNav'

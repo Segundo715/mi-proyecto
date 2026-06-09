@@ -1,5 +1,7 @@
 'use client'
 
+// POST /api/auth escribe la cookie httpOnly admin_session en éxito.
+// Soporta registro de nuevas cuentas desde la misma pantalla (tab "Crear cuenta").
 import { useState } from 'react'
 
 type Tab = 'login' | 'register'

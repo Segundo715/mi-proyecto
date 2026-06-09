@@ -1,5 +1,7 @@
 'use client'
 
+// Las reseñas negativas (≤ 3★) tienen bad=true y disparan email al crearse; aquí solo se muestran/eliminan.
+// Las buenas (≥ 4★) se pueden publicar/despublicar para que aparezcan en /review.
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 

@@ -1,5 +1,7 @@
 'use client'
 
+// Home del empleado: escanea QR del cliente para sellar su tarjeta de lealtad.
+// QRScanner se importa dinámicamente (SSR-unsafe); scanKey bumps el ref para re-montar el scanner.
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { QRScanner } from '../components/QRScanner'

@@ -1,5 +1,6 @@
 'use client'
 
+// Órdenes de compra a proveedores. Estado en localStorage (no persiste en Supabase aún).
 import { useState, useEffect } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
 

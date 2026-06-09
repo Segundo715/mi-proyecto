@@ -1,5 +1,6 @@
 'use client'
 
+// Reportes de ventas e inventario de RESTA3. Datos calculados desde /api/orders y /api/resta3/inventory.
 import { useState, useEffect } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
 

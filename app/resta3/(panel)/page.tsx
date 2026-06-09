@@ -1,5 +1,6 @@
 'use client'
 
+// Dashboard de RESTA3: KPIs del día (ventas, mesas, pedidos) con datos en tiempo real de Supabase.
 import { useEffect, useState } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
 

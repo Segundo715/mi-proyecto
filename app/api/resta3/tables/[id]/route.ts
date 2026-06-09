@@ -1,3 +1,4 @@
+// PATCH y DELETE requieren resta3_session. PATCH acepta status, customer y since.
 import { NextRequest } from 'next/server'
 import { updateTable, deleteTable } from '@/lib/tablesDb'
 import { verifySession } from '@/lib/auth'

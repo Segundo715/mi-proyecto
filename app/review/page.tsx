@@ -1,5 +1,7 @@
 'use client'
 
+// Feed público de reseñas aprobadas (rating >= 4). A diferencia de /resena,
+// todas las calificaciones se guardan en /api/reviews y se muestran en pantalla.
 import { useState, useEffect } from 'react'
 import CustomerNav from '../components/CustomerNav'
 

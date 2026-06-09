@@ -1,3 +1,5 @@
+// Alias de /resetas aún sin implementar; muestra un placeholder "Próximamente".
+// La ruta activa con branding completo es app/resetas/page.tsx.
 export default function RecetasPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-5" style={{ backgroundColor: '#000' }}>

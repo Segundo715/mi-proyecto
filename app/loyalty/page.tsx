@@ -1,5 +1,7 @@
 'use client'
 
+// Login/registro de cuenta de cliente (nombre + contraseña vía /api/customer-auth).
+// Si loyalty_id ya existe en localStorage, redirige directo a /menu sin mostrar el formulario.
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 

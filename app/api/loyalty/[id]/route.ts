@@ -1,3 +1,4 @@
+// Todas las acciones (stamp/redeem/activate/deactivate) requieren admin_session.
 import { NextRequest } from 'next/server'
 import { getCard, addStamp, redeemCoffee, deleteCard, deactivateCard, activateCard } from '@/lib/loyaltyDb'
 import { verifySession } from '@/lib/auth'

@@ -1,5 +1,7 @@
 'use client'
 
+// Módulo de reservaciones con plano de mesas, timeline, perfiles y turnos.
+// Las reservaciones solo existen en estado local; no persisten en Supabase.
 import { useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 import FloorPlanEditor from '@/components/floor-plan/FloorPlanEditor'

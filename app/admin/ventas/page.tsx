@@ -1,5 +1,6 @@
 'use client'
 
+// Vista de ventas con gráfica de barras del mes. Datos demo; no conecta a API de ventas real.
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {

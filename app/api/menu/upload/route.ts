@@ -1,3 +1,4 @@
+// Sube imagen a Supabase Storage bucket "uploads/" con prefijo "menu/<uuid>.<ext>" y devuelve URL pública.
 import { NextRequest } from 'next/server'
 import { extname } from 'node:path'
 import { randomUUID } from 'node:crypto'

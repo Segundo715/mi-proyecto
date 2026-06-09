@@ -1,5 +1,7 @@
 'use client'
 
+// Tarjeta estilo wallet con diseño tipo pase de Apple Wallet.
+// useMemo + useRef se usan para animar el flip de la tarjeta sin re-renders innecesarios.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import dynamic from 'next/dynamic'

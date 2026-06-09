@@ -1,5 +1,7 @@
 'use client'
 
+// Lee ?id= de la URL, llama PATCH /api/customers/:id {action:'confirm'}, mueve el ID de
+// loyalty_pending_id → loyalty_id en localStorage y redirige a / tras 3 s.
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 

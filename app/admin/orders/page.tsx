@@ -1,5 +1,7 @@
 'use client'
 
+// Kanban de pedidos reales (GET /api/orders) con polling cada 10 s.
+// Permite avanzar el estado pending → preparing → ready → delivered con un PATCH.
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 

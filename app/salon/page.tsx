@@ -1,5 +1,7 @@
 'use client'
 
+// Vista pública de disponibilidad de mesas (datos de /api/resta3/tables), sin autenticación.
+// Pensada para una pantalla en el salón; se auto-refresca cada 15 s sin acción del usuario.
 import { useState, useEffect } from 'react'
 
 type TableStatus = 'libre' | 'ocupada' | 'reservada' | 'limpieza'

@@ -1,5 +1,7 @@
 'use client'
 
+// Programador de posts para redes sociales (Instagram, TikTok, Facebook, WhatsApp).
+// Estado solo en memoria; no conecta a APIs de publicación real.
 import { useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 

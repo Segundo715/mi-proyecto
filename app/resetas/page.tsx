@@ -1,5 +1,7 @@
 'use client'
 
+// Recetario público con branding configurable (recetario_color, recetario_logo desde settings).
+// El color de marca se propaga a todos los componentes internos en tiempo de render, no vía CSS vars.
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 
 /* ============================================================================

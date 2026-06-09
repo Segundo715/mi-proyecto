@@ -1,5 +1,6 @@
 'use client'
 
+// POST /api/employee/auth escribe la cookie httpOnly employee_session en éxito.
 import { useState } from 'react'
 
 export default function EmployeeLoginPage() {

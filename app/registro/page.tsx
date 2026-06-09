@@ -1,5 +1,8 @@
 'use client'
 
+// Registro de lealtad con máquina de estados: checking → form → already → success.
+// En "checking" valida registro_card_id en localStorage contra /api/loyalty para evitar
+// duplicados si el cliente recarga o vuelve a abrir el link.
 import { useState, useEffect } from 'react'
 
 type Step = 'checking' | 'form' | 'already' | 'success'

@@ -1,5 +1,6 @@
 'use client'
 
+// Gestión de pedidos para el empleado: polling cada 10 s, avanza estado igual que admin/orders.
 import { useState, useEffect } from 'react'
 import EmployeeNav from '@/app/components/EmployeeNav'
 

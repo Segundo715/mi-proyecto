@@ -1,5 +1,7 @@
 'use client'
 
+// Vista de analytics con predicción de ventas de 7 días (banda de confianza + forecast).
+// Datos estáticos/demo; no conecta a ninguna API de analytics real.
 import AdminNav from '@/app/components/AdminNav'
 
 const S = {

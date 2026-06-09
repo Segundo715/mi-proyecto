@@ -1,5 +1,7 @@
 'use client'
 
+// Sugerencias de automatización IA. Aplicar/Descartar solo mutan estado local;
+// no hay integración real con ningún servicio externo.
 import { useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 

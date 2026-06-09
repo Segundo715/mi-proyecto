@@ -1,3 +1,5 @@
+// Auth guard de RESTA3: el route group (panel) excluye /resta3/login de esta protección,
+// evitando el bucle de redirección que ocurre si el layout protege su propia ruta de login.
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { verifySession } from '@/lib/auth'

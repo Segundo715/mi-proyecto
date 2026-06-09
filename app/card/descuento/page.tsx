@@ -1,5 +1,6 @@
 'use client'
 
+// Tarjeta de descuento: acumula stamps para canjear un porcentaje de descuento en la próxima compra.
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import CustomerNav from '@/app/components/CustomerNav'

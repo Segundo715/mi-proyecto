@@ -1,5 +1,7 @@
 'use client'
 
+// Gestión de mesas: tap sobre mesa → modal para cambiar estado + nombre del cliente.
+// Persiste en Supabase (tabla tables) vía PATCH /api/resta3/tables/:id.
 import { useState, useEffect } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
 

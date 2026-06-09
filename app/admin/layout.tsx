@@ -1,3 +1,5 @@
+// Server component: lee settings en el servidor para pasar nombre/logo/acento a BrandProvider
+// sin parpadeo. Inyecta el script de tema y el CSS del scrollbar con el color de sidebar_accent.
 import { getSetting } from '@/lib/settingsDb'
 import { getFeatureFlags } from '@/lib/features'
 import BrandProvider from '@/app/components/BrandProvider'

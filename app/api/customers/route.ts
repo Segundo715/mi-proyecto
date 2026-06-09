@@ -1,3 +1,4 @@
+// GET es admin-only (lista todos los clientes). POST es público: crea cliente con confirmed:false.
 import { NextRequest } from 'next/server'
 import { getAllCustomers, createCustomer } from '@/lib/db'
 
