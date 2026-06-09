@@ -21,13 +21,13 @@ Restaurant/coffee-shop SaaS platform ("Chubis", white-labeled per tenant). It st
 
 - **Customers** (public, no chrome): digital menu (`/menu`), reviews (`/review`, `/resena`), recipe book (`/recetas`, `/resetas`), and several loyalty-card styles (`/card`, `/card/premium`, `/card/2x1`, `/card/descuento`, `/card/wallet`, `/card/usuario`), registration (`/registro`, `/loyalty`), and the activation page (`/activate`). The TV signage view (`/tv`) is meant for an in-store screen.
 - **Employees** (`/employee/*`): scan/stamp loyalty cards, manage orders, menu, TV slides, recipes, customers. Login at `/employee/login`.
-- **Admins** (`/admin/*`): full dashboard — analytics, marketing, CRM, sales, menu, recipes, operations, TV, loyalty/stamping (`/admin/sellar`), cards (`/admin/tarjetas`), reviews, automation, content, production, reports, configuration (`/admin/configuracion`), and the customer-nav editor (`/admin/navegador`). Login at `/admin/login`.
+- **Admins** (`/admin/*`): full dashboard — analytics, marketing, CRM, sales, menu, recipes, operations, TV signage (`/admin/tv`), reservations & floor-plan ops (`/admin/reservaciones`), loyalty/stamping (`/admin/sellar`), cards (`/admin/tarjetas`), reviews, automation, content, production, reports, configuration (`/admin/configuracion`), and the customer-nav editor (`/admin/navegador`). Login at `/admin/login`.
 
 The classic loyalty flow still exists: 5 stamps → free coffee. `app/page.tsx` redirects `/` → `/menu`.
 
 ## Architecture
 
-**Stack:** Next.js 16 (App Router, webpack) · React 19 · Tailwind CSS 4 · TypeScript · Supabase
+**Stack:** Next.js 16 (App Router, webpack) · React 19 · Tailwind CSS 4 · TypeScript · Supabase · Konva/react-konva (canvas) · lottie-react
 
 > ⚠️ This is Next.js 16 with breaking changes vs. older versions. See `AGENTS.md` — read `node_modules/next/dist/docs/` before writing framework code.
 
@@ -103,6 +103,18 @@ Each domain has a collection route (`GET` list / `POST` create) and an `[id]` ro
 - `QRScanner` (`app/components/QRScanner.tsx`): dynamically imports `html5-qrcode` (SSR-unsafe) inside `useEffect`, guards double-fire with `didScanRef`. The `div#qr-reader` must be in the DOM before `Html5Qrcode.start()`; the parent re-mounts it via a `scanKey` ref bump.
 - `/activate` uses `<Suspense>` (`page.tsx`) + inner client component (`ActivateClient.tsx`) because `useSearchParams()` requires Suspense in the App Router.
 
+### Client-only modules (Konva canvas + localStorage)
+
+Two newer feature areas run **entirely in the browser** — no Supabase, no API routes. State lives in React and persists to `localStorage`. Most live in a **repo-root `components/` folder** (distinct from `app/components/`), imported via `@/components/...` (the `@/*` alias maps to the repo root — see `tsconfig.json`).
+
+- **TV digital signage** — `/admin/tv` is a "Gestión de Pantallas" editor (clients → TVs → screens) with a Lottie animation system; per-screen fullscreen public view at `/admin/tv/pantalla/[id]`. Components in `app/components/` (`LottiePlayer`, `AnimationRenderer`, `AnimationEditorModal`, `animations/` registry). Lottie JSON lives in `public/animations/`; register a new animation by adding its `<id>.tsx` `AnimationDef` to `app/components/animations/registry.ts`. localStorage key: `pantalla_dashboard_v1`. Uses `lottie-react` (client-only).
+- **Reservations operations** — `/admin/reservaciones` is tabbed: Reservaciones (list) · Servicio · Plano de mesas · Perfiles · Timeline · Consumo · Turnos. Modules under root `components/{floor-plan,service,guests,timeline,spend,shifts}/`:
+  - `floor-plan/` — interactive table-layout editor (react-konva). Domain types in `floor-plan/types.ts` (`RestaurantTable`, `FloorPlan`). localStorage key: `floor_plan_v1`.
+  - `service/` — host/service panel (waitlist + reservation rows) beside a live read-only floor plan; seating a party updates the table status and re-persists `floor_plan_v1`.
+  - `guests/` (`guest_profiles_v1`) and `shifts/` (`shift_plan_v1`) are localStorage-backed; `timeline/` and `spend/` read the saved floor plan for table names and otherwise use demo data.
+
+**Konva/SSR rule:** `react-konva`/`konva` are not SSR-safe. The canvas (`FloorCanvas`) is loaded with `next/dynamic(() => import('./FloorCanvas'), { ssr: false })` from a `"use client"` parent — never import react-konva from a Server Component. All these modules theme via the admin `--ad-*` CSS vars, so they follow the light/dark toggle.
+
 ### Email
 
 `lib/email.ts` uses `nodemailer` (Gmail). `createReview` with `rating <= 3` sends a "reseña negativa" alert. No-ops silently if `GMAIL_USER` / `GMAIL_APP_PASSWORD` are unset.
@@ -124,4 +136,6 @@ Set in `.env.local` (only Supabase is currently configured locally):
 - Tailwind CSS 4 uses `@import "tailwindcss"` in `globals.css` — there is no `tailwind.config.js`. Custom theme tokens go in `@theme inline {}`. Admin/employee theming uses CSS vars (`--ad-bg`, `--ad-accent`, …) toggled by `data-admin-theme`.
 - `RouteContext<'/api/.../[id]'>` is a globally available Next.js 16 type — no import needed.
 - `html5-qrcode` must never be statically imported; always `import()` inside `useEffect`.
+- `react-konva`/`konva` must never be statically imported either; load the canvas with `next/dynamic(..., { ssr: false })` from a client component (not SSR-safe).
+- The `@/*` alias points at the **repo root**, so root-level `components/` (the Konva/localStorage modules) imports as `@/components/...` — distinct from the server-adjacent `app/components/`.
 - Server-only `lib/*Db.ts` and `lib/auth.ts`/`lib/email.ts` must not be imported from client components.
