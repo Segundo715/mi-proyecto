@@ -1,17 +1,21 @@
 'use client'
 
+// Sidebar de RESTA3. Usa BrandProvider (vía useBrand) para mostrar el logo
+// y nombre del restaurante igual que el admin. Mismas CSS vars --ad-* para tema coherente.
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import AdminThemeToggle from '@/app/components/AdminThemeToggle'
+import { useBrand } from '@/app/components/BrandProvider'
 
 const LINKS = [
-  { href: '/resta3',           icon: 'dashboard', label: 'Dashboard',    exact: true },
-  { href: '/resta3/tpv',       icon: 'tpv',       label: 'TPV / Caja' },
-  { href: '/resta3/mesas',     icon: 'mesas',      label: 'Mesas' },
-  { href: '/resta3/cocina',    icon: 'cocina',     label: 'Cocina' },
-  { href: '/resta3/inventario',icon: 'inventario', label: 'Inventario' },
-  { href: '/resta3/compras',   icon: 'compras',    label: 'Compras' },
-  { href: '/resta3/empleados', icon: 'empleados',  label: 'Empleados' },
-  { href: '/resta3/reportes',  icon: 'reportes',   label: 'Reportes' },
+  { href: '/resta3',            icon: 'dashboard', label: 'Dashboard',    exact: true },
+  { href: '/resta3/tpv',        icon: 'tpv',       label: 'TPV / Caja' },
+  { href: '/resta3/mesas',      icon: 'mesas',      label: 'Mesas' },
+  { href: '/resta3/cocina',     icon: 'cocina',     label: 'Cocina' },
+  { href: '/resta3/inventario', icon: 'inventario', label: 'Inventario' },
+  { href: '/resta3/compras',    icon: 'compras',    label: 'Compras' },
+  { href: '/resta3/empleados',  icon: 'empleados',  label: 'Empleados' },
+  { href: '/resta3/reportes',   icon: 'reportes',   label: 'Reportes' },
 ]
 
 const ICONS: Record<string, string> = {
@@ -34,15 +38,19 @@ function NavIcon({ name }: { name: string }) {
   )
 }
 
-// Mapeo link ID → feature flag ID
 const LINK_FEATURE: Record<string, string> = {
-  tpv:        'r3_tpv',
-  mesas:      'r3_mesas',
-  cocina:     'r3_cocina',
-  inventario: 'r3_inventario',
-  compras:    'r3_compras',
-  empleados:  'r3_empleados',
-  reportes:   'r3_reportes',
+  tpv: 'r3_tpv', mesas: 'r3_mesas', cocina: 'r3_cocina',
+  inventario: 'r3_inventario', compras: 'r3_compras',
+  empleados: 'r3_empleados', reportes: 'r3_reportes',
+}
+
+function contrastText(hex: string): string {
+  const m = /^#([0-9a-fA-F]{6})$/.exec(hex)
+  if (!m) return '#000'
+  const n = parseInt(m[1], 16)
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return lum > 0.6 ? '#000' : '#fff'
 }
 
 export default function Resta3Nav() {
@@ -50,6 +58,12 @@ export default function Resta3Nav() {
   const [pathname, setPathname] = useState('')
   const [open, setOpen] = useState(false)
   const [flags, setFlags] = useState<Record<string, boolean>>({})
+  const brand = useBrand()
+
+  const brandName = brand.name || 'RESTA3'
+  const brandLogo = brand.logo || '/logo.png'
+  const accentColor = brand.accent || 'var(--ad-accent)'
+  const accentText = contrastText(brand.accent)
 
   useEffect(() => {
     setPathname(window.location.pathname)
@@ -73,57 +87,63 @@ export default function Resta3Nav() {
     return exact ? pathname === href : pathname.startsWith(href)
   }
 
+  const S = {
+    sidebar: { backgroundColor: 'var(--ad-sidebar)', borderRight: '1px solid var(--ad-border)' },
+    text:    { color: 'var(--ad-text)' },
+    sub:     { color: 'var(--ad-sub)' },
+    border:  { borderTop: '1px solid var(--ad-border)' },
+    overlay: { backgroundColor: 'var(--ad-overlay)' },
+  }
+
   const sidebar = (
-    <div className="flex flex-col h-full" style={{ backgroundColor: '#0f1117', borderRight: '1px solid rgba(245,158,11,0.1)' }}>
-      {/* Logo */}
-      <div className="px-5 py-5 flex items-center gap-3" style={{ borderBottom: '1px solid rgba(245,158,11,0.1)' }}>
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xl"
-          style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' }}>R</div>
+    <div className="flex flex-col h-full" style={S.sidebar}>
+      {/* Logo — misma estructura que AdminNav */}
+      <div className="flex items-center gap-3 px-5 py-5">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center relative flex-shrink-0 overflow-hidden">
+          <img src={brandLogo} alt="" className="w-full h-full object-contain" />
+        </div>
         <div>
-          <div className="font-black text-base tracking-tight" style={{ color: '#f1f5f9' }}>
-            RESTA<span style={{ color: '#f59e0b' }}>3</span>
-          </div>
-          <div className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: '#475569' }}>
-            Gestión
-          </div>
+          <div className="font-extrabold text-base tracking-wide" style={S.text}>{brandName}</div>
+          <div className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: 'var(--ad-sub)' }}>RESTA3</div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto">
         {LINKS.map(link => {
           const active = isActive(link.href, link.exact)
           const enabled = isEnabled(link.icon)
           return (
             <a key={link.href} href={enabled ? link.href : undefined}
               onClick={enabled ? () => setOpen(false) : e => e.preventDefault()}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all"
               style={active && enabled
-                ? { background: 'linear-gradient(135deg,#f59e0b22,#d9770611)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)' }
-                : { color: enabled ? '#64748b' : '#334155', border: '1px solid transparent', opacity: enabled ? 1 : 0.4, cursor: enabled ? 'pointer' : 'not-allowed', pointerEvents: enabled ? undefined : 'none' }}>
+                ? { backgroundColor: accentColor, color: accentText }
+                : { color: enabled ? 'var(--ad-sub)' : 'var(--ad-sub)', opacity: enabled ? 1 : 0.4, cursor: enabled ? 'pointer' : 'not-allowed', pointerEvents: enabled ? undefined : 'none' }}>
               <NavIcon name={link.icon} />
               <span className="flex-1">{link.label}</span>
-              {!enabled && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}>PRO</span>}
-              {active && enabled && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#f59e0b' }} />}
+              {!enabled && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                  style={{ backgroundColor: 'rgba(0,230,118,0.15)', color: 'var(--ad-accent)' }}>PRO</span>
+              )}
             </a>
           )
         })}
       </nav>
 
       {/* Footer */}
-      <div className="p-3" style={{ borderTop: '1px solid rgba(245,158,11,0.1)' }}>
-        <div className="flex items-center gap-3 px-3 py-2 rounded-xl mb-1"
-          style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
-            style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' }}>A</div>
+      <div className="p-3" style={S.border}>
+        <div className="flex items-center gap-3 p-2 rounded-lg mb-1" style={S.overlay}>
+          <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm"
+            style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' }}>R</div>
           <div>
-            <div className="text-xs font-bold" style={{ color: '#f1f5f9' }}>Administrador</div>
-            <div className="text-[10px]" style={{ color: '#475569' }}>RESTA3</div>
+            <div className="text-sm font-semibold" style={S.text}>RESTA3</div>
+            <div className="text-xs" style={{ color: 'var(--ad-sub)' }}>Panel de gestión</div>
           </div>
         </div>
         <button onClick={logout}
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all"
-          style={{ color: '#475569' }}>
+          className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all"
+          style={{ color: 'var(--ad-sub)' }}>
           <NavIcon name="logout" />
           <span>Cerrar sesión</span>
         </button>
@@ -133,32 +153,47 @@ export default function Resta3Nav() {
 
   return (
     <>
+      {/* Logo agencia + toggle (escritorio) */}
+      <div className="hidden md:flex fixed top-5 right-[250px] z-[100] items-center gap-3">
+        <img src="/L_agencia/logo_singular.svg" alt="Singular" className="ad-logo h-6 w-auto pointer-events-none" />
+        <AdminThemeToggle />
+      </div>
+
       {/* Topbar mobile */}
       <div className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3"
-        style={{ backgroundColor: '#0f1117', borderBottom: '1px solid rgba(245,158,11,0.1)' }}>
+        style={{ backgroundColor: 'var(--ad-sidebar)', borderBottom: '1px solid var(--ad-border)' }}>
         <button onClick={() => setOpen(true)} className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm"
-            style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' }}>R</div>
-          <span className="font-bold text-sm" style={{ color: '#f1f5f9' }}>RESTA3</span>
+          <div className="flex flex-col gap-1">
+            {[0,1,2].map(i => (
+              <span key={i} className="block h-0.5 rounded-full w-5" style={{ backgroundColor: 'var(--ad-text)' }} />
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center">
+              <img src={brandLogo} alt="" className="w-5 h-5 object-contain" />
+            </div>
+            <span className="font-bold text-sm" style={S.text}>{brandName}</span>
+          </div>
         </button>
-        <button onClick={logout} className="text-xs px-3 py-1.5 rounded-lg"
-          style={{ backgroundColor: '#1a1d27', color: '#64748b', border: '1px solid rgba(245,158,11,0.1)' }}>
-          Salir
-        </button>
+        <div className="flex items-center gap-2">
+          <img src="/L_agencia/logo_singular.svg" alt="Singular" className="ad-logo h-6 w-auto" />
+          <AdminThemeToggle />
+        </div>
       </div>
 
       {/* Sidebar desktop */}
-      <aside className="hidden md:block fixed left-0 top-0 bottom-0 z-40 w-[220px]">
+      <aside className="hidden md:block fixed left-0 top-0 bottom-0 z-40 w-[240px]">
         {sidebar}
       </aside>
 
       {/* Drawer mobile */}
-      {open && (
-        <div className="md:hidden fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/70" onClick={() => setOpen(false)} />
-          <aside className="relative w-64 h-full shadow-2xl">{sidebar}</aside>
-        </div>
-      )}
+      <div className={`md:hidden fixed inset-0 z-50 transition-all duration-200 ${open ? 'visible' : 'invisible pointer-events-none'}`}>
+        <div className={`absolute inset-0 bg-black transition-opacity duration-200 ${open ? 'opacity-60' : 'opacity-0'}`}
+          onClick={() => setOpen(false)} />
+        <aside className={`relative w-64 h-full shadow-2xl transform transition-transform duration-250 ease-out ${open ? 'translate-x-0' : '-translate-x-full'}`}>
+          {sidebar}
+        </aside>
+      </div>
     </>
   )
 }

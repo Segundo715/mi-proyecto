@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
 
-const S = { bg: '#0a0d14', card: '#1a1d27', accent: '#f59e0b', text: '#f1f5f9', sub: '#64748b', border: 'rgba(245,158,11,0.1)' }
+const S = { bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)', text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)' }
 
 interface Item { id: string; name: string; category: string; stock: number; minStock: number; unit: string; cost: number; updatedAt: string }
 
@@ -71,7 +71,7 @@ export default function InventarioPage() {
   const totalValue = items.reduce((s, i) => s + i.stock * i.cost, 0)
 
   return (
-    <div className="min-h-screen md:ml-[220px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <Resta3Nav />
       <div className="max-w-[1000px] mx-auto p-4 space-y-4">
 

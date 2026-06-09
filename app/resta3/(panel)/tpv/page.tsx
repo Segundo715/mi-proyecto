@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
 
-const S = { bg: '#0a0d14', card: '#1a1d27', accent: '#f59e0b', text: '#f1f5f9', sub: '#64748b', border: 'rgba(245,158,11,0.1)' }
+const S = { bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)', text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)' }
 
 interface MenuItem { id: string; name: string; category: string; price: number; imageUrl?: string; available: boolean }
 interface LineItem { item: MenuItem; qty: number }
@@ -102,7 +102,7 @@ export default function TPVPage() {
   const statusLabel: Record<string, string> = { pending: 'Pendiente', preparing: 'En cocina', ready: 'Listo', delivered: 'Entregado' }
 
   return (
-    <div className="min-h-screen md:ml-[220px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <Resta3Nav />
       <div className="max-w-[1300px] mx-auto p-4">
 

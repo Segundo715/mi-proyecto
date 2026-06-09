@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
 
 const S = {
-  bg: '#0a0d14', card: '#1a1d27', accent: '#f59e0b',
-  text: '#f1f5f9', sub: '#64748b', border: 'rgba(245,158,11,0.1)',
+  bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
+  text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)',
   blue: '#3b82f6', green: '#22c55e', red: '#ef4444', purple: '#a855f7',
 }
 
@@ -87,7 +87,7 @@ export default function Resta3Dashboard() {
   }
 
   return (
-    <div className="min-h-screen md:ml-[220px]" style={{ backgroundColor: S.bg }}>
+    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <Resta3Nav />
 
       <div className="max-w-[1200px] mx-auto p-4 space-y-5">
