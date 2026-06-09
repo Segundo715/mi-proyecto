@@ -140,7 +140,7 @@ export default function Resta3Nav() {
           </div>
           <div className="min-w-0">
             <div className="text-sm font-semibold truncate" style={S.text}>{brandName}</div>
-            <div className="text-xs" style={{ color: 'var(--ad-sub)' }}>Panel de gestión</div>
+            <div className="text-xs" style={{ color: 'var(--ad-sub)' }}>RP</div>
           </div>
         </div>
         <button onClick={logout}
