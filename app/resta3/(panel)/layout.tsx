@@ -16,17 +16,25 @@ export default async function Resta3Layout({ children }: { children: React.React
   const session = jar.get('resta3_session')?.value
   if (!verifySession(session)) redirect('/resta3/login')
 
-  const [name, logo, accent, features] = await Promise.all([
+  const [name, logo, r3Logo, accent, r3Accent, r3Name, features] = await Promise.all([
     getSetting('restaurant_name'),
     getSetting('profile_logo'),
+    getSetting('resta3_logo'),
     getSetting('sidebar_accent'),
+    getSetting('resta3_accent'),
+    getSetting('resta3_name'),
     getFeatureFlags(),
   ])
 
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
-      <BrandProvider value={{ name, logo, accent, features }}>
+      <BrandProvider value={{
+        name:    r3Name   || name,
+        logo:    r3Logo   || logo,
+        accent:  r3Accent || accent,
+        features,
+      }}>
         {children}
       </BrandProvider>
     </>
