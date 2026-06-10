@@ -97,12 +97,14 @@ ${menuText}`
           return `• ${o.customerName} → ${statusLabel[o.status] ?? o.status}${est > 0 ? `, ~${est} min` : ' (¡ya listo!)'}`
         }).join('\n')
 
-    const menuText = available.map(m => `${m.name} $${m.price} — ${m.category}`).join('\n')
+    const menuText = available.map(m => `${m.name} $${m.price} — ${m.category}${m.description ? ' — ' + m.description.slice(0,80) : ''}`).join('\n')
 
     return `${base}
 
 Rol: ASISTENTE AL CLIENTE.
 Puedes: verificar estado del pedido por nombre, dar tiempos estimados, recomendar platillos.
+
+IMPORTANTE AL RECOMENDAR: Menciona los nombres de los platillos EXACTAMENTE como aparecen en el menú (con mayúsculas y tildes iguales). Esto permite que el sistema los muestre como tarjetas interactivas. Recomienda máximo 4 platillos a la vez.
 
 ## PEDIDOS EN CURSO
 ${ordersText}
@@ -141,7 +143,21 @@ export async function POST(req: Request) {
 
   const { messages, role = 'staff' } = await req.json()
   const restaurantName = await getSetting('restaurant_name', 'Restaurante')
-  const system = await buildSystem(role as Role, restaurantName)
+
+  // Timeout de 8 s para construir el contexto desde Supabase
+  let system: string
+  try {
+    system = await Promise.race([
+      buildSystem(role as Role, restaurantName),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 8000)
+      ),
+    ])
+  } catch {
+    // Si Supabase tarda, continúa con contexto mínimo
+    const now = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City', hour12: true })
+    system = `Eres el asistente del restaurante "${restaurantName}". Hora: ${now}. Responde en español, sé útil y amigable.`
+  }
 
   const groqRes = await fetch(GROQ_URL, {
     method: 'POST',

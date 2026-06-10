@@ -5,7 +5,6 @@
 // Los pedidos entregados se eliminan del localStorage automáticamente tras 30 s.
 import { useState, useEffect, useRef } from 'react'
 import CustomerNav from '../components/CustomerNav'
-import { FEATURES } from '@/lib/features'
 import AIChat from '../components/AIChat'
 
 const FAVORITES_KEY = 'favorites'
@@ -201,6 +200,17 @@ export default function MenuPage() {
     setOpenCategory(prev => prev === cat ? null : cat)
     setOpenItem(null)
   }
+
+  // Escucha recomendaciones del asistente IA → agrega al carrito directamente
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const item = (e as CustomEvent<MenuItem>).detail
+      if (item?.id) addToCart(item)
+    }
+    window.addEventListener('ai-add-to-cart', handler)
+    return () => window.removeEventListener('ai-add-to-cart', handler)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function toggleItem(id: string) {
     setOpenItem(prev => prev === id ? null : id)
