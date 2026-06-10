@@ -6,6 +6,7 @@ import { verifySession } from '@/lib/auth'
 import { getSetting } from '@/lib/settingsDb'
 import { getFeatureFlags } from '@/lib/features'
 import BrandProvider from '@/app/components/BrandProvider'
+import AIChat from '@/app/components/AIChat'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,6 +37,7 @@ export default async function Resta3Layout({ children }: { children: React.React
         features,
       }}>
         {children}
+        <AIChat role="staff" />
       </BrandProvider>
     </>
   )

@@ -4,6 +4,7 @@ import { getSetting } from '@/lib/settingsDb'
 import { getFeatureFlags } from '@/lib/features'
 import BrandProvider from '@/app/components/BrandProvider'
 import FeatureGuard from '@/app/components/FeatureGuard'
+import AIChat from '@/app/components/AIChat'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,6 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <BrandProvider value={{ name, logo, accent, features }}>
         <FeatureGuard />
         {children}
+        <AIChat role="admin" />
       </BrandProvider>
     </>
   )

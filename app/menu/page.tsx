@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from 'react'
 import CustomerNav from '../components/CustomerNav'
 import { FEATURES } from '@/lib/features'
+import AIChat from '../components/AIChat'
 
 const FAVORITES_KEY = 'favorites'
 
@@ -736,6 +737,7 @@ export default function MenuPage() {
       )}
 
       <CustomerNav active="menu" />
+      <AIChat role="customer" />
     </div>
   )
 }
