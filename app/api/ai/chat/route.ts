@@ -1,6 +1,6 @@
-// IA gratuita usando Groq (Llama 3.3 70B). Sin costo, sin tarjeta de crédito.
-// Clave: GROQ_API_KEY en .env.local (gratis en console.groq.com)
-// Contexto inyectado en tiempo real desde Supabase según el rol.
+// Edge Runtime: sin límite de 10 s de Vercel Hobby → streaming sin corte.
+export const runtime = 'edge'
+
 import { getAllOrders } from '@/lib/ordersDb'
 import { getAllMenuItems } from '@/lib/menuDb'
 import { getAllRecipes } from '@/lib/recipeDb'
@@ -159,12 +159,18 @@ export async function POST(req: Request) {
     system = `Eres el asistente del restaurante "${restaurantName}". Hora: ${now}. Responde en español, sé útil y amigable.`
   }
 
+  // Filtra el saludo inicial (role=assistant en pos 0) — es solo UI, no va al modelo
+  type ChatMsg = { role: string; content: string }
+  const cleanMessages: ChatMsg[] = (messages as ChatMsg[]).filter(
+    (m: ChatMsg, i: number) => !(i === 0 && m.role === 'assistant')
+  )
+
   const groqRes = await fetch(GROQ_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: MODEL,
-      messages: [{ role: 'system', content: system }, ...messages],
+      messages: [{ role: 'system', content: system }, ...cleanMessages],
       stream: true,
       max_tokens: 1024,
       temperature: 0.6,
