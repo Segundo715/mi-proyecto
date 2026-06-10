@@ -177,13 +177,22 @@ export default function AIChat({
     const timer = setTimeout(() => ctrl.abort(), 28000)
 
     try {
+      // Para cliente: envía menú ya cargado → evita llamada extra a Supabase en el servidor
+      const body: Record<string, unknown> = {
+        messages: history.map(m => ({ role: m.role, content: m.content })),
+        role,
+      }
+      if (role === 'customer' && menuItems.length > 0) {
+        body.menuContext = menuItems.slice(0, 40).map(m => ({
+          id: m.id, name: m.name, price: m.price,
+          category: (m as any).category ?? '', description: m.description,
+        }))
+      }
+
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: history.map(m => ({ role: m.role, content: m.content })),
-          role,
-        }),
+        body: JSON.stringify(body),
         signal: ctrl.signal,
       })
       clearTimeout(timer)

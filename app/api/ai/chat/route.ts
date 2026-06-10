@@ -1,139 +1,106 @@
-// Edge Runtime: sin límite de 10 s de Vercel Hobby → streaming sin corte.
-export const runtime = 'edge'
-
+// Groq (Llama 3.3 70B) — streaming de texto.
+// Para el rol "customer" el cliente envía menuContext para evitar
+// llamadas extra a Supabase y cumplir el timeout de 10 s de Vercel Hobby.
 import { getAllOrders } from '@/lib/ordersDb'
 import { getAllMenuItems } from '@/lib/menuDb'
 import { getAllRecipes } from '@/lib/recipeDb'
 import { getSetting } from '@/lib/settingsDb'
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const MODEL = 'llama-3.3-70b-versatile'
+const MODEL    = 'llama-3.3-70b-versatile'
 
 type Role = 'cook' | 'staff' | 'customer' | 'admin' | 'recipe'
+interface SimpleMenu { id: string; name: string; price: number; category: string; description?: string }
 
-async function buildSystem(role: Role, restaurantName: string): Promise<string> {
-  const now = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City', hour12: true })
+async function buildSystem(
+  role: Role,
+  restaurantName: string,
+  menuContext?: SimpleMenu[],
+): Promise<string> {
+  const now  = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City', hour12: true })
+  const base = `Eres el asistente inteligente del restaurante "${restaurantName}". Hora actual: ${now}.
+Responde SIEMPRE en español. Sé breve, directo y útil.`
 
-  const base = `Eres el asistente inteligente del restaurante "${restaurantName}".
-Hora actual: ${now}.
-REGLAS: Responde SIEMPRE en español. Sé breve, directo y útil. Usa emojis con moderación.`
-
-  if (role === 'cook' || role === 'staff') {
-    const [orders, menu, recipes] = await Promise.all([getAllOrders(), getAllMenuItems(), getAllRecipes()])
-    const active = orders.filter(o => o.status !== 'delivered')
-
-    const statusLabel: Record<string, string> = {
-      pending: 'pendiente', preparing: 'preparando', ready: 'listo', picked_up: 'recogido por rider',
-    }
-
-    const ordersText = active.length === 0
-      ? 'Sin pedidos activos.'
-      : active.map(o => {
-          const mins = Math.floor((Date.now() - new Date(o.createdAt).getTime()) / 60000)
-          const platform = o.notes?.match(/^\[(\w+)\]/)?.[1]
-          const loc = platform ? `[${platform}]` : (o.tableNumber ? `Mesa ${o.tableNumber}` : 'sin mesa')
-          const items = o.items.map(i => `${i.quantity}×${i.name}`).join(', ')
-          return `• ${o.customerName} | ${loc} | ${statusLabel[o.status] ?? o.status} | ${mins}min${items ? ' | ' + items : ''}`
-        }).join('\n')
-
-    const menuText = menu.map(m => `${m.name} $${m.price} (${m.available ? '✓' : 'agotado'}) ${m.category}`).join('\n')
-
-    const recipesText = recipes.map(r =>
-      `▸ ${r.name}: ${r.description}\n  Ingredientes: ${r.ingredients.join(', ')}\n  Pasos: ${r.steps.join(' → ')}`
-    ).join('\n\n')
+  // ── CLIENTE: usa el menú enviado por el cliente (sin llamadas a Supabase) ──
+  if (role === 'customer') {
+    const menuText = menuContext && menuContext.length > 0
+      ? menuContext.map(m => `${m.name} $${m.price} — ${m.category}${m.description ? ' — ' + m.description.slice(0, 80) : ''}`).join('\n')
+      : 'Menú no disponible en este momento.'
 
     return `${base}
 
-${role === 'cook'
-  ? `Rol: COCINERO.
-INSTRUCCIÓN ESPECIAL PARA RECETAS: Cuando te pregunten cómo preparar algo, da los pasos NUMERADOS, uno por uno, de forma clara. Si el cocinero dice "siguiente" o "continúa", da el siguiente paso. Sé el mejor sous-chef posible.`
-  : 'Rol: MESERO — ayuda con estado de pedidos, mesas y menú.'}
+Rol: ASISTENTE AL CLIENTE — recomiendas platillos, informas sobre el menú.
+IMPORTANTE: cuando recomiendes platillos menciona su nombre EXACTAMENTE como aparece en el menú (mismas mayúsculas y tildes). Recomienda máximo 4 platillos a la vez.
 
-## PEDIDOS ACTIVOS AHORA
+## MENÚ DISPONIBLE
+${menuText}`
+  }
+
+  // ── COOK / STAFF ──
+  if (role === 'cook' || role === 'staff') {
+    const [orders, menu, recipes] = await Promise.all([getAllOrders(), getAllMenuItems(), getAllRecipes()])
+    const active = orders.filter(o => o.status !== 'delivered').slice(0, 30)
+    const labels: Record<string, string> = { pending: 'pendiente', preparing: 'preparando', ready: 'listo', picked_up: 'con rider' }
+
+    const ordersText = active.length === 0 ? 'Sin pedidos activos.' : active.map(o => {
+      const mins = Math.floor((Date.now() - new Date(o.createdAt).getTime()) / 60000)
+      const loc  = o.notes?.match(/^\[(\w+)\]/)?.[1] ?? (o.tableNumber ? `Mesa ${o.tableNumber}` : 'sin mesa')
+      return `• ${o.customerName} | ${loc} | ${labels[o.status] ?? o.status} | ${mins}min | ${o.items.map(i => `${i.quantity}×${i.name}`).join(', ')}`
+    }).join('\n')
+
+    const menuText    = menu.map(m => `${m.name} $${m.price} (${m.available ? '✓' : 'agotado'})`).join('\n')
+    const recipesText = recipes.map(r =>
+      `▸ ${r.name}\n  Ingredientes: ${r.ingredients.join(', ')}\n  Pasos: ${r.steps.map((s, i) => `${i + 1}. ${s}`).join(' → ')}`
+    ).join('\n\n')
+
+    return `${base}
+Rol: ${role === 'cook' ? 'COCINERO — da pasos numerados para recetas. Si dicen "siguiente" continúa donde quedaste.' : 'MESERO — info de pedidos y menú.'}
+
+## PEDIDOS ACTIVOS
 ${ordersText}
 
 ## MENÚ
 ${menuText}
 
-## RECETARIO COMPLETO (con pasos detallados)
+## RECETARIO
 ${recipesText}`
   }
 
+  // ── RECIPE ──
   if (role === 'recipe') {
-    const recipes = await getAllRecipes()
-    const menu = await getAllMenuItems()
-    const menuText = menu.filter(m => m.available).map(m => `${m.name} $${m.price}`).join(', ')
+    const [recipes, menu] = await Promise.all([getAllRecipes(), getAllMenuItems()])
     const recipesText = recipes.map(r =>
-      `▸ ${r.name}${r.description ? ': ' + r.description : ''}\n  Ingredientes: ${r.ingredients.join(', ')}\n  Pasos:\n${r.steps.map((s, i) => `    ${i+1}. ${s}`).join('\n')}`
+      `▸ ${r.name}${r.description ? ': ' + r.description : ''}\n  Ingredientes: ${r.ingredients.join(', ')}\n  Pasos:\n${r.steps.map((s, i) => `    ${i + 1}. ${s}`).join('\n')}`
     ).join('\n\n')
+    const menuText = menu.filter(m => m.available).map(m => `${m.name} $${m.price}`).join(', ')
+
     return `${base}
+Eres el CHEF VIRTUAL. Explicas recetas paso a paso. Puedes sugerir variaciones y sustituciones.
 
-Eres el CHEF VIRTUAL del restaurante. Especialista en el recetario de "${restaurantName}".
-Cuando expliques una receta: usa pasos NUMERADOS y claros. Si te piden "siguiente paso", continúa donde te quedaste.
-Puedes sugerir variaciones, sustituciones de ingredientes y trucos de cocina.
-
-## RECETARIO COMPLETO
+## RECETARIO
 ${recipesText}
 
 ## MENÚ DISPONIBLE
 ${menuText}`
   }
 
-  if (role === 'customer') {
-    const [orders, menu] = await Promise.all([getAllOrders(), getAllMenuItems()])
-    const active = orders.filter(o => o.status !== 'delivered')
-    const available = menu.filter(m => m.available)
-
-    const statusLabel: Record<string, string> = {
-      pending: 'en cola ⏳', preparing: 'en preparación 🍳', ready: 'listo para entregar ✅', picked_up: 'en camino 🛵',
-    }
-    const estimateMins: Record<string, number> = { pending: 20, preparing: 12, ready: 0, picked_up: 15 }
-
-    const ordersText = active.length === 0
-      ? 'No hay pedidos activos en este momento.'
-      : active.map(o => {
-          const mins = Math.floor((Date.now() - new Date(o.createdAt).getTime()) / 60000)
-          const est = Math.max(0, estimateMins[o.status] - mins)
-          return `• ${o.customerName} → ${statusLabel[o.status] ?? o.status}${est > 0 ? `, ~${est} min` : ' (¡ya listo!)'}`
-        }).join('\n')
-
-    const menuText = available.map(m => `${m.name} $${m.price} — ${m.category}${m.description ? ' — ' + m.description.slice(0,80) : ''}`).join('\n')
-
-    return `${base}
-
-Rol: ASISTENTE AL CLIENTE.
-Puedes: verificar estado del pedido por nombre, dar tiempos estimados, recomendar platillos.
-
-IMPORTANTE AL RECOMENDAR: Menciona los nombres de los platillos EXACTAMENTE como aparecen en el menú (con mayúsculas y tildes iguales). Esto permite que el sistema los muestre como tarjetas interactivas. Recomienda máximo 4 platillos a la vez.
-
-## PEDIDOS EN CURSO
-${ordersText}
-
-## MENÚ DISPONIBLE
-${menuText}`
-  }
-
-  // admin
+  // ── ADMIN ──
   const [orders, menu, recipes] = await Promise.all([getAllOrders(), getAllMenuItems(), getAllRecipes()])
-  const today = new Date().toDateString()
+  const today       = new Date().toDateString()
   const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today)
-  const revenue = todayOrders.reduce((s, o) => s + (o.total ?? 0), 0)
-  const active = orders.filter(o => o.status !== 'delivered')
-  const byStatus = active.reduce<Record<string, number>>((acc, o) => { acc[o.status] = (acc[o.status] ?? 0) + 1; return acc }, {})
+  const active      = orders.filter(o => o.status !== 'delivered')
+  const revenue     = todayOrders.reduce((s, o) => s + (o.total ?? 0), 0)
 
   return `${base}
+Rol: ADMINISTRADOR — acceso completo a datos.
 
-Rol: ADMINISTRADOR — acceso completo a datos operativos y analíticos.
-
-## HOY
-Pedidos: ${todayOrders.length} | Ventas: $${revenue.toFixed(2)} | Activos: ${active.length}
-Por estado: ${Object.entries(byStatus).map(([s, c]) => `${s}:${c}`).join(', ')}
+## HOY: ${todayOrders.length} pedidos | $${revenue.toFixed(2)} en ventas | ${active.length} activos
 Menú: ${menu.length} ítems | Recetas: ${recipes.length}
 
 ## PEDIDOS ACTIVOS
 ${active.length === 0 ? 'Ninguno.' : active.map(o => `• ${o.customerName} | ${o.status} | $${o.total}`).join('\n')}
 
-## PEDIDOS DE HOY (últimos 30)
+## VENTAS DE HOY (últimas 30)
 ${todayOrders.slice(0, 30).map(o => `${o.customerName} | ${o.status} | $${o.total} | ${new Date(o.createdAt).toLocaleTimeString('es-MX')}`).join('\n')}`
 }
 
@@ -141,27 +108,22 @@ export async function POST(req: Request) {
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) return Response.json({ error: 'GROQ_API_KEY no configurada' }, { status: 500 })
 
-  const { messages, role = 'staff' } = await req.json()
+  const body = await req.json()
+  const { messages, role = 'staff', menuContext } = body
+
   const restaurantName = await getSetting('restaurant_name', 'Restaurante')
 
-  // Timeout de 8 s para construir el contexto desde Supabase
   let system: string
   try {
-    system = await Promise.race([
-      buildSystem(role as Role, restaurantName),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), 8000)
-      ),
-    ])
-  } catch {
-    // Si Supabase tarda, continúa con contexto mínimo
+    system = await buildSystem(role as Role, restaurantName, menuContext)
+  } catch (e) {
     const now = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City', hour12: true })
-    system = `Eres el asistente del restaurante "${restaurantName}". Hora: ${now}. Responde en español, sé útil y amigable.`
+    system = `Eres el asistente del restaurante "${restaurantName}". Hora: ${now}. Responde en español.`
   }
 
-  // Filtra el saludo inicial (role=assistant en pos 0) — es solo UI, no va al modelo
+  // Filtra el mensaje de saludo del cliente (assistant en posición 0) — es solo UI
   type ChatMsg = { role: string; content: string }
-  const cleanMessages: ChatMsg[] = (messages as ChatMsg[]).filter(
+  const cleanMsgs: ChatMsg[] = (messages as ChatMsg[]).filter(
     (m: ChatMsg, i: number) => !(i === 0 && m.role === 'assistant')
   )
 
@@ -170,10 +132,10 @@ export async function POST(req: Request) {
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: MODEL,
-      messages: [{ role: 'system', content: system }, ...cleanMessages],
+      messages: [{ role: 'system', content: system }, ...cleanMsgs],
       stream: true,
-      max_tokens: 1024,
-      temperature: 0.6,
+      max_tokens: 800,
+      temperature: 0.65,
     }),
   })
 
@@ -183,32 +145,36 @@ export async function POST(req: Request) {
   }
 
   const encoder = new TextEncoder()
-  const reader = groqRes.body!.getReader()
+  const reader  = groqRes.body!.getReader()
   const decoder = new TextDecoder()
-  let buffer = ''
+  let buffer    = ''
 
-  const body = new ReadableStream({
+  const stream = new ReadableStream({
     async start(controller) {
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() ?? ''
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          const data = line.slice(6).trim()
-          if (data === '[DONE]') { controller.close(); return }
-          try {
-            const json = JSON.parse(data)
-            const text = json.choices?.[0]?.delta?.content
-            if (text) controller.enqueue(encoder.encode(text))
-          } catch { /* fragmentos SSE incompletos */ }
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() ?? ''
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue
+            const data = line.slice(6).trim()
+            if (data === '[DONE]') { controller.close(); return }
+            try {
+              const json = JSON.parse(data)
+              const text = json.choices?.[0]?.delta?.content
+              if (text) controller.enqueue(encoder.encode(text))
+            } catch { /* fragmento SSE incompleto */ }
+          }
         }
-      }
+      } catch { /* cliente cerró conexión */ }
       controller.close()
     },
   })
 
-  return new Response(body, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+  return new Response(stream, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache' },
+  })
 }
