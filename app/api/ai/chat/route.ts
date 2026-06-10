@@ -9,7 +9,7 @@ import { getSetting } from '@/lib/settingsDb'
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
 const MODEL = 'llama-3.3-70b-versatile'
 
-type Role = 'cook' | 'staff' | 'customer' | 'admin'
+type Role = 'cook' | 'staff' | 'customer' | 'admin' | 'recipe'
 
 async function buildSystem(role: Role, restaurantName: string): Promise<string> {
   const now = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City', hour12: true })
@@ -45,7 +45,8 @@ REGLAS: Responde SIEMPRE en español. Sé breve, directo y útil. Usa emojis con
     return `${base}
 
 ${role === 'cook'
-  ? 'Rol: COCINERO — ayuda con pedidos activos, tiempos y recetas.'
+  ? `Rol: COCINERO.
+INSTRUCCIÓN ESPECIAL PARA RECETAS: Cuando te pregunten cómo preparar algo, da los pasos NUMERADOS, uno por uno, de forma clara. Si el cocinero dice "siguiente" o "continúa", da el siguiente paso. Sé el mejor sous-chef posible.`
   : 'Rol: MESERO — ayuda con estado de pedidos, mesas y menú.'}
 
 ## PEDIDOS ACTIVOS AHORA
@@ -54,8 +55,28 @@ ${ordersText}
 ## MENÚ
 ${menuText}
 
-## RECETARIO COMPLETO
+## RECETARIO COMPLETO (con pasos detallados)
 ${recipesText}`
+  }
+
+  if (role === 'recipe') {
+    const recipes = await getAllRecipes()
+    const menu = await getAllMenuItems()
+    const menuText = menu.filter(m => m.available).map(m => `${m.name} $${m.price}`).join(', ')
+    const recipesText = recipes.map(r =>
+      `▸ ${r.name}${r.description ? ': ' + r.description : ''}\n  Ingredientes: ${r.ingredients.join(', ')}\n  Pasos:\n${r.steps.map((s, i) => `    ${i+1}. ${s}`).join('\n')}`
+    ).join('\n\n')
+    return `${base}
+
+Eres el CHEF VIRTUAL del restaurante. Especialista en el recetario de "${restaurantName}".
+Cuando expliques una receta: usa pasos NUMERADOS y claros. Si te piden "siguiente paso", continúa donde te quedaste.
+Puedes sugerir variaciones, sustituciones de ingredientes y trucos de cocina.
+
+## RECETARIO COMPLETO
+${recipesText}
+
+## MENÚ DISPONIBLE
+${menuText}`
   }
 
   if (role === 'customer') {

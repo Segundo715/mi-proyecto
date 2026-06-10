@@ -3,6 +3,7 @@
 // Recetario público con branding configurable (recetario_color, recetario_logo desde settings).
 // El color de marca se propaga a todos los componentes internos en tiempo de render, no vía CSS vars.
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import AIChat from '@/app/components/AIChat'
 
 /* ============================================================================
  * Tema (claro / oscuro). El guinda es constante en ambos.
@@ -436,6 +437,7 @@ export default function RecetasPage() {
           )}
         </div>
       </div>
+      <AIChat role="recipe" />
     </div>
   )
 }

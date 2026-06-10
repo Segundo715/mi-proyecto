@@ -37,7 +37,7 @@ export default async function Resta3Layout({ children }: { children: React.React
         features,
       }}>
         {children}
-        <AIChat role="staff" />
+        <AIChat />
       </BrandProvider>
     </>
   )

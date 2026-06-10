@@ -39,7 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <BrandProvider value={{ name, logo, accent, features }}>
         <FeatureGuard />
         {children}
-        <AIChat role="admin" />
+        <AIChat />
       </BrandProvider>
     </>
   )

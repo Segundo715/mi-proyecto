@@ -159,9 +159,10 @@ export default function CocinaPage() {
 
   useEffect(() => {
     load(true)
-    const t = setInterval(() => load(), 10000)
+const t = setInterval(() => load(), 10000)
     return () => clearInterval(t)
   }, [])
+
 
   async function advance(id: string, next: string) {
     setAdvancing(id)
@@ -410,6 +411,7 @@ export default function CocinaPage() {
           </div>
         </div>
       )}
+
     </div>
   )
 }
