@@ -549,6 +549,7 @@ export default function MenuPage() {
       {/* BotÃ³n flotante del carrito */}
       <div className="fixed z-40" style={{ bottom: '72px', right: '20px' }}>
         <button type="button" onClick={() => cartCount > 0 && setShowOrder(true)}
+          aria-label={cartCount > 0 ? `Ver carrito (${cartCount} artículo${cartCount > 1 ? 's' : ''})` : 'Carrito vacío'}
           className="relative flex items-center justify-center rounded-full shadow-2xl transition-transform active:scale-95"
           style={{ width: '60px', height: '60px', backgroundColor: '#DC5E86', opacity: cartCount > 0 ? 1 : 0.45 }}>
           <img src={logo} alt="" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />

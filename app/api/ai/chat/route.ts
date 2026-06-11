@@ -21,9 +21,9 @@ async function buildSystem(
   const base = `Eres el asistente inteligente del restaurante "${restaurantName}". Hora actual: ${now}.
 Responde SIEMPRE en español. Sé breve, directo y útil.`
 
-  // Timeout compartido para todas las llamadas a Supabase (3 s por llamada)
+  // Timeout compartido para todas las llamadas a Supabase (2.5 s por llamada)
   const safe = <T,>(p: Promise<T>, fallback: T): Promise<T> =>
-    Promise.race([p, new Promise<T>(res => setTimeout(() => res(fallback), 3000))])
+    Promise.race([p, new Promise<T>(res => setTimeout(() => res(fallback), 2500))])
 
   // ── CLIENTE: usa el menú enviado por el cliente (sin llamadas a Supabase) ──
   if (role === 'customer') {
@@ -136,7 +136,12 @@ export async function POST(req: Request) {
     const { messages, role = 'staff', menuContext } = body
 
     let restaurantName = 'Restaurante'
-    try { restaurantName = await getSetting('restaurant_name', 'Restaurante') } catch { /* usa fallback */ }
+    try {
+      restaurantName = await Promise.race([
+        getSetting('restaurant_name', 'Restaurante'),
+        new Promise<string>(res => setTimeout(() => res('Restaurante'), 1000)),
+      ])
+    } catch { /* usa fallback */ }
 
     let system: string
     try {
@@ -151,9 +156,9 @@ export async function POST(req: Request) {
       (m: ChatMsg, i: number) => !(i === 0 && m.role === 'assistant')
     )
 
-    // Timeout 9s: Vercel Hobby corta la función a los 10s
+    // Timeout 6s: Vercel Hobby corta a los 10s; getSetting(1s) + buildSystem(2.5s) + Groq(6s) = 9.5s
     const groqCtrl    = new AbortController()
-    const groqTimeout = setTimeout(() => groqCtrl.abort(), 9000)
+    const groqTimeout = setTimeout(() => groqCtrl.abort(), 6000)
     let groqRes: Response
     try {
       groqRes = await fetch(GROQ_URL, {
@@ -163,7 +168,7 @@ export async function POST(req: Request) {
           model: MODEL,
           messages: [{ role: 'system', content: system }, ...cleanMsgs],
           stream: true,
-          max_tokens: 800,
+          max_tokens: 600,
           temperature: 0.65,
         }),
         signal: groqCtrl.signal,
