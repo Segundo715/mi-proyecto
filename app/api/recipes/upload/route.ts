@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server'
-import { extname } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { verifySession } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
+import { toWebp } from '@/lib/imageWebp'
 
 export async function POST(req: NextRequest) {
   if (!verifySession(req.cookies.get('admin_session')?.value))
@@ -12,13 +12,12 @@ export async function POST(req: NextRequest) {
   const file = formData.get('file') as File | null
   if (!file) return Response.json({ error: 'No se recibió ningún archivo' }, { status: 400 })
 
-  const bytes = await file.arrayBuffer()
-  const ext = extname(file.name) || '.jpg'
-  const filename = `${randomUUID()}${ext}`
-  const storagePath = `recipes/${filename}`
+  const raw = Buffer.from(await file.arrayBuffer())
+  const { data, contentType, ext } = await toWebp(raw, file.type)
+  const storagePath = `recipes/${randomUUID()}${ext}`
 
-  const { error } = await supabase.storage.from('uploads').upload(storagePath, Buffer.from(bytes), {
-    contentType: file.type || 'image/jpeg',
+  const { error } = await supabase.storage.from('uploads').upload(storagePath, data, {
+    contentType,
     upsert: true,
   })
   if (error) return Response.json({ error: error.message }, { status: 500 })
