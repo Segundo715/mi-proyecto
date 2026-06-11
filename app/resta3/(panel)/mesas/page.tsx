@@ -1,15 +1,30 @@
 'use client'
 
-// Gestión de mesas: tap sobre mesa → modal para cambiar estado + nombre del cliente.
-// Pestaña "Plano" reutiliza FloorPlanEditor del admin (localStorage floor_plan_v1).
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Resta3Nav from '@/app/components/Resta3Nav'
 
 const FloorPlanEditor = dynamic(() => import('@/components/floor-plan/FloorPlanEditor'), { ssr: false })
+const ServiceView     = dynamic(() => import('@/components/service/ServiceView'),         { ssr: false })
+const GuestProfiles   = dynamic(() => import('@/components/guests/GuestProfiles'),         { ssr: false })
+const TimelineView    = dynamic(() => import('@/components/timeline/TimelineView'),         { ssr: false })
+const SpendAlerts     = dynamic(() => import('@/components/spend/SpendAlerts'),             { ssr: false })
+const ShiftPlanner    = dynamic(() => import('@/components/shifts/ShiftPlanner'),           { ssr: false })
 
-const S = { bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)', text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)' }
+const S = {
+  bg:     'var(--ad-bg)',
+  card:   'var(--ad-card)',
+  accent: 'var(--ad-accent)',
+  text:   'var(--ad-text)',
+  sub:    'var(--ad-sub)',
+  border: 'var(--ad-border)',
+  input:  '#0a0e1c',
+}
 
+const INPUT_CLS = 'w-full rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors'
+const inputStyle = { backgroundColor: S.input, color: S.text, border: `1px solid rgba(0,230,118,0.25)` }
+
+// ── Tipos ─────────────────────────────────────────────────────────────────────
 type TableStatus = 'libre' | 'ocupada' | 'reservada' | 'limpieza'
 interface Table { id: string; label: string; seats: number; status: TableStatus; customer?: string; since?: string; zone: string }
 
@@ -20,35 +35,84 @@ const STATUS_CFG: Record<TableStatus, { label: string; color: string; bg: string
   limpieza:  { label: 'Limpieza',  color: '#a855f7', bg: 'rgba(168,85,247,0.08)', border: 'rgba(168,85,247,0.25)', icon: '🟣' },
 }
 
-export default function MesasPage() {
-  const [tab, setTab] = useState<'mesas' | 'plano'>('mesas')
-  const [tables, setTables] = useState<Table[]>([])
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<TableStatus | 'todas'>('todas')
-  const [zone, setZone] = useState('todas')
-  const [saving, setSaving] = useState(false)
-  const [modal, setModal] = useState<Table | null>(null)
-  const [customerInput, setCustomerInput] = useState('')
-  const [selectedStatus, setSelectedStatus] = useState<TableStatus>('libre')
+// ── Reservaciones ─────────────────────────────────────────────────────────────
+interface Reservation {
+  id: number; name: string; time: string; guests: number; phone: string; notes: string
+  status: 'confirmed' | 'pending' | 'cancelled'
+}
 
-  async function load() {
+const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
+  confirmed: { bg: 'rgba(34,197,94,0.15)',  color: '#4ade80', label: 'Confirmada' },
+  pending:   { bg: 'rgba(251,191,36,0.15)', color: '#fbbf24', label: 'Pendiente'  },
+  cancelled: { bg: 'rgba(239,68,68,0.15)',  color: '#f87171', label: 'Cancelada'  },
+}
+
+const DEMO: Reservation[] = [
+  { id: 1, name: 'Carlos Mendoza',  time: '13:00', guests: 4, phone: '555-1234', notes: 'Aniversario', status: 'confirmed' },
+  { id: 2, name: 'Ana García',      time: '13:30', guests: 2, phone: '555-5678', notes: '',             status: 'confirmed' },
+  { id: 3, name: 'Roberto Silva',   time: '14:00', guests: 6, phone: '555-9012', notes: 'Cumpleaños',   status: 'pending'   },
+  { id: 4, name: 'María López',     time: '15:00', guests: 3, phone: '555-3456', notes: '',             status: 'confirmed' },
+  { id: 5, name: 'Jorge Ramírez',   time: '15:30', guests: 2, phone: '555-7890', notes: 'Ventana',      status: 'confirmed' },
+  { id: 6, name: 'Patricia Torres', time: '16:00', guests: 8, phone: '555-2345', notes: 'Evento corp.', status: 'pending'   },
+]
+
+function KPI({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
+  return (
+    <div className="rounded-2xl p-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+      <p className="text-xs font-medium uppercase tracking-wide mb-1" style={{ color: S.sub }}>{label}</p>
+      <p className="text-2xl font-black" style={{ color: color ?? S.text }}>{value}</p>
+      {sub && <p className="text-xs mt-0.5" style={{ color: S.sub }}>{sub}</p>}
+    </div>
+  )
+}
+
+// ── Tabs disponibles ──────────────────────────────────────────────────────────
+const TABS = [
+  { key: 'mesas',    label: '🪑 Mesas'      },
+  { key: 'plano',    label: '🗺️ Plano'      },
+  { key: 'reservas', label: '📋 Reservas'   },
+  { key: 'servicio', label: '🍽️ Servicio'   },
+  { key: 'perfiles', label: '👥 Perfiles'   },
+  { key: 'timeline', label: '⏱️ Timeline'   },
+  { key: 'consumo',  label: '📊 Consumo'    },
+  { key: 'turnos',   label: '🔄 Turnos'     },
+] as const
+
+type Tab = typeof TABS[number]['key']
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function MesasPage() {
+  const [tab, setTab] = useState<Tab>('mesas')
+
+  // ── Estado mesas ─────────────────────────────────────────────────────────
+  const [tables,          setTables]          = useState<Table[]>([])
+  const [loadingTables,   setLoadingTables]   = useState(true)
+  const [filter,          setFilter]          = useState<TableStatus | 'todas'>('todas')
+  const [zone,            setZone]            = useState('todas')
+  const [saving,          setSaving]          = useState(false)
+  const [modal,           setModal]           = useState<Table | null>(null)
+  const [customerInput,   setCustomerInput]   = useState('')
+  const [selectedStatus,  setSelectedStatus]  = useState<TableStatus>('libre')
+
+  // ── Estado reservaciones ──────────────────────────────────────────────────
+  const [reservations, setReservations] = useState<Reservation[]>(DEMO)
+  const [showForm,     setShowForm]     = useState(false)
+  const [form,         setForm]         = useState({ name: '', time: '', guests: '2', phone: '', notes: '' })
+
+  // ── Carga de mesas ────────────────────────────────────────────────────────
+  async function loadTables() {
     const r = await fetch('/api/resta3/tables')
     if (r.ok) setTables(await r.json())
-    setLoading(false)
+    setLoadingTables(false)
   }
+  useEffect(() => { loadTables() }, [])
 
-  useEffect(() => { load() }, [])
-
+  // ── Handlers mesas ────────────────────────────────────────────────────────
   function openModal(table: Table) {
-    setModal(table)
-    setSelectedStatus(table.status)
-    setCustomerInput(table.customer ?? '')
+    setModal(table); setSelectedStatus(table.status); setCustomerInput(table.customer ?? '')
   }
-
-  function closeModal() {
-    setModal(null)
-    setCustomerInput('')
-  }
+  function closeModal() { setModal(null); setCustomerInput('') }
 
   async function applyChange() {
     if (!modal) return
@@ -62,18 +126,31 @@ export default function MesasPage() {
       body: JSON.stringify({
         status: selectedStatus,
         customer: customerInput.trim() || null,
-        since: (selectedStatus === 'libre' || selectedStatus === 'limpieza') ? null : (modal.since ?? since),
+        since: selectedStatus === 'libre' || selectedStatus === 'limpieza' ? null : (modal.since ?? since),
       }),
     })
-    await load()
-    setSaving(false)
-    closeModal()
+    await loadTables(); setSaving(false); closeModal()
   }
 
-  const zones = ['todas', ...Array.from(new Set(tables.map(t => t.zone)))]
+  // ── Handlers reservaciones ────────────────────────────────────────────────
+  function addReservation() {
+    if (!form.name.trim() || !form.time || !form.phone.trim()) return
+    setReservations(prev => [
+      ...prev,
+      { id: Date.now(), name: form.name.trim(), time: form.time,
+        guests: parseInt(form.guests) || 2, phone: form.phone.trim(), notes: form.notes.trim(), status: 'pending' },
+    ])
+    setForm({ name: '', time: '', guests: '2', phone: '', notes: '' })
+    setShowForm(false)
+  }
+  function changeStatus(id: number, status: Reservation['status']) {
+    setReservations(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+  }
+
+  // ── Derivados ─────────────────────────────────────────────────────────────
+  const zones    = ['todas', ...Array.from(new Set(tables.map(t => t.zone)))]
   const displayed = tables.filter(t =>
-    (filter === 'todas' || t.status === filter) &&
-    (zone === 'todas' || t.zone === zone)
+    (filter === 'todas' || t.status === filter) && (zone === 'todas' || t.zone === zone)
   )
   const stats = {
     libre:     tables.filter(t => t.status === 'libre').length,
@@ -83,6 +160,11 @@ export default function MesasPage() {
   }
   const occupancy = tables.length ? Math.round((stats.ocupada / tables.length) * 100) : 0
 
+  const confirmed   = reservations.filter(r => r.status === 'confirmed').length
+  const pending     = reservations.filter(r => r.status === 'pending').length
+  const totalGuests = reservations.filter(r => r.status !== 'cancelled').reduce((s, r) => s + r.guests, 0)
+  const sorted      = [...reservations].sort((a, b) => a.time.localeCompare(b.time))
+
   return (
     <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <Resta3Nav />
@@ -91,37 +173,44 @@ export default function MesasPage() {
         {/* Header */}
         <div className="flex items-center justify-between pt-1">
           <div>
-            <h1 className="text-xl font-black" style={{ color: S.text }}>Gestión de Mesas</h1>
-            <p className="text-xs mt-0.5" style={{ color: S.sub }}>{tables.length} mesas · {occupancy}% ocupación</p>
+            <h1 className="text-xl font-black" style={{ color: S.text }}>Mesas & Reservaciones</h1>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>
+              {tables.length} mesas · {occupancy}% ocupación · {confirmed + pending} reservas hoy
+            </p>
           </div>
-          <span className="text-sm font-black px-3 py-1.5 rounded-xl" style={{ backgroundColor: `${S.accent}18`, color: S.accent }}>
-            {stats.ocupada} ocupadas
-          </span>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-          {(['mesas', 'plano'] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
-              style={tab === t ? { backgroundColor: S.accent, color: '#000' } : { color: S.sub, backgroundColor: 'transparent' }}>
-              {t === 'mesas' ? '🪑 Mesas' : '🗺️ Plano'}
+          {tab === 'reservas' && (
+            <button onClick={() => setShowForm(p => !p)}
+              className="text-xs px-3 py-1.5 rounded-full font-semibold"
+              style={{ backgroundColor: S.accent, color: '#000' }}>
+              + Nueva reserva
             </button>
-          ))}
+          )}
+          {tab === 'mesas' && (
+            <span className="text-sm font-black px-3 py-1.5 rounded-xl"
+              style={{ backgroundColor: `${S.accent}18`, color: S.accent }}>
+              {stats.ocupada} ocupadas
+            </span>
+          )}
         </div>
 
-        {/* Tab: Plano */}
-        {tab === 'plano' && (
-          <div className="rounded-2xl p-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-            <FloorPlanEditor />
+        {/* Barra de tabs (scroll horizontal en móvil) */}
+        <div className="overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex gap-1.5 p-1 rounded-xl w-max" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            {TABS.map(t => (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className="px-3.5 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap"
+                style={tab === t.key
+                  ? { backgroundColor: S.accent, color: '#000' }
+                  : { color: S.sub, backgroundColor: 'transparent' }}>
+                {t.label}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
 
-        {/* Tab: Mesas */}
+        {/* ── TAB: MESAS ───────────────────────────────────────────────────── */}
         {tab === 'mesas' && (
           <div className="space-y-4">
-
-            {/* Stats / filtro */}
             <div className="grid grid-cols-4 gap-2">
               {(Object.entries(stats) as [TableStatus, number][]).map(([status, count]) => {
                 const cfg = STATUS_CFG[status]
@@ -136,7 +225,6 @@ export default function MesasPage() {
               })}
             </div>
 
-            {/* Filtro zona */}
             {zones.length > 2 && (
               <div className="flex gap-2 flex-wrap">
                 {zones.map(z => (
@@ -151,8 +239,7 @@ export default function MesasPage() {
               </div>
             )}
 
-            {/* Grid de mesas */}
-            {loading ? (
+            {loadingTables ? (
               <div className="text-center py-16 text-sm" style={{ color: S.sub }}>Cargando mesas...</div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -175,7 +262,7 @@ export default function MesasPage() {
                         <span className="text-[10px] ml-1" style={{ color: S.sub }}>{table.seats}p</span>
                       </div>
                       {table.customer && <p className="text-xs font-bold truncate" style={{ color: S.text }}>{table.customer}</p>}
-                      {table.since && <p className="text-xs" style={{ color: S.sub }}>desde {table.since}</p>}
+                      {table.since    && <p className="text-xs" style={{ color: S.sub }}>desde {table.since}</p>}
                       <p className="text-[9px] mt-2" style={{ color: 'rgba(255,255,255,0.2)' }}>Toca para gestionar</p>
                     </button>
                   )
@@ -185,9 +272,155 @@ export default function MesasPage() {
           </div>
         )}
 
+        {/* ── TAB: PLANO ───────────────────────────────────────────────────── */}
+        {tab === 'plano' && (
+          <div className="rounded-2xl p-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            <FloorPlanEditor />
+          </div>
+        )}
+
+        {/* ── TAB: RESERVAS ────────────────────────────────────────────────── */}
+        {tab === 'reservas' && (
+          <div className="max-w-3xl space-y-5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <KPI label="Hoy" value={String(confirmed + pending)} sub="reservaciones" color={S.accent} />
+              <KPI label="Confirmadas" value={String(confirmed)} sub="listas" />
+              <KPI label="Pendientes" value={String(pending)} sub="por confirmar" />
+              <KPI label="Comensales" value={String(totalGuests)} sub="esperados hoy" />
+            </div>
+
+            {showForm && (
+              <div className="rounded-2xl p-5 space-y-3" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+                <h2 className="font-bold" style={{ color: S.accent }}>Nueva reservación</h2>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Nombre *</label>
+                    <input id="res-name" name="res_name" type="text" value={form.name}
+                      onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                      placeholder="Nombre del cliente" className={INPUT_CLS} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Teléfono *</label>
+                    <input id="res-phone" name="res_phone" type="tel" value={form.phone}
+                      onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+                      placeholder="555-0000" className={INPUT_CLS} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Hora *</label>
+                    <input id="res-time" name="res_time" type="time" value={form.time}
+                      onChange={e => setForm(p => ({ ...p, time: e.target.value }))}
+                      className={INPUT_CLS} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Personas</label>
+                    <input id="res-guests" name="res_guests" type="number" value={form.guests}
+                      onChange={e => setForm(p => ({ ...p, guests: e.target.value }))}
+                      min="1" max="20" className={INPUT_CLS} style={inputStyle} />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Notas</label>
+                    <input id="res-notes" name="res_notes" type="text" value={form.notes}
+                      onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
+                      placeholder="Ej. Aniversario, cumpleaños..." className={INPUT_CLS} style={inputStyle} />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={addReservation}
+                    className="flex-1 font-bold py-2.5 rounded-xl text-sm"
+                    style={{ backgroundColor: S.accent, color: '#000' }}>
+                    Agregar
+                  </button>
+                  <button onClick={() => setShowForm(false)}
+                    className="flex-1 font-bold py-2.5 rounded-xl text-sm"
+                    style={{ border: `1px solid ${S.border}`, color: S.sub, backgroundColor: 'transparent' }}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {sorted.map(r => {
+                const st = STATUS_STYLE[r.status]
+                return (
+                  <div key={r.id} className="rounded-2xl p-4"
+                    style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+                    <div className="flex items-start gap-3">
+                      <div className="text-center shrink-0">
+                        <p className="font-black text-xl leading-none" style={{ color: S.accent }}>{r.time}</p>
+                        <p className="text-xs mt-0.5" style={{ color: S.sub }}>{r.guests} pers.</p>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-bold text-sm" style={{ color: S.text }}>{r.name}</p>
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                            style={{ backgroundColor: st.bg, color: st.color }}>{st.label}</span>
+                        </div>
+                        <p className="text-xs" style={{ color: S.sub }}>{r.phone}</p>
+                        {r.notes && <p className="text-xs mt-0.5 font-medium" style={{ color: '#fbbf24' }}>📝 {r.notes}</p>}
+                      </div>
+                    </div>
+                    {r.status !== 'cancelled' && (
+                      <div className="flex gap-2 mt-3">
+                        {r.status === 'pending' && (
+                          <button onClick={() => changeStatus(r.id, 'confirmed')}
+                            className="flex-1 py-1.5 rounded-xl text-sm font-medium"
+                            style={{ border: '1px solid rgba(34,197,94,0.4)', color: '#4ade80', backgroundColor: 'transparent' }}>
+                            Confirmar
+                          </button>
+                        )}
+                        <button onClick={() => changeStatus(r.id, 'cancelled')}
+                          className="flex-1 py-1.5 rounded-xl text-sm font-medium"
+                          style={{ border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', backgroundColor: 'transparent' }}>
+                          Cancelar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB: SERVICIO ────────────────────────────────────────────────── */}
+        {tab === 'servicio' && (
+          <div className="w-full">
+            <ServiceView />
+          </div>
+        )}
+
+        {/* ── TAB: PERFILES ────────────────────────────────────────────────── */}
+        {tab === 'perfiles' && (
+          <div className="w-full">
+            <GuestProfiles />
+          </div>
+        )}
+
+        {/* ── TAB: TIMELINE ────────────────────────────────────────────────── */}
+        {tab === 'timeline' && (
+          <div className="w-full">
+            <TimelineView />
+          </div>
+        )}
+
+        {/* ── TAB: CONSUMO ─────────────────────────────────────────────────── */}
+        {tab === 'consumo' && (
+          <div className="w-full">
+            <SpendAlerts />
+          </div>
+        )}
+
+        {/* ── TAB: TURNOS ──────────────────────────────────────────────────── */}
+        {tab === 'turnos' && (
+          <div className="w-full">
+            <ShiftPlanner />
+          </div>
+        )}
+
       </div>
 
-      {/* Modal gestión de mesa */}
+      {/* ── Modal gestión de mesa ─────────────────────────────────────────── */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}
@@ -200,13 +433,13 @@ export default function MesasPage() {
                 <h2 className="font-black text-lg" style={{ color: S.text }}>{modal.label}</h2>
                 <p className="text-xs" style={{ color: S.sub }}>{modal.seats} personas · {modal.zone}</p>
               </div>
-              <button onClick={closeModal} style={{ color: S.sub }} className="text-xl">✕</button>
+              <button onClick={closeModal} aria-label="Cerrar" style={{ color: S.sub }} className="text-xl">✕</button>
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: S.sub }}>
+              <label htmlFor="mesa-customer" className="block text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: S.sub }}>
                 Nombre del cliente / reserva
               </label>
-              <input
+              <input id="mesa-customer" name="mesa_customer"
                 value={customerInput}
                 onChange={e => setCustomerInput(e.target.value)}
                 placeholder="Ej: González, Reserva 8pm..."
@@ -234,7 +467,7 @@ export default function MesasPage() {
             <button onClick={applyChange} disabled={saving}
               className="w-full py-3.5 rounded-xl font-black text-sm disabled:opacity-50 transition-all"
               style={{ backgroundColor: S.accent, color: '#000' }}>
-              {saving ? 'Guardando...' : `Aplicar cambio → ${STATUS_CFG[selectedStatus].label}`}
+              {saving ? 'Guardando...' : `Aplicar → ${STATUS_CFG[selectedStatus].label}`}
             </button>
           </div>
         </div>
