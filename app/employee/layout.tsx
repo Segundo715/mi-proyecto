@@ -12,14 +12,16 @@ const THEME_INIT = `try{var t=localStorage.getItem('admin_theme')||'dark';docume
 
 export default async function EmployeeLayout({ children }: { children: React.ReactNode }) {
   // Se leen en el servidor para que el nombre/logo/color estén presentes desde el primer render.
-  const [name, logo, accent, empAccent, features] = await Promise.all([
+  const [name, logo, accent, empAccent, empLogo, features] = await Promise.all([
     getSetting('restaurant_name'),
     getSetting('profile_logo'),
     getSetting('sidebar_accent'),
     getSetting('employee_accent'),
+    getSetting('employee_logo'),
     getFeatureFlags(),
   ])
   const finalAccent = empAccent || accent
+  const finalLogo   = empLogo   || logo
 
   // Color del scrollbar = color de acento configurado en el panel de admin.
   const scroll = /^#[0-9a-fA-F]{6}$/.test(finalAccent) ? finalAccent : '#00e676'
@@ -34,7 +36,7 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
     <>
       <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       <style dangerouslySetInnerHTML={{ __html: SCROLL_CSS }} />
-      <BrandProvider value={{ name, logo, accent: finalAccent, features }}>
+      <BrandProvider value={{ name, logo: finalLogo, accent: finalAccent, features }}>
         {/* FeatureGuard redirige al inicio si el empleado intenta acceder a un módulo desactivado */}
         <FeatureGuard />
         {children}

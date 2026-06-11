@@ -48,8 +48,11 @@ export default function AdminConfiguracionPage() {
   const [values, setValues]       = useState<Record<string, string>>({})
   const [saving, setSaving]       = useState<string | null>(null)
   const [saved,  setSaved]        = useState<string | null>(null)
-  const [uploadingLogo, setUploadingLogo] = useState(false)
-  const [uploadingR3Logo, setUploadingR3Logo] = useState(false)
+  const [uploadingLogo,     setUploadingLogo]     = useState(false)
+  const [uploadingR3Logo,   setUploadingR3Logo]   = useState(false)
+  const [uploadingEmpLogo,  setUploadingEmpLogo]  = useState(false)
+  const [uploadingMenuLogo, setUploadingMenuLogo] = useState(false)
+  const [uploadingRecLogo,  setUploadingRecLogo]  = useState(false)
 
   // Feature flags
   const [flags, setFlags]         = useState<Record<string, boolean>>({})
@@ -69,7 +72,9 @@ export default function AdminConfiguracionPage() {
       ...TEXT_SETTINGS.map(s => s.key),
       'restaurant_name', 'profile_logo', 'sidebar_accent',
       'resta3_name', 'resta3_logo', 'resta3_accent',
-      'employee_accent',
+      'employee_accent', 'employee_logo',
+      'menu_logo', 'menu_bg_color', 'menu_btn_color', 'menu_hover_color',
+      'recetario_color', 'recetario_logo',
     ]
     keys.forEach(async key => {
       const r = await fetch(`/api/settings?key=${key}`)
@@ -107,9 +112,8 @@ export default function AdminConfiguracionPage() {
     setTimeout(() => setSaved(null), 2000)
   }
 
-  async function uploadLogo(file: File, key: 'profile_logo' | 'resta3_logo') {
-    if (key === 'profile_logo') setUploadingLogo(true)
-    else setUploadingR3Logo(true)
+  async function uploadLogo(file: File, key: string, setLoading: (v: boolean) => void) {
+    setLoading(true)
     try {
       const fd = new FormData()
       fd.append('file', file)
@@ -120,8 +124,7 @@ export default function AdminConfiguracionPage() {
         await saveSetting(key, d.url)
       }
     } finally {
-      if (key === 'profile_logo') setUploadingLogo(false)
-      else setUploadingR3Logo(false)
+      setLoading(false)
     }
   }
 
@@ -246,7 +249,7 @@ export default function AdminConfiguracionPage() {
                   style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
                   {uploadingLogo ? 'Subiendo...' : 'Cambiar logo'}
                   <input type="file" accept="image/*" className="hidden"
-                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f, 'profile_logo') }} />
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f, 'profile_logo', setUploadingLogo) }} />
                 </label>
               </div>
               <p className="text-xs mt-1" style={{ color: S.sub }}>PNG o SVG con fondo transparente recomendado</p>
@@ -299,7 +302,7 @@ export default function AdminConfiguracionPage() {
                   style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
                   {uploadingR3Logo ? 'Subiendo...' : 'Cambiar logo Resta3'}
                   <input type="file" accept="image/*" className="hidden"
-                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f, 'resta3_logo') }} />
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f, 'resta3_logo', setUploadingR3Logo) }} />
                 </label>
               </div>
               <p className="text-xs mt-1" style={{ color: S.sub }}>Dejar vacío usa el logo del restaurante</p>
@@ -318,19 +321,132 @@ export default function AdminConfiguracionPage() {
           </div>
         </div>
 
-        {/* ===== Colores del empleado ===== */}
+        {/* ===== Panel de Empleados ===== */}
         <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
           <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
             <p className="font-bold text-sm" style={{ color: S.text }}>Panel de Empleados (/employee)</p>
-            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Color de acento en el panel del mesero. Sin valor = hereda el color de Admin.</p>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Logo y color del panel del mesero. Sin valor = hereda los del Admin.</p>
           </div>
-          <div className="p-5 space-y-4">
+          <div className="p-5 space-y-5">
+
+            {/* Logo propio del empleado */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Color del panel de empleado</label>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Logo del empleado</label>
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden shrink-0"
+                  style={{ background: `linear-gradient(135deg,${empAccent},${empAccent}99)` }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={values.employee_logo || values.profile_logo || '/logo.png'} alt="logo empleado" className="w-10 h-10 object-contain" />
+                </div>
+                <label className="px-4 py-2 rounded-2xl text-sm font-bold cursor-pointer transition-all"
+                  style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                  {uploadingEmpLogo ? 'Subiendo...' : 'Cambiar logo empleado'}
+                  <input type="file" accept="image/*" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f, 'employee_logo', setUploadingEmpLogo) }} />
+                </label>
+              </div>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>Dejar vacío usa el logo del restaurante</p>
+            </div>
+
+            {/* Color */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Color de acento</label>
               {renderColorRow('employee_accent', empAccent)}
               <div className="mt-2 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium"
                 style={{ backgroundColor: empAccent, color: '#000' }}>
                 Vista previa Empleado
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== Menú del cliente ===== */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <p className="font-bold text-sm" style={{ color: S.text }}>Menú del cliente (/menu, /card)</p>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Logo y colores de las páginas públicas que ven los comensales</p>
+          </div>
+          <div className="p-5 space-y-5">
+
+            {/* Logo menú */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Logo en el menú del cliente</label>
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden shrink-0"
+                  style={{ background: values.menu_bg_color || '#0d0d0d', border: `1px solid ${S.border}` }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={values.menu_logo || values.profile_logo || '/logo.png'} alt="logo menú" className="w-10 h-10 object-contain" />
+                </div>
+                <label className="px-4 py-2 rounded-2xl text-sm font-bold cursor-pointer transition-all"
+                  style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                  {uploadingMenuLogo ? 'Subiendo...' : 'Cambiar logo'}
+                  <input type="file" accept="image/*" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f, 'menu_logo', setUploadingMenuLogo) }} />
+                </label>
+              </div>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>Aparece en la barra superior y en el carrito</p>
+            </div>
+
+            {/* Fondo */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Color de fondo</label>
+              {renderColorRow('menu_bg_color', values.menu_bg_color || '#0d0d0d')}
+            </div>
+
+            {/* Botón principal */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Color del botón principal</label>
+              {renderColorRow('menu_btn_color', values.menu_btn_color || '#B90F45')}
+            </div>
+
+            {/* Color hover / acento */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Color de acento / hover</label>
+              {renderColorRow('menu_hover_color', values.menu_hover_color || '#DC5E86')}
+              <div className="mt-2 flex gap-2">
+                <span className="inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: values.menu_btn_color || '#B90F45', color: '#fff' }}>Botón</span>
+                <span className="inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: values.menu_hover_color || '#DC5E86', color: '#fff' }}>Acento</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== Recetario ===== */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <p className="font-bold text-sm" style={{ color: S.text }}>Recetario (/resetas, /recetas)</p>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Branding del recetario público del restaurante</p>
+          </div>
+          <div className="p-5 space-y-5">
+
+            {/* Logo recetario */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Logo del recetario</label>
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden shrink-0"
+                  style={{ background: `linear-gradient(135deg,${values.recetario_color || '#7c3aed'},#4f6ef7)` }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={values.recetario_logo || values.profile_logo || '/logo.png'} alt="logo recetario" className="w-10 h-10 object-contain" />
+                </div>
+                <label className="px-4 py-2 rounded-2xl text-sm font-bold cursor-pointer transition-all"
+                  style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                  {uploadingRecLogo ? 'Subiendo...' : 'Cambiar logo'}
+                  <input type="file" accept="image/*" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f, 'recetario_logo', setUploadingRecLogo) }} />
+                </label>
+              </div>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>Dejar vacío usa el logo del restaurante</p>
+            </div>
+
+            {/* Color recetario */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Color principal del recetario</label>
+              {renderColorRow('recetario_color', values.recetario_color || '#7c3aed')}
+              <div className="mt-2 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium"
+                style={{ backgroundColor: values.recetario_color || '#7c3aed', color: '#fff' }}>
+                Vista previa Recetario
               </div>
             </div>
           </div>
