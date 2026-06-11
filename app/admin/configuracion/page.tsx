@@ -65,6 +65,7 @@ export default function AdminConfiguracionPage() {
   const [newPass, setNewPass]     = useState('')
   const [profileError, setProfileError] = useState('')
   const [creating, setCreating]   = useState(false)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const me = currentAdminName()
 
   useEffect(() => {
@@ -97,7 +98,14 @@ export default function AdminConfiguracionPage() {
 
   async function loadAdmins() {
     const r = await fetch('/api/admins')
-    if (r.ok) setAdmins(await r.json())
+    if (!r.ok) return
+    const list: AdminItem[] = await r.json()
+    setAdmins(list)
+    // El super admin es el admin creado primero (createdAt más antiguo)
+    if (list.length > 0) {
+      const oldest = list.reduce((a, b) => a.createdAt < b.createdAt ? a : b)
+      setIsSuperAdmin(oldest.name.toLowerCase() === me.toLowerCase())
+    }
   }
 
   async function saveSetting(key: string, valueOverride?: string) {
@@ -452,7 +460,8 @@ export default function AdminConfiguracionPage() {
           </div>
         </div>
 
-        {/* ===== Feature flags ===== */}
+        {/* ===== Feature flags — solo super admin ===== */}
+        {isSuperAdmin && (
         <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
           <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: `1px solid ${S.border}` }}>
             <div>
@@ -499,6 +508,7 @@ export default function AdminConfiguracionPage() {
             </p>
           </div>
         </div>
+        )}
 
         {/* ===== Textos del formulario de registro ===== */}
         <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>

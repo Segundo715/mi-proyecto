@@ -6,8 +6,9 @@ import { getAllMenuItems } from '@/lib/menuDb'
 import { getAllRecipes } from '@/lib/recipeDb'
 import { getSetting } from '@/lib/settingsDb'
 
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const MODEL    = 'llama-3.3-70b-versatile'
+const GROQ_URL       = 'https://api.groq.com/openai/v1/chat/completions'
+const MODEL_FAST     = 'llama-3.1-8b-instant'    // cliente: <1s TTFT
+const MODEL_POWERFUL = 'llama-3.3-70b-versatile' // staff/admin: más contexto
 
 type Role = 'cook' | 'staff' | 'customer' | 'admin' | 'recipe'
 interface SimpleMenu { id: string; name: string; price: number; category: string; description?: string }
@@ -156,19 +157,24 @@ export async function POST(req: Request) {
       (m: ChatMsg, i: number) => !(i === 0 && m.role === 'assistant')
     )
 
-    // Timeout 6s: Vercel Hobby corta a los 10s; getSetting(1s) + buildSystem(2.5s) + Groq(6s) = 9.5s
+    // customer usa modelo rápido (8B): TTFT <1s → timeout 8s ampliado
+    // otros roles usan 70B con datos de Supabase: getSetting(1s)+buildSystem(2.5s)+Groq(6s)=9.5s
+    const isCustomer  = (role as Role) === 'customer'
+    const model       = isCustomer ? MODEL_FAST : MODEL_POWERFUL
+    const groqMs      = isCustomer ? 8000 : 6000
+
     const groqCtrl    = new AbortController()
-    const groqTimeout = setTimeout(() => groqCtrl.abort(), 6000)
+    const groqTimeout = setTimeout(() => groqCtrl.abort(), groqMs)
     let groqRes: Response
     try {
       groqRes = await fetch(GROQ_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({
-          model: MODEL,
+          model,
           messages: [{ role: 'system', content: system }, ...cleanMsgs],
           stream: true,
-          max_tokens: 600,
+          max_tokens: isCustomer ? 500 : 600,
           temperature: 0.65,
         }),
         signal: groqCtrl.signal,
@@ -217,7 +223,11 @@ export async function POST(req: Request) {
     })
 
     return new Response(stream, {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache' },
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+      },
     })
   } catch {
     return streamText('Ocurrió un error inesperado. Intenta de nuevo.')
