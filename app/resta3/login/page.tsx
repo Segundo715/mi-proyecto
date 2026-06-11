@@ -1,139 +1,146 @@
 'use client'
 
-// Login de RESTA3: usa la misma tabla admins pero emite resta3_session (cookie independiente de admin_session).
-// Lee resta3_accent / resta3_logo / resta3_name desde settings con fallback a los del admin.
+// Login de RESTA3 — misma estructura visual que /admin/login.
+// Lee resta3_accent / resta3_logo / resta3_name con fallback a settings del admin.
+// Cookie: resta3_session (independiente de admin_session).
 import { useState, useEffect } from 'react'
 
+type Tab = 'login' | 'register'
+
 export default function Resta3LoginPage() {
-  const [name, setName] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [tab, setTab]                     = useState<Tab>('login')
+  const [name, setName]                   = useState('')
+  const [password, setPassword]           = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError]                 = useState('')
+  const [loading, setLoading]             = useState(false)
 
   // Branding dinámico
-  const [accent, setAccent]     = useState('#f59e0b')
-  const [logo, setLogo]         = useState('')
+  const [accent, setAccent]       = useState('#00e676')
+  const [logo, setLogo]           = useState('/logo.png')
   const [brandName, setBrandName] = useState('RESTA3')
+  const [brandSub, setBrandSub]   = useState('Panel de gestión')
 
   useEffect(() => {
-    async function loadBranding() {
-      const keys = ['resta3_accent', 'resta3_logo', 'resta3_name', 'sidebar_accent', 'profile_logo', 'restaurant_name']
-      const results = await Promise.all(keys.map(k => fetch(`/api/settings?key=${k}`).then(r => r.json())))
-      const [r3Accent, r3Logo, r3Name, adminAccent, adminLogo, adminName] = results.map((d: { value?: string }) => d.value ?? '')
-      if (r3Accent || adminAccent) setAccent(r3Accent || adminAccent)
-      if (r3Logo   || adminLogo)   setLogo(r3Logo   || adminLogo)
-      if (r3Name   || adminName)   setBrandName(r3Name || adminName)
-    }
-    loadBranding()
+    const keys = ['resta3_accent', 'resta3_logo', 'resta3_name', 'sidebar_accent', 'profile_logo', 'restaurant_name']
+    Promise.all(keys.map(k => fetch(`/api/settings?key=${k}`).then(r => r.json()))).then(res => {
+      const [r3a, r3l, r3n, a, l, n] = res.map((d: { value?: string }) => d.value ?? '')
+      if (r3a || a) setAccent(r3a || a)
+      if (r3l || l) setLogo(r3l || l)
+      if (r3n || n) {
+        setBrandName(r3n || n)
+        if (r3n && n && r3n !== n) setBrandSub(n)
+      }
+    })
   }, [])
 
-  async function handleSubmit(e: React.FormEvent) {
+  function switchTab(t: Tab) { setTab(t); setError(''); setConfirmPassword('') }
+
+  async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault()
     if (!name.trim() || !password) { setError('Completa todos los campos'); return }
-    setError(''); setLoading(true)
+    if (tab === 'register' && password !== confirmPassword) { setError('Las contraseñas no coinciden'); return }
+    if (tab === 'register' && password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
+    setError('')
+    setLoading(true)
     try {
       const res = await fetch('/api/resta3/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), password }),
+        body: JSON.stringify({ action: tab, name: name.trim(), password }),
       })
+      const data = await res.json()
       if (res.ok) window.location.href = '/resta3'
-      else { const d = await res.json(); setError(d.error ?? 'Error') }
-    } catch { setError('Error de conexión') }
-    finally { setLoading(false) }
+      else setError(data.error ?? 'Error')
+    } catch {
+      setError('Error de conexión. Intenta de nuevo.')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const accentHex = /^#[0-9a-fA-F]{6}$/.test(accent) ? accent : '#f59e0b'
-  const accentDark = accentHex + 'bb'
+  const accentHex  = /^#[0-9a-fA-F]{6}$/.test(accent) ? accent : '#00e676'
+  const borderIdle = `${accentHex}4d`
+
+  const INPUT = 'w-full rounded-2xl px-4 py-3.5 text-white text-sm transition-colors focus:outline-none'
+  const inputStyle = { backgroundColor: '#0a0e1c', border: `1px solid ${borderIdle}` }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: 'linear-gradient(135deg, #0a0d14 0%, #111827 50%, #0a0d14 100%)' }}>
+    <div className="fixed inset-0 flex flex-col items-center justify-center p-5"
+      style={{ backgroundColor: '#0a0d14' }}>
 
-      {/* Fondo decorativo */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-8"
-          style={{ background: `radial-gradient(circle, ${accentHex}, transparent)`, filter: 'blur(80px)' }} />
-        <div className="absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full opacity-5"
-          style={{ background: 'radial-gradient(circle, #3b82f6, transparent)', filter: 'blur(60px)' }} />
+      {/* Brand */}
+      <div className="text-center mb-8">
+        <div className="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl overflow-hidden"
+          style={{ background: `linear-gradient(135deg,${accentHex},#06b6d4)` }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logo} alt="Logo" className="w-full h-full object-contain p-2" />
+        </div>
+        <div className="font-extrabold text-xl tracking-wide text-white">{brandName}</div>
+        <p className="text-sm mt-1 font-medium" style={{ color: accentHex }}>{brandSub}</p>
       </div>
 
-      <div className="relative w-full max-w-sm">
+      <div className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden"
+        style={{ backgroundColor: '#1a1d27', border: '1px solid rgba(255,255,255,0.08)' }}>
 
-        {/* Logo / Brand */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 shadow-2xl overflow-hidden"
-            style={{ background: `linear-gradient(135deg, ${accentHex}, ${accentDark})` }}>
-            {logo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logo} alt="logo" className="w-14 h-14 object-contain" />
-            ) : (
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 3h18v18H3zM9 9h6M9 12h6M9 15h4"/>
-              </svg>
-            )}
-          </div>
-          <h1 className="text-3xl font-black tracking-tight" style={{ color: '#f1f5f9' }}>
-            {brandName !== 'RESTA3' && brandName
-              ? <span>{brandName}</span>
-              : <>RESTA<span style={{ color: accentHex }}>3</span></>
-            }
-          </h1>
-          <p className="text-sm mt-1 font-medium" style={{ color: '#64748b' }}>
-            Gestión integral de restaurantes
-          </p>
-        </div>
-
-        {/* Card login */}
-        <div className="rounded-3xl p-6 shadow-2xl"
-          style={{ backgroundColor: '#1a1d27', border: `1px solid ${accentHex}25` }}>
-
-          <h2 className="text-base font-bold mb-5" style={{ color: '#94a3b8' }}>Acceso al sistema</h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-1.5" style={{ color: '#475569' }}>
-                Usuario
-              </label>
-              <input type="text" value={name} onChange={e => { setName(e.target.value); setError('') }}
-                placeholder="Nombre de usuario" autoFocus
-                className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none transition-all"
-                style={{ backgroundColor: '#0f1117', border: '1px solid rgba(255,255,255,0.08)' }}
-                onFocus={e => e.currentTarget.style.borderColor = accentHex}
-                onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'} />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-1.5" style={{ color: '#475569' }}>
-                Contraseña
-              </label>
-              <input type="password" value={password} onChange={e => { setPassword(e.target.value); setError('') }}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none transition-all"
-                style={{ backgroundColor: '#0f1117', border: '1px solid rgba(255,255,255,0.08)' }}
-                onFocus={e => e.currentTarget.style.borderColor = accentHex}
-                onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'} />
-            </div>
-
-            {error && (
-              <div className="px-4 py-3 rounded-xl text-sm font-medium"
-                style={{ backgroundColor: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
-                {error}
-              </div>
-            )}
-
-            <button type="submit" disabled={loading}
-              className="w-full py-3.5 rounded-xl font-black text-sm tracking-wide disabled:opacity-60 transition-all mt-2"
-              style={{ background: `linear-gradient(135deg, ${accentHex}, ${accentDark})`, color: '#000' }}>
-              {loading ? 'Iniciando sesión...' : 'Iniciar sesión →'}
+        {/* Tabs */}
+        <div className="flex p-1.5 gap-1.5 m-4 rounded-2xl" style={{ backgroundColor: '#0f1117' }}>
+          {(['login', 'register'] as const).map(t => (
+            <button key={t} type="button" onClick={() => switchTab(t)}
+              className="flex-1 py-2.5 text-sm font-bold rounded-xl transition-all"
+              style={tab === t
+                ? { backgroundColor: accentHex, color: '#000' }
+                : { color: '#64748b' }}>
+              {t === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
             </button>
-          </form>
+          ))}
         </div>
 
-        <p className="text-center text-xs mt-6" style={{ color: '#334155' }}>
-          RESTA3 · Software de gestión para restaurantes y bares
-        </p>
+        <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3">
+          <div>
+            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#475569' }}>Nombre</label>
+            <input type="text" value={name} onChange={e => { setName(e.target.value); setError('') }}
+              placeholder="Ej. Carlos" autoComplete="username" autoFocus
+              className={INPUT} style={inputStyle}
+              onFocus={e => e.currentTarget.style.borderColor = accentHex}
+              onBlur={e => e.currentTarget.style.borderColor = borderIdle} />
+          </div>
+          <div>
+            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#475569' }}>Contraseña</label>
+            <input type="password" value={password} onChange={e => { setPassword(e.target.value); setError('') }}
+              placeholder="••••••••" autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
+              className={INPUT} style={inputStyle}
+              onFocus={e => e.currentTarget.style.borderColor = accentHex}
+              onBlur={e => e.currentTarget.style.borderColor = borderIdle} />
+          </div>
+
+          {tab === 'register' && (
+            <div>
+              <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#475569' }}>Confirmar contraseña</label>
+              <input type="password" value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); setError('') }}
+                placeholder="••••••••" autoComplete="new-password"
+                className={INPUT} style={inputStyle}
+                onFocus={e => e.currentTarget.style.borderColor = accentHex}
+                onBlur={e => e.currentTarget.style.borderColor = borderIdle} />
+            </div>
+          )}
+
+          {error && (
+            <div className="border rounded-2xl px-4 py-3 text-sm font-medium text-red-300"
+              style={{ backgroundColor: '#2d0a0a', borderColor: '#7f1d1d' }}>
+              {error}
+            </div>
+          )}
+
+          <button type="submit" disabled={loading}
+            className="w-full font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors mt-1"
+            style={{ backgroundColor: accentHex, color: '#000' }}>
+            {loading ? 'Cargando...' : tab === 'login' ? '→ Entrar' : '→ Crear cuenta'}
+          </button>
+        </form>
       </div>
+
+      <p className="text-xs mt-6" style={{ color: '#334155' }}>Solo para uso del personal autorizado</p>
     </div>
   )
 }
