@@ -502,25 +502,26 @@ export default function CocinaPage() {
                 Cliente / ID del pedido
               </label>
               <input type="text" value={modalName} onChange={e => setModalName(e.target.value)}
-                placeholder="Nombre o número de pedido"
+                placeholder="Ej: #4521 · Juan García"
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none"
                 style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
             </div>
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: S.sub }}>
-                Nota (opcional)
+                Descripción (opcional)
               </label>
-              <input type="text" value={modalNote} onChange={e => setModalNote(e.target.value)}
-                placeholder="Instrucciones especiales..."
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+              <textarea value={modalNote} onChange={e => setModalNote(e.target.value)}
+                placeholder="Ej: 2 hamburguesas sin cebolla..."
+                rows={3}
+                className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none"
                 style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
             </div>
 
             <button onClick={createDeliveryOrder} disabled={modalSaving || !modalName.trim()}
               className="w-full py-3.5 rounded-xl text-sm font-black transition-all disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg,#06c167,#059669)', color: '#fff' }}>
-              {modalSaving ? 'Creando...' : '+ Registrar pedido'}
+              style={{ background: `linear-gradient(135deg,${PLATFORMS[modalPlatform].color},${PLATFORMS[modalPlatform].color}bb)`, color: '#fff' }}>
+              {modalSaving ? 'Registrando...' : `Registrar pedido ${PLATFORMS[modalPlatform].label}`}
             </button>
           </div>
         </div>
