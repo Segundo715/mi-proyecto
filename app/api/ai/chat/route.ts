@@ -120,81 +120,93 @@ function streamText(text: string): Response {
 }
 
 export async function POST(req: Request) {
-  const apiKey = process.env.GROQ_API_KEY
-  if (!apiKey) return streamText('El asistente IA no está configurado en este servidor. Contacta al administrador.')
-
-  const body = await req.json()
-  const { messages, role = 'staff', menuContext } = body
-
-  let restaurantName = 'Restaurante'
-  try { restaurantName = await getSetting('restaurant_name', 'Restaurante') } catch { /* usa fallback */ }
-
-  let system: string
   try {
-    system = await buildSystem(role as Role, restaurantName, menuContext)
-  } catch {
-    const now = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City', hour12: true })
-    system = `Eres el asistente del restaurante "${restaurantName}". Hora: ${now}. Responde en español.`
-  }
+    const apiKey = process.env.GROQ_API_KEY
+    if (!apiKey) return streamText('El asistente IA no está configurado en este servidor. Contacta al administrador.')
 
-  // Filtra el mensaje de saludo del cliente (assistant en posición 0) — es solo UI
-  type ChatMsg = { role: string; content: string }
-  const cleanMsgs: ChatMsg[] = (messages as ChatMsg[]).filter(
-    (m: ChatMsg, i: number) => !(i === 0 && m.role === 'assistant')
-  )
+    const body = await req.json()
+    const { messages, role = 'staff', menuContext } = body
 
-  const groqRes = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [{ role: 'system', content: system }, ...cleanMsgs],
-      stream: true,
-      max_tokens: 800,
-      temperature: 0.65,
-    }),
-  })
+    let restaurantName = 'Restaurante'
+    try { restaurantName = await getSetting('restaurant_name', 'Restaurante') } catch { /* usa fallback */ }
 
-  if (!groqRes.ok) {
-    const err = await groqRes.text().catch(() => 'Error desconocido')
-    // Devuelve el error como texto en el stream (no como JSON 500)
-    const msg = groqRes.status === 429
-      ? 'El asistente alcanzó su límite de uso. Intenta en unos minutos.'
-      : `Error al contactar la IA (${groqRes.status}). Intenta de nuevo.`
-    return streamText(msg)
-  }
+    let system: string
+    try {
+      system = await buildSystem(role as Role, restaurantName, menuContext)
+    } catch {
+      const now = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City', hour12: true })
+      system = `Eres el asistente del restaurante "${restaurantName}". Hora: ${now}. Responde en español.`
+    }
 
-  const encoder = new TextEncoder()
-  const reader  = groqRes.body!.getReader()
-  const decoder = new TextDecoder()
-  let buffer    = ''
+    type ChatMsg = { role: string; content: string }
+    const cleanMsgs: ChatMsg[] = (messages as ChatMsg[]).filter(
+      (m: ChatMsg, i: number) => !(i === 0 && m.role === 'assistant')
+    )
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() ?? ''
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue
-            const data = line.slice(6).trim()
-            if (data === '[DONE]') { controller.close(); return }
-            try {
-              const json = JSON.parse(data)
-              const text = json.choices?.[0]?.delta?.content
-              if (text) controller.enqueue(encoder.encode(text))
-            } catch { /* fragmento SSE incompleto */ }
+    // Timeout 9s: Vercel Hobby corta la función a los 10s
+    const groqCtrl    = new AbortController()
+    const groqTimeout = setTimeout(() => groqCtrl.abort(), 9000)
+    let groqRes: Response
+    try {
+      groqRes = await fetch(GROQ_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: MODEL,
+          messages: [{ role: 'system', content: system }, ...cleanMsgs],
+          stream: true,
+          max_tokens: 800,
+          temperature: 0.65,
+        }),
+        signal: groqCtrl.signal,
+      })
+    } catch {
+      clearTimeout(groqTimeout)
+      return streamText('El asistente tardó demasiado. Intenta de nuevo en un momento.')
+    }
+    clearTimeout(groqTimeout)
+
+    if (!groqRes.ok) {
+      const msg = groqRes.status === 429
+        ? 'El asistente alcanzó su límite de uso. Intenta en unos minutos.'
+        : `Error al contactar la IA (${groqRes.status}). Intenta de nuevo.`
+      return streamText(msg)
+    }
+
+    const encoder = new TextEncoder()
+    const reader  = groqRes.body!.getReader()
+    const decoder = new TextDecoder()
+    let buffer    = ''
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            buffer += decoder.decode(value, { stream: true })
+            const lines = buffer.split('\n')
+            buffer = lines.pop() ?? ''
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue
+              const data = line.slice(6).trim()
+              if (data === '[DONE]') { controller.close(); return }
+              try {
+                const json = JSON.parse(data)
+                const text = json.choices?.[0]?.delta?.content
+                if (text) controller.enqueue(encoder.encode(text))
+              } catch { /* fragmento SSE incompleto */ }
+            }
           }
-        }
-      } catch { /* cliente cerró conexión */ }
-      controller.close()
-    },
-  })
+        } catch { /* cliente cerró conexión */ }
+        controller.close()
+      },
+    })
 
-  return new Response(stream, {
-    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache' },
-  })
+    return new Response(stream, {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache' },
+    })
+  } catch {
+    return streamText('Ocurrió un error inesperado. Intenta de nuevo.')
+  }
 }
