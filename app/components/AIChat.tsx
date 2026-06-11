@@ -384,11 +384,13 @@ export default function AIChat({
               </button>
 
               <input ref={inputRef}
+                id="ai-chat-input" name="ai_chat_input"
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) } }}
                 placeholder={listening ? '🎤 Escuchando…' : cfg.placeholder}
                 disabled={busy || listening}
+                autoComplete="off"
                 className="flex-1 px-3.5 py-2.5 rounded-2xl text-[13px] outline-none disabled:opacity-40"
                 style={{ background: 'rgba(255,255,255,0.06)', color: '#f1f5f9', border: '1px solid rgba(255,255,255,0.09)' }} />
 

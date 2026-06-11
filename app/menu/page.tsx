@@ -600,7 +600,8 @@ export default function MenuPage() {
                       ${(c.item.price * c.qty).toFixed(2)}
                     </span>
                   </div>
-                  <input type="text" value={c.notes ?? ''}
+                  <input type="text" id={`item-notes-${c.item.id}`} name={`item_notes_${c.item.id}`}
+                    value={c.notes ?? ''}
                     onChange={e => setItemNotes(c.item.id, e.target.value)}
                     placeholder="Nota para este platillo (sin cebolla, tÃ©rmino...)"
                     className="w-full border border-[#B90F45]/30 rounded-xl px-3 py-2 text-xs text-white bg-[#1a1a1a] placeholder-gray-500 focus:outline-none focus:border-[#B90F45] transition-colors" />
@@ -659,13 +660,13 @@ export default function MenuPage() {
             {orderType === 'restaurante' && (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Tu nombre *</label>
-                  <input type="text" value={orderName} onChange={e => setOrderName(e.target.value)}
-                    placeholder="Ej. MarÃ­a" className={INPUT} />
+                  <label htmlFor="order-name" className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Tu nombre *</label>
+                  <input id="order-name" name="order_name" type="text" value={orderName} onChange={e => setOrderName(e.target.value)}
+                    placeholder="Ej. MarÃ­a" autoComplete="name" className={INPUT} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Mesa (opcional)</label>
-                  <input type="text" value={orderTable} onChange={e => setOrderTable(e.target.value)}
+                  <label htmlFor="order-table" className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Mesa (opcional)</label>
+                  <input id="order-table" name="order_table" type="text" value={orderTable} onChange={e => setOrderTable(e.target.value)}
                     placeholder="Ej. 3" className={INPUT} />
                 </div>
               </div>
@@ -674,14 +675,14 @@ export default function MenuPage() {
             {orderType === 'domicilio' && (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Tu nombre *</label>
-                  <input type="text" value={orderName} onChange={e => setOrderName(e.target.value)}
-                    placeholder="Ej. MarÃ­a" className={INPUT} />
+                  <label htmlFor="order-name-dom" className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Tu nombre *</label>
+                  <input id="order-name-dom" name="order_name" type="text" value={orderName} onChange={e => setOrderName(e.target.value)}
+                    placeholder="Ej. MarÃ­a" autoComplete="name" className={INPUT} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Domicilio *</label>
-                  <input type="text" value={orderAddress} onChange={e => setOrderAddress(e.target.value)}
-                    placeholder="Calle, nÃºmero, colonia, referencias" className={INPUT} />
+                  <label htmlFor="order-address" className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Domicilio *</label>
+                  <input id="order-address" name="order_address" type="text" value={orderAddress} onChange={e => setOrderAddress(e.target.value)}
+                    placeholder="Calle, nÃºmero, colonia, referencias" autoComplete="street-address" className={INPUT} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-wide">Forma de pago *</label>
