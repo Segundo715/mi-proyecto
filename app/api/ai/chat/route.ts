@@ -21,6 +21,10 @@ async function buildSystem(
   const base = `Eres el asistente inteligente del restaurante "${restaurantName}". Hora actual: ${now}.
 Responde SIEMPRE en español. Sé breve, directo y útil.`
 
+  // Timeout compartido para todas las llamadas a Supabase (3 s por llamada)
+  const safe = <T,>(p: Promise<T>, fallback: T): Promise<T> =>
+    Promise.race([p, new Promise<T>(res => setTimeout(() => res(fallback), 3000))])
+
   // ── CLIENTE: usa el menú enviado por el cliente (sin llamadas a Supabase) ──
   if (role === 'customer') {
     const menuText = menuContext && menuContext.length > 0
@@ -38,7 +42,11 @@ ${menuText}`
 
   // ── COOK / STAFF ──
   if (role === 'cook' || role === 'staff') {
-    const [orders, menu, recipes] = await Promise.all([getAllOrders(), getAllMenuItems(), getAllRecipes()])
+    const [orders, menu, recipes] = await Promise.all([
+      safe(getAllOrders(), []),
+      safe(getAllMenuItems(), []),
+      safe(getAllRecipes(), []),
+    ])
     const active = orders.filter(o => o.status !== 'delivered').slice(0, 30)
     const labels: Record<string, string> = { pending: 'pendiente', preparing: 'preparando', ready: 'listo', picked_up: 'con rider' }
 
@@ -68,7 +76,10 @@ ${recipesText}`
 
   // ── RECIPE ──
   if (role === 'recipe') {
-    const [recipes, menu] = await Promise.all([getAllRecipes(), getAllMenuItems()])
+    const [recipes, menu] = await Promise.all([
+      safe(getAllRecipes(), []),
+      safe(getAllMenuItems(), []),
+    ])
     const recipesText = recipes.map(r =>
       `▸ ${r.name}${r.description ? ': ' + r.description : ''}\n  Ingredientes: ${r.ingredients.join(', ')}\n  Pasos:\n${r.steps.map((s, i) => `    ${i + 1}. ${s}`).join('\n')}`
     ).join('\n\n')
@@ -84,10 +95,7 @@ ${recipesText}
 ${menuText}`
   }
 
-  // ── ADMIN ── (cada fetch con timeout individual de 4 s)
-  const safe = <T>(p: Promise<T>, fallback: T): Promise<T> =>
-    Promise.race([p, new Promise<T>(res => setTimeout(() => res(fallback), 4000))])
-
+  // ── ADMIN ──
   const [orders, menu, recipes] = await Promise.all([
     safe(getAllOrders(), []),
     safe(getAllMenuItems(), []),
