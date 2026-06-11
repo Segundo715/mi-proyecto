@@ -136,13 +136,18 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { messages, role = 'staff', menuContext } = body
 
+    // Para customer: saltamos getSetting para no perder ~1s de timeout de Vercel Hobby.
+    // El nombre del restaurante no es crítico en el rol cliente.
+    const isCustomer  = (role as Role) === 'customer'
     let restaurantName = 'Restaurante'
-    try {
-      restaurantName = await Promise.race([
-        getSetting('restaurant_name', 'Restaurante'),
-        new Promise<string>(res => setTimeout(() => res('Restaurante'), 1000)),
-      ])
-    } catch { /* usa fallback */ }
+    if (!isCustomer) {
+      try {
+        restaurantName = await Promise.race([
+          getSetting('restaurant_name', 'Restaurante'),
+          new Promise<string>(res => setTimeout(() => res('Restaurante'), 800)),
+        ])
+      } catch { /* usa fallback */ }
+    }
 
     let system: string
     try {
@@ -157,9 +162,6 @@ export async function POST(req: Request) {
       (m: ChatMsg, i: number) => !(i === 0 && m.role === 'assistant')
     )
 
-    // customer usa modelo rápido (8B): TTFT <1s → timeout 8s ampliado
-    // otros roles usan 70B con datos de Supabase: getSetting(1s)+buildSystem(2.5s)+Groq(6s)=9.5s
-    const isCustomer  = (role as Role) === 'customer'
     const model       = isCustomer ? MODEL_FAST : MODEL_POWERFUL
     const groqMs      = isCustomer ? 8000 : 6000
 

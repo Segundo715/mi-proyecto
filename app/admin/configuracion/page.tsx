@@ -1,7 +1,7 @@
 'use client'
 
 // Configuración del sistema: branding del admin, branding de Resta3, colores del empleado,
-// textos de registro, feature flags y perfiles de administrador.
+// textos de registro y perfiles de administrador.
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 
@@ -14,27 +14,6 @@ const TEXT_SETTINGS = [
   { key: 'registro_titulo',    label: 'Título de bienvenida',    placeholder: '¡Bienvenido!',                       hint: 'Aparece en la tarjeta de /registro' },
   { key: 'registro_subtitulo', label: 'Subtítulo de bienvenida', placeholder: 'Completa tus datos para registrarte...', hint: 'Texto debajo del título en /registro' },
 ]
-
-const FEATURE_DEFS: Record<string, { label: string; emoji: string }> = {
-  orders:           { label: 'Pedidos',          emoji: '📋' },
-  menu:             { label: 'Menú',             emoji: '🍽' },
-  reviews:          { label: 'Reseñas',          emoji: '⭐' },
-  tv:               { label: 'Pantalla TV',      emoji: '📺' },
-  customers:        { label: 'Clientes',         emoji: '👥' },
-  analytics:        { label: 'Analytics',        emoji: '📊' },
-  loyaltyCard:      { label: 'Tarjeta Lealtad',  emoji: '☕' },
-  favorites:        { label: 'Favoritos',        emoji: '❤️'  },
-  ventas:           { label: 'Ventas',           emoji: '💰' },
-  marketing:        { label: 'Marketing',        emoji: '📣' },
-  crm:              { label: 'CRM',              emoji: '🤝' },
-  reservaciones:    { label: 'Reservaciones',    emoji: '📅' },
-  operaciones:      { label: 'Operaciones',      emoji: '🏭' },
-  automatizaciones: { label: 'Automatizaciones', emoji: '🤖' },
-  contenido:        { label: 'Contenido',        emoji: '🖼'  },
-  produccion:       { label: 'Producción',       emoji: '📦' },
-  reportes:         { label: 'Reportes',         emoji: '📑' },
-  configuracion:    { label: 'Configuración',    emoji: '⚙️'  },
-}
 
 interface AdminItem { id: string; name: string; createdAt: string }
 
@@ -54,18 +33,12 @@ export default function AdminConfiguracionPage() {
   const [uploadingMenuLogo, setUploadingMenuLogo] = useState(false)
   const [uploadingRecLogo,  setUploadingRecLogo]  = useState(false)
 
-  // Feature flags
-  const [flags, setFlags]         = useState<Record<string, boolean>>({})
-  const [savingFlags, setSavingFlags] = useState(false)
-  const [flagsSaved, setFlagsSaved]   = useState(false)
-
   // Perfiles
   const [admins, setAdmins]       = useState<AdminItem[]>([])
   const [newName, setNewName]     = useState('')
   const [newPass, setNewPass]     = useState('')
   const [profileError, setProfileError] = useState('')
   const [creating, setCreating]   = useState(false)
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const me = currentAdminName()
 
   useEffect(() => {
@@ -83,16 +56,6 @@ export default function AdminConfiguracionPage() {
       if (d.value) setValues(p => ({ ...p, [key]: d.value }))
     })
 
-    // Cargar feature flags
-    fetch('/api/settings?key=feature_flags').then(r => r.json()).then(d => {
-      const defaults = Object.fromEntries(Object.keys(FEATURE_DEFS).map(k => [k, true]))
-      if (d.value) {
-        try { setFlags({ ...defaults, ...JSON.parse(d.value) }) } catch { setFlags(defaults) }
-      } else {
-        setFlags(defaults)
-      }
-    })
-
     loadAdmins()
   }, [])
 
@@ -101,11 +64,6 @@ export default function AdminConfiguracionPage() {
     if (!r.ok) return
     const list: AdminItem[] = await r.json()
     setAdmins(list)
-    // El super admin es el admin creado primero (createdAt más antiguo)
-    if (list.length > 0) {
-      const oldest = list.reduce((a, b) => a.createdAt < b.createdAt ? a : b)
-      setIsSuperAdmin(oldest.name.toLowerCase() === me.toLowerCase())
-    }
   }
 
   async function saveSetting(key: string, valueOverride?: string) {
@@ -134,20 +92,6 @@ export default function AdminConfiguracionPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  async function toggleFlag(key: string) {
-    const newFlags = { ...flags, [key]: !flags[key] }
-    setFlags(newFlags)
-    setSavingFlags(true)
-    await fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: 'feature_flags', value: JSON.stringify(newFlags) }),
-    })
-    setSavingFlags(false)
-    setFlagsSaved(true)
-    setTimeout(() => setFlagsSaved(false), 2000)
   }
 
   async function createProfile() {
@@ -459,56 +403,6 @@ export default function AdminConfiguracionPage() {
             </div>
           </div>
         </div>
-
-        {/* ===== Feature flags — solo super admin ===== */}
-        {isSuperAdmin && (
-        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-          <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: `1px solid ${S.border}` }}>
-            <div>
-              <p className="font-bold text-sm" style={{ color: S.text }}>Módulos del sistema</p>
-              <p className="text-xs mt-0.5" style={{ color: S.sub }}>
-                Activa o desactiva funciones para Admin, Empleado y Resta3
-              </p>
-            </div>
-            {flagsSaved && (
-              <span className="text-xs font-bold px-3 py-1 rounded-xl" style={{ backgroundColor: 'rgba(74,222,128,.15)', color: '#4ade80' }}>
-                ✓ Guardado
-              </span>
-            )}
-            {savingFlags && !flagsSaved && (
-              <span className="text-xs" style={{ color: S.sub }}>Guardando...</span>
-            )}
-          </div>
-          <div className="p-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {Object.entries(FEATURE_DEFS).map(([key, def]) => {
-                const enabled = flags[key] !== false
-                return (
-                  <button key={key}
-                    onClick={() => toggleFlag(key)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all"
-                    style={{
-                      backgroundColor: enabled ? `${S.accent}0d` : S.bg,
-                      border: `1px solid ${enabled ? S.accent + '33' : S.border}`,
-                    }}>
-                    <span className="text-lg shrink-0">{def.emoji}</span>
-                    <span className="flex-1 text-sm font-bold" style={{ color: enabled ? S.text : S.sub }}>{def.label}</span>
-                    <span className="text-xs font-black px-2 py-0.5 rounded-full shrink-0"
-                      style={enabled
-                        ? { backgroundColor: `${S.accent}22`, color: S.accent }
-                        : { backgroundColor: 'rgba(239,68,68,0.12)', color: '#f87171' }}>
-                      {enabled ? 'ON' : 'OFF'}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-            <p className="text-xs mt-3" style={{ color: S.sub }}>
-              Los módulos desactivados aparecen bloqueados en el menú lateral de Admin con badge "PRO".
-            </p>
-          </div>
-        </div>
-        )}
 
         {/* ===== Textos del formulario de registro ===== */}
         <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
