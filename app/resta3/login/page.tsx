@@ -1,13 +1,31 @@
 'use client'
 
 // Login de RESTA3: usa la misma tabla admins pero emite resta3_session (cookie independiente de admin_session).
-import { useState } from 'react'
+// Lee resta3_accent / resta3_logo / resta3_name desde settings con fallback a los del admin.
+import { useState, useEffect } from 'react'
 
 export default function Resta3LoginPage() {
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Branding dinámico
+  const [accent, setAccent]     = useState('#f59e0b')
+  const [logo, setLogo]         = useState('')
+  const [brandName, setBrandName] = useState('RESTA3')
+
+  useEffect(() => {
+    async function loadBranding() {
+      const keys = ['resta3_accent', 'resta3_logo', 'resta3_name', 'sidebar_accent', 'profile_logo', 'restaurant_name']
+      const results = await Promise.all(keys.map(k => fetch(`/api/settings?key=${k}`).then(r => r.json())))
+      const [r3Accent, r3Logo, r3Name, adminAccent, adminLogo, adminName] = results.map((d: { value?: string }) => d.value ?? '')
+      if (r3Accent || adminAccent) setAccent(r3Accent || adminAccent)
+      if (r3Logo   || adminLogo)   setLogo(r3Logo   || adminLogo)
+      if (r3Name   || adminName)   setBrandName(r3Name || adminName)
+    }
+    loadBranding()
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -25,15 +43,18 @@ export default function Resta3LoginPage() {
     finally { setLoading(false) }
   }
 
+  const accentHex = /^#[0-9a-fA-F]{6}$/.test(accent) ? accent : '#f59e0b'
+  const accentDark = accentHex + 'bb'
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4"
       style={{ background: 'linear-gradient(135deg, #0a0d14 0%, #111827 50%, #0a0d14 100%)' }}>
 
       {/* Fondo decorativo */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-5"
-          style={{ background: 'radial-gradient(circle, #f59e0b, transparent)', filter: 'blur(60px)' }} />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full opacity-5"
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-8"
+          style={{ background: `radial-gradient(circle, ${accentHex}, transparent)`, filter: 'blur(80px)' }} />
+        <div className="absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full opacity-5"
           style={{ background: 'radial-gradient(circle, #3b82f6, transparent)', filter: 'blur(60px)' }} />
       </div>
 
@@ -41,14 +62,22 @@ export default function Resta3LoginPage() {
 
         {/* Logo / Brand */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 shadow-2xl"
-            style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 3h18v18H3zM9 9h6M9 12h6M9 15h4"/>
-            </svg>
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 shadow-2xl overflow-hidden"
+            style={{ background: `linear-gradient(135deg, ${accentHex}, ${accentDark})` }}>
+            {logo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logo} alt="logo" className="w-14 h-14 object-contain" />
+            ) : (
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 3h18v18H3zM9 9h6M9 12h6M9 15h4"/>
+              </svg>
+            )}
           </div>
           <h1 className="text-3xl font-black tracking-tight" style={{ color: '#f1f5f9' }}>
-            RESTA<span style={{ color: '#f59e0b' }}>3</span>
+            {brandName !== 'RESTA3' && brandName
+              ? <span>{brandName}</span>
+              : <>RESTA<span style={{ color: accentHex }}>3</span></>
+            }
           </h1>
           <p className="text-sm mt-1 font-medium" style={{ color: '#64748b' }}>
             Gestión integral de restaurantes
@@ -57,7 +86,7 @@ export default function Resta3LoginPage() {
 
         {/* Card login */}
         <div className="rounded-3xl p-6 shadow-2xl"
-          style={{ backgroundColor: '#1a1d27', border: '1px solid rgba(245,158,11,0.15)' }}>
+          style={{ backgroundColor: '#1a1d27', border: `1px solid ${accentHex}25` }}>
 
           <h2 className="text-base font-bold mb-5" style={{ color: '#94a3b8' }}>Acceso al sistema</h2>
 
@@ -70,7 +99,7 @@ export default function Resta3LoginPage() {
                 placeholder="Nombre de usuario" autoFocus
                 className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none transition-all"
                 style={{ backgroundColor: '#0f1117', border: '1px solid rgba(255,255,255,0.08)' }}
-                onFocus={e => e.currentTarget.style.borderColor = '#f59e0b'}
+                onFocus={e => e.currentTarget.style.borderColor = accentHex}
                 onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'} />
             </div>
 
@@ -82,7 +111,7 @@ export default function Resta3LoginPage() {
                 placeholder="••••••••"
                 className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none transition-all"
                 style={{ backgroundColor: '#0f1117', border: '1px solid rgba(255,255,255,0.08)' }}
-                onFocus={e => e.currentTarget.style.borderColor = '#f59e0b'}
+                onFocus={e => e.currentTarget.style.borderColor = accentHex}
                 onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'} />
             </div>
 
@@ -95,7 +124,7 @@ export default function Resta3LoginPage() {
 
             <button type="submit" disabled={loading}
               className="w-full py-3.5 rounded-xl font-black text-sm tracking-wide disabled:opacity-60 transition-all mt-2"
-              style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#000' }}>
+              style={{ background: `linear-gradient(135deg, ${accentHex}, ${accentDark})`, color: '#000' }}>
               {loading ? 'Iniciando sesión...' : 'Iniciar sesión →'}
             </button>
           </form>

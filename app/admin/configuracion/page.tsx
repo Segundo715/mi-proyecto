@@ -1,7 +1,7 @@
 'use client'
 
-// Gestiona branding del panel (restaurant_name, profile_logo, sidebar_accent) y cuentas de admin.
-// Lee admin_name desde la cookie legible para marcar "tú" y bloquear auto-eliminación.
+// Configuración del sistema: branding del admin, branding de Resta3, colores del empleado,
+// textos de registro, feature flags y perfiles de administrador.
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 
@@ -10,10 +10,31 @@ const S = {
   text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)',
 }
 
-const SETTINGS = [
-  { key: 'registro_titulo',    label: 'Título de bienvenida',   placeholder: '¡Bienvenido!',             hint: 'Aparece en la tarjeta de /registro' },
+const TEXT_SETTINGS = [
+  { key: 'registro_titulo',    label: 'Título de bienvenida',    placeholder: '¡Bienvenido!',                       hint: 'Aparece en la tarjeta de /registro' },
   { key: 'registro_subtitulo', label: 'Subtítulo de bienvenida', placeholder: 'Completa tus datos para registrarte...', hint: 'Texto debajo del título en /registro' },
 ]
+
+const FEATURE_DEFS: Record<string, { label: string; emoji: string }> = {
+  orders:           { label: 'Pedidos',          emoji: '📋' },
+  menu:             { label: 'Menú',             emoji: '🍽' },
+  reviews:          { label: 'Reseñas',          emoji: '⭐' },
+  tv:               { label: 'Pantalla TV',      emoji: '📺' },
+  customers:        { label: 'Clientes',         emoji: '👥' },
+  analytics:        { label: 'Analytics',        emoji: '📊' },
+  loyaltyCard:      { label: 'Tarjeta Lealtad',  emoji: '☕' },
+  favorites:        { label: 'Favoritos',        emoji: '❤️'  },
+  ventas:           { label: 'Ventas',           emoji: '💰' },
+  marketing:        { label: 'Marketing',        emoji: '📣' },
+  crm:              { label: 'CRM',              emoji: '🤝' },
+  reservaciones:    { label: 'Reservaciones',    emoji: '📅' },
+  operaciones:      { label: 'Operaciones',      emoji: '🏭' },
+  automatizaciones: { label: 'Automatizaciones', emoji: '🤖' },
+  contenido:        { label: 'Contenido',        emoji: '🖼'  },
+  produccion:       { label: 'Producción',       emoji: '📦' },
+  reportes:         { label: 'Reportes',         emoji: '📑' },
+  configuracion:    { label: 'Configuración',    emoji: '⚙️'  },
+}
 
 interface AdminItem { id: string; name: string; createdAt: string }
 
@@ -24,26 +45,48 @@ function currentAdminName(): string {
 }
 
 export default function AdminConfiguracionPage() {
-  const [values, setValues] = useState<Record<string, string>>({})
-  const [saving, setSaving] = useState<string | null>(null)
-  const [saved, setSaved] = useState<string | null>(null)
+  const [values, setValues]       = useState<Record<string, string>>({})
+  const [saving, setSaving]       = useState<string | null>(null)
+  const [saved,  setSaved]        = useState<string | null>(null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [uploadingR3Logo, setUploadingR3Logo] = useState(false)
+
+  // Feature flags
+  const [flags, setFlags]         = useState<Record<string, boolean>>({})
+  const [savingFlags, setSavingFlags] = useState(false)
+  const [flagsSaved, setFlagsSaved]   = useState(false)
 
   // Perfiles
-  const [admins, setAdmins] = useState<AdminItem[]>([])
-  const [newName, setNewName] = useState('')
-  const [newPass, setNewPass] = useState('')
+  const [admins, setAdmins]       = useState<AdminItem[]>([])
+  const [newName, setNewName]     = useState('')
+  const [newPass, setNewPass]     = useState('')
   const [profileError, setProfileError] = useState('')
-  const [creating, setCreating] = useState(false)
+  const [creating, setCreating]   = useState(false)
   const me = currentAdminName()
 
   useEffect(() => {
-    const allKeys = [...SETTINGS.map(s => s.key), 'restaurant_name', 'profile_logo', 'sidebar_accent']
-    allKeys.forEach(async key => {
+    const keys = [
+      ...TEXT_SETTINGS.map(s => s.key),
+      'restaurant_name', 'profile_logo', 'sidebar_accent',
+      'resta3_name', 'resta3_logo', 'resta3_accent',
+      'employee_accent',
+    ]
+    keys.forEach(async key => {
       const r = await fetch(`/api/settings?key=${key}`)
       const d = await r.json()
       if (d.value) setValues(p => ({ ...p, [key]: d.value }))
     })
+
+    // Cargar feature flags
+    fetch('/api/settings?key=feature_flags').then(r => r.json()).then(d => {
+      const defaults = Object.fromEntries(Object.keys(FEATURE_DEFS).map(k => [k, true]))
+      if (d.value) {
+        try { setFlags({ ...defaults, ...JSON.parse(d.value) }) } catch { setFlags(defaults) }
+      } else {
+        setFlags(defaults)
+      }
+    })
+
     loadAdmins()
   }, [])
 
@@ -64,20 +107,36 @@ export default function AdminConfiguracionPage() {
     setTimeout(() => setSaved(null), 2000)
   }
 
-  async function uploadLogo(file: File) {
-    setUploadingLogo(true)
+  async function uploadLogo(file: File, key: 'profile_logo' | 'resta3_logo') {
+    if (key === 'profile_logo') setUploadingLogo(true)
+    else setUploadingR3Logo(true)
     try {
       const fd = new FormData()
       fd.append('file', file)
       const r = await fetch('/api/settings/upload', { method: 'POST', body: fd })
       const d = await r.json()
       if (d.url) {
-        setValues(p => ({ ...p, profile_logo: d.url }))
-        await saveSetting('profile_logo', d.url)
+        setValues(p => ({ ...p, [key]: d.url }))
+        await saveSetting(key, d.url)
       }
     } finally {
-      setUploadingLogo(false)
+      if (key === 'profile_logo') setUploadingLogo(false)
+      else setUploadingR3Logo(false)
     }
+  }
+
+  async function toggleFlag(key: string) {
+    const newFlags = { ...flags, [key]: !flags[key] }
+    setFlags(newFlags)
+    setSavingFlags(true)
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'feature_flags', value: JSON.stringify(newFlags) }),
+    })
+    setSavingFlags(false)
+    setFlagsSaved(true)
+    setTimeout(() => setFlagsSaved(false), 2000)
   }
 
   async function createProfile() {
@@ -111,7 +170,9 @@ export default function AdminConfiguracionPage() {
     await loadAdmins()
   }
 
-  const accent = values.sidebar_accent || '#00e676'
+  const accent   = values.sidebar_accent   || '#00e676'
+  const r3Accent = values.resta3_accent    || accent
+  const empAccent = values.employee_accent || accent
 
   const renderSaveBtn = (k: string) => (
     <button
@@ -123,6 +184,23 @@ export default function AdminConfiguracionPage() {
     </button>
   )
 
+  const renderColorRow = (key: string, previewColor: string) => (
+    <div className="flex items-center gap-2">
+      <input type="color"
+        value={/^#[0-9a-fA-F]{6}$/.test(previewColor) ? previewColor : '#00e676'}
+        onChange={e => setValues(p => ({ ...p, [key]: e.target.value }))}
+        className="w-12 h-11 rounded-2xl cursor-pointer bg-transparent"
+        style={{ border: `1px solid ${S.border}` }} />
+      <input type="text"
+        value={values[key] ?? ''}
+        onChange={e => setValues(p => ({ ...p, [key]: e.target.value }))}
+        placeholder="#00e676"
+        className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none font-mono"
+        style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+      {renderSaveBtn(key)}
+    </div>
+  )
+
   return (
     <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <AdminNav />
@@ -130,35 +208,32 @@ export default function AdminConfiguracionPage() {
 
         <div className="pt-1">
           <h1 className="text-xl font-black" style={{ color: S.text }}>Configuración</h1>
-          <p className="text-xs mt-0.5" style={{ color: S.sub }}>Textos y personalización del sistema</p>
+          <p className="text-xs mt-0.5" style={{ color: S.sub }}>Textos, colores, logos y módulos del sistema</p>
         </div>
 
-        {/* ===== Identidad del restaurante ===== */}
+        {/* ===== Identidad del restaurante (Admin) ===== */}
         <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
           <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
-            <p className="font-bold text-sm" style={{ color: S.text }}>Identidad del restaurante</p>
-            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Nombre, logo y color que se muestran en el panel</p>
+            <p className="font-bold text-sm" style={{ color: S.text }}>Identidad del restaurante · Panel Admin</p>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Nombre, logo y color del menú lateral de /admin</p>
           </div>
           <div className="p-5 space-y-5">
 
-            {/* Nombre del restaurante */}
+            {/* Nombre */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Nombre del restaurante</label>
               <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={values.restaurant_name ?? ''}
+                <input type="text" value={values.restaurant_name ?? ''}
                   onChange={e => setValues(p => ({ ...p, restaurant_name: e.target.value }))}
                   placeholder="NICHO"
                   className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
-                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}
-                />
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
                 {renderSaveBtn('restaurant_name')}
               </div>
               <p className="text-xs mt-1" style={{ color: S.sub }}>Se muestra en el menú lateral del panel</p>
             </div>
 
-            {/* Logo de perfil */}
+            {/* Logo admin */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Logo de perfil</label>
               <div className="flex items-center gap-3">
@@ -171,39 +246,165 @@ export default function AdminConfiguracionPage() {
                   style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
                   {uploadingLogo ? 'Subiendo...' : 'Cambiar logo'}
                   <input type="file" accept="image/*" className="hidden"
-                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f) }} />
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f, 'profile_logo') }} />
                 </label>
               </div>
               <p className="text-xs mt-1" style={{ color: S.sub }}>PNG o SVG con fondo transparente recomendado</p>
             </div>
 
-            {/* Color del botón del menú lateral */}
+            {/* Color admin */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Color del botón del menú lateral</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={/^#[0-9a-fA-F]{6}$/.test(accent) ? accent : '#00e676'}
-                  onChange={e => setValues(p => ({ ...p, sidebar_accent: e.target.value }))}
-                  className="w-12 h-11 rounded-2xl cursor-pointer bg-transparent"
-                  style={{ border: `1px solid ${S.border}` }}
-                />
-                <input
-                  type="text"
-                  value={values.sidebar_accent ?? ''}
-                  onChange={e => setValues(p => ({ ...p, sidebar_accent: e.target.value }))}
-                  placeholder="#00e676"
-                  className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none font-mono"
-                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}
-                />
-                {renderSaveBtn('sidebar_accent')}
-              </div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Color del menú lateral (Admin)</label>
+              {renderColorRow('sidebar_accent', accent)}
               <div className="mt-2 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium"
                 style={{ backgroundColor: accent, color: '#000' }}>
                 Vista previa del botón activo
               </div>
             </div>
 
+          </div>
+        </div>
+
+        {/* ===== Branding Resta3 ===== */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <p className="font-bold text-sm" style={{ color: S.text }}>Branding de Resta3</p>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Personalización del panel /resta3 y su pantalla de login</p>
+          </div>
+          <div className="p-5 space-y-5">
+
+            {/* Nombre Resta3 */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Nombre en Resta3</label>
+              <div className="flex gap-2">
+                <input type="text" value={values.resta3_name ?? ''}
+                  onChange={e => setValues(p => ({ ...p, resta3_name: e.target.value }))}
+                  placeholder="Dejar vacío = usa el nombre del restaurante"
+                  className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+                {renderSaveBtn('resta3_name')}
+              </div>
+            </div>
+
+            {/* Logo Resta3 */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Logo de Resta3</label>
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden shrink-0"
+                  style={{ background: `linear-gradient(135deg,${r3Accent},${r3Accent}99)` }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={values.resta3_logo || values.profile_logo || '/logo.png'} alt="logo resta3" className="w-10 h-10 object-contain" />
+                </div>
+                <label className="px-4 py-2 rounded-2xl text-sm font-bold cursor-pointer transition-all"
+                  style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                  {uploadingR3Logo ? 'Subiendo...' : 'Cambiar logo Resta3'}
+                  <input type="file" accept="image/*" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f, 'resta3_logo') }} />
+                </label>
+              </div>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>Dejar vacío usa el logo del restaurante</p>
+            </div>
+
+            {/* Color Resta3 */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Color del panel Resta3</label>
+              {renderColorRow('resta3_accent', r3Accent)}
+              <div className="mt-2 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium"
+                style={{ backgroundColor: r3Accent, color: '#000' }}>
+                Vista previa Resta3
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ===== Colores del empleado ===== */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <p className="font-bold text-sm" style={{ color: S.text }}>Panel de Empleados (/employee)</p>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Color de acento en el panel del mesero. Sin valor = hereda el color de Admin.</p>
+          </div>
+          <div className="p-5 space-y-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Color del panel de empleado</label>
+              {renderColorRow('employee_accent', empAccent)}
+              <div className="mt-2 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium"
+                style={{ backgroundColor: empAccent, color: '#000' }}>
+                Vista previa Empleado
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== Feature flags ===== */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <div>
+              <p className="font-bold text-sm" style={{ color: S.text }}>Módulos del sistema</p>
+              <p className="text-xs mt-0.5" style={{ color: S.sub }}>
+                Activa o desactiva funciones para Admin, Empleado y Resta3
+              </p>
+            </div>
+            {flagsSaved && (
+              <span className="text-xs font-bold px-3 py-1 rounded-xl" style={{ backgroundColor: 'rgba(74,222,128,.15)', color: '#4ade80' }}>
+                ✓ Guardado
+              </span>
+            )}
+            {savingFlags && !flagsSaved && (
+              <span className="text-xs" style={{ color: S.sub }}>Guardando...</span>
+            )}
+          </div>
+          <div className="p-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {Object.entries(FEATURE_DEFS).map(([key, def]) => {
+                const enabled = flags[key] !== false
+                return (
+                  <button key={key}
+                    onClick={() => toggleFlag(key)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all"
+                    style={{
+                      backgroundColor: enabled ? `${S.accent}0d` : S.bg,
+                      border: `1px solid ${enabled ? S.accent + '33' : S.border}`,
+                    }}>
+                    <span className="text-lg shrink-0">{def.emoji}</span>
+                    <span className="flex-1 text-sm font-bold" style={{ color: enabled ? S.text : S.sub }}>{def.label}</span>
+                    <span className="text-xs font-black px-2 py-0.5 rounded-full shrink-0"
+                      style={enabled
+                        ? { backgroundColor: `${S.accent}22`, color: S.accent }
+                        : { backgroundColor: 'rgba(239,68,68,0.12)', color: '#f87171' }}>
+                      {enabled ? 'ON' : 'OFF'}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-xs mt-3" style={{ color: S.sub }}>
+              Los módulos desactivados aparecen bloqueados en el menú lateral de Admin con badge "PRO".
+            </p>
+          </div>
+        </div>
+
+        {/* ===== Textos del formulario de registro ===== */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <p className="font-bold text-sm" style={{ color: S.text }}>Formulario de Registro (/registro)</p>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Texto que ven los clientes al escanear el QR del restaurante</p>
+          </div>
+          <div className="p-5 space-y-4">
+            {TEXT_SETTINGS.map(s => (
+              <div key={s.key}>
+                <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>{s.label}</label>
+                <div className="flex gap-2">
+                  <input type="text" value={values[s.key] ?? ''}
+                    onChange={e => setValues(p => ({ ...p, [s.key]: e.target.value }))}
+                    placeholder={s.placeholder}
+                    className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
+                    style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+                  {renderSaveBtn(s.key)}
+                </div>
+                <p className="text-xs mt-1" style={{ color: S.sub }}>{s.hint}</p>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -215,12 +416,12 @@ export default function AdminConfiguracionPage() {
           </div>
           <div className="p-5 space-y-4">
 
-            {/* Lista */}
             <div className="space-y-2">
               {admins.map(a => {
                 const isMe = a.name.toLowerCase() === me.toLowerCase()
                 return (
-                  <div key={a.id} className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ backgroundColor: S.bg, border: `1px solid ${S.border}` }}>
+                  <div key={a.id} className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                    style={{ backgroundColor: S.bg, border: `1px solid ${S.border}` }}>
                     <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
                       style={{ background: 'linear-gradient(135deg,#7c3aed,#4f6ef7)', color: '#fff' }}>
                       {a.name.charAt(0).toUpperCase()}
@@ -231,9 +432,7 @@ export default function AdminConfiguracionPage() {
                       </p>
                       <p className="text-xs" style={{ color: S.sub }}>Alta: {new Date(a.createdAt).toLocaleDateString()}</p>
                     </div>
-                    <button
-                      onClick={() => deleteProfile(a.id, a.name)}
-                      disabled={isMe}
+                    <button onClick={() => deleteProfile(a.id, a.name)} disabled={isMe}
                       className="px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                       style={{ color: '#f87171', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'transparent' }}>
                       Eliminar
@@ -246,29 +445,20 @@ export default function AdminConfiguracionPage() {
               )}
             </div>
 
-            {/* Crear nuevo */}
             <div className="pt-2" style={{ borderTop: `1px solid ${S.border}` }}>
               <p className="text-xs font-bold uppercase tracking-wide mt-3 mb-2" style={{ color: S.sub }}>Crear nuevo perfil</p>
               <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="text"
-                  value={newName}
+                <input type="text" value={newName}
                   onChange={e => { setNewName(e.target.value); setProfileError('') }}
                   placeholder="Nombre de usuario"
                   className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
-                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}
-                />
-                <input
-                  type="password"
-                  value={newPass}
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+                <input type="password" value={newPass}
                   onChange={e => { setNewPass(e.target.value); setProfileError('') }}
                   placeholder="Contraseña"
                   className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
-                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}
-                />
-                <button
-                  onClick={createProfile}
-                  disabled={creating}
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+                <button onClick={createProfile} disabled={creating}
                   className="px-4 py-2 rounded-2xl text-sm font-bold shrink-0 transition-all"
                   style={{ backgroundColor: S.accent, color: '#000' }}>
                   {creating ? '...' : '+ Crear'}
@@ -279,33 +469,6 @@ export default function AdminConfiguracionPage() {
               )}
             </div>
 
-          </div>
-        </div>
-
-        {/* ===== Textos del formulario de registro ===== */}
-        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
-            <p className="font-bold text-sm" style={{ color: S.text }}>Formulario de Registro (/registro)</p>
-            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Texto que ven los clientes al escanear el QR del restaurante</p>
-          </div>
-          <div className="p-5 space-y-4">
-            {SETTINGS.map(s => (
-              <div key={s.key}>
-                <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>{s.label}</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={values[s.key] ?? ''}
-                    onChange={e => setValues(p => ({ ...p, [s.key]: e.target.value }))}
-                    placeholder={s.placeholder}
-                    className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
-                    style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}
-                  />
-                  {renderSaveBtn(s.key)}
-                </div>
-                <p className="text-xs mt-1" style={{ color: S.sub }}>{s.hint}</p>
-              </div>
-            ))}
           </div>
         </div>
 

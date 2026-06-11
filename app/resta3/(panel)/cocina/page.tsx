@@ -1,8 +1,8 @@
 'use client'
 
-// KDS de cocina con pestaña de delivery (Gogo / Uber Eats / Rappi).
+// KDS de cocina con vista dividida en desktop: delivery IZQUIERDA, cocina DERECHA.
+// En móvil mantiene pestañas (cocina | domicilio).
 // Los pedidos de delivery usan notes con prefijo [GOGO], [UBEREATS] o [RAPPI].
-// Estado extra: picked_up (repartidor recogió) entre ready → delivered.
 import { useState, useEffect, useRef } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
 
@@ -19,16 +19,16 @@ const PLATFORMS = {
 type PlatformKey = keyof typeof PLATFORMS
 
 const KDS_CFG: Record<string, { label: string; color: string; next: string; nextLabel: string; urgentAfter: number }> = {
-  pending:   { label: 'Nuevo',      color: '#f59e0b', next: 'preparing', nextLabel: '▶ Iniciar',      urgentAfter: 5 },
-  preparing: { label: 'Preparando', color: '#3b82f6', next: 'ready',     nextLabel: '✓ Listo',         urgentAfter: 15 },
-  ready:     { label: 'Listo',      color: '#22c55e', next: 'delivered', nextLabel: '🚀 Entregar',     urgentAfter: 10 },
+  pending:   { label: 'Nuevo',      color: '#f59e0b', next: 'preparing', nextLabel: '▶ Iniciar',    urgentAfter: 5  },
+  preparing: { label: 'Preparando', color: '#3b82f6', next: 'ready',     nextLabel: '✓ Listo',      urgentAfter: 15 },
+  ready:     { label: 'Listo',      color: '#22c55e', next: 'delivered', nextLabel: '🚀 Entregar',  urgentAfter: 10 },
 }
 
 const DELIVERY_CFG: Record<string, { label: string; color: string; next: string; nextLabel: string; urgentAfter: number }> = {
-  pending:   { label: 'Nuevo',           color: '#f59e0b', next: 'preparing', nextLabel: '▶ Preparar',    urgentAfter: 5 },
-  preparing: { label: 'Preparando',      color: '#3b82f6', next: 'ready',     nextLabel: '✓ Listo',       urgentAfter: 20 },
-  ready:     { label: 'Esperando rider', color: '#a855f7', next: 'picked_up', nextLabel: '🛵 Recogido',   urgentAfter: 15 },
-  picked_up: { label: 'En camino',       color: '#06b6d4', next: 'delivered', nextLabel: '✅ Entregado',  urgentAfter: 40 },
+  pending:   { label: 'Nuevo',           color: '#f59e0b', next: 'preparing', nextLabel: '▶ Preparar',   urgentAfter: 5  },
+  preparing: { label: 'Preparando',      color: '#3b82f6', next: 'ready',     nextLabel: '✓ Listo',      urgentAfter: 20 },
+  ready:     { label: 'Esperando rider', color: '#a855f7', next: 'picked_up', nextLabel: '🛵 Recogido',  urgentAfter: 15 },
+  picked_up: { label: 'En camino',       color: '#06b6d4', next: 'delivered', nextLabel: '✅ Entregado', urgentAfter: 40 },
 }
 
 function getPlatform(notes?: string) {
@@ -62,7 +62,6 @@ function OrderCard({ order, cfg, advancing, onAdvance }: {
     <div className="rounded-2xl p-4 space-y-3 transition-all"
       style={{ backgroundColor: S.card, border: `2px solid ${urgent ? cfg.color + '66' : platform ? platform.border : cfg.color + '22'}` }}>
 
-      {/* Platform badge */}
       {platform && (
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg w-fit"
           style={{ backgroundColor: platform.bg, border: `1px solid ${platform.border}` }}>
@@ -71,7 +70,6 @@ function OrderCard({ order, cfg, advancing, onAdvance }: {
         </div>
       )}
 
-      {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-black text-sm" style={{ color: S.text }}>{order.customerName}</p>
@@ -83,7 +81,6 @@ function OrderCard({ order, cfg, advancing, onAdvance }: {
         </span>
       </div>
 
-      {/* Items */}
       {order.items.length > 0 && (
         <ul className="space-y-1">
           {order.items.map((item, i) => (
@@ -96,19 +93,43 @@ function OrderCard({ order, cfg, advancing, onAdvance }: {
         </ul>
       )}
 
-      {/* Nota */}
       {note && (
         <p className="text-xs px-2 py-1.5 rounded-lg" style={{ backgroundColor: '#0f1117', color: '#fbbf24' }}>
           📝 {note}
         </p>
       )}
 
-      {/* Acción */}
       <button onClick={() => onAdvance(order.id, cfg.next)} disabled={advancing === order.id}
         className="w-full py-2.5 rounded-xl text-sm font-black transition-all disabled:opacity-60"
         style={{ background: `linear-gradient(135deg,${cfg.color}22,${cfg.color}11)`, color: cfg.color, border: `1px solid ${cfg.color}33` }}>
         {advancing === order.id ? 'Guardando...' : cfg.nextLabel}
       </button>
+    </div>
+  )
+}
+
+// ── Status section para vista dividida de escritorio ─────────────────────────
+function StatusSection({ status, orders, cfg, advancing, onAdvance }: {
+  status: string
+  orders: Order[]
+  cfg: typeof KDS_CFG[string]
+  advancing: string | null
+  onAdvance: (id: string, next: string) => void
+}) {
+  if (orders.length === 0) return null
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2 px-1">
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cfg.color }} />
+        <span className="text-xs font-black uppercase tracking-wide" style={{ color: cfg.color }}>{cfg.label}</span>
+        <span className="text-xs px-1.5 py-0.5 rounded-full font-bold"
+          style={{ backgroundColor: `${cfg.color}18`, color: cfg.color }}>{orders.length}</span>
+      </div>
+      <div className="space-y-2">
+        {orders.map(order => (
+          <OrderCard key={order.id} order={order} cfg={cfg} advancing={advancing} onAdvance={onAdvance} />
+        ))}
+      </div>
     </div>
   )
 }
@@ -123,7 +144,6 @@ export default function CocinaPage() {
   const [newAlert, setNewAlert] = useState(false)
   const audioRef = useRef<AudioContext | null>(null)
 
-  // Modal nuevo pedido de delivery
   const [showModal, setShowModal] = useState(false)
   const [modalPlatform, setModalPlatform] = useState<PlatformKey>('GOGO')
   const [modalName, setModalName] = useState('')
@@ -159,10 +179,9 @@ export default function CocinaPage() {
 
   useEffect(() => {
     load(true)
-const t = setInterval(() => load(), 10000)
+    const t = setInterval(() => load(), 10000)
     return () => clearInterval(t)
   }, [])
-
 
   async function advance(id: string, next: string) {
     setAdvancing(id)
@@ -178,18 +197,11 @@ const t = setInterval(() => load(), 10000)
   async function createDeliveryOrder() {
     if (!modalName.trim()) return
     setModalSaving(true)
-    const notes = modalNote.trim()
-      ? `[${modalPlatform}] ${modalNote.trim()}`
-      : `[${modalPlatform}]`
+    const notes = modalNote.trim() ? `[${modalPlatform}] ${modalNote.trim()}` : `[${modalPlatform}]`
     await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        customerName: modalName.trim(),
-        items: [],
-        total: 0,
-        notes,
-      }),
+      body: JSON.stringify({ customerName: modalName.trim(), items: [], total: 0, notes }),
     })
     await load(true)
     setModalSaving(false)
@@ -199,9 +211,9 @@ const t = setInterval(() => load(), 10000)
     setTab('domicilio')
   }
 
-  const localOrders   = orders.filter(o => !isDelivery(o))
+  const localOrders    = orders.filter(o => !isDelivery(o))
   const deliveryOrders = orders.filter(o => isDelivery(o))
-  const kdsGroups = ['pending', 'preparing', 'ready']
+  const kdsGroups      = ['pending', 'preparing', 'ready']
   const deliveryGroups = ['pending', 'preparing', 'ready', 'picked_up']
 
   return (
@@ -215,7 +227,7 @@ const t = setInterval(() => load(), 10000)
         </div>
       )}
 
-      <div className="max-w-[1400px] mx-auto p-4 space-y-4">
+      <div className="max-w-[1600px] mx-auto p-4 space-y-4">
 
         {/* Header */}
         <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
@@ -239,8 +251,8 @@ const t = setInterval(() => load(), 10000)
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+        {/* Tabs — solo en móvil */}
+        <div className="flex md:hidden gap-1 p-1 rounded-xl w-fit" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
           {([['cocina', '🍽️ Cocina', localOrders.length], ['domicilio', '🛵 Domicilio', deliveryOrders.length]] as const).map(([t, label, count]) => (
             <button key={t} onClick={() => setTab(t)}
               className="px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2"
@@ -260,82 +272,195 @@ const t = setInterval(() => load(), 10000)
           <div className="text-center py-16 text-sm" style={{ color: S.sub }}>Cargando pedidos...</div>
         ) : (
           <>
-            {/* ── Tab: Cocina KDS ── */}
-            {tab === 'cocina' && (
-              localOrders.length === 0 ? (
-                <div className="text-center py-20 rounded-2xl" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-                  <p className="text-5xl mb-3">✅</p>
-                  <p className="text-lg font-black" style={{ color: S.text }}>Cocina al día</p>
-                  <p className="text-sm mt-1" style={{ color: S.sub }}>Sin pedidos en mesa pendientes</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {kdsGroups.map(status => {
-                    const cfg = KDS_CFG[status]
-                    const group = localOrders.filter(o => o.status === status)
-                    return (
-                      <div key={status}>
-                        <div className="flex items-center gap-2 mb-3 px-1">
-                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
-                          <span className="text-sm font-black" style={{ color: cfg.color }}>{cfg.label}</span>
-                          <span className="text-xs px-2 py-0.5 rounded-full font-bold"
-                            style={{ backgroundColor: `${cfg.color}18`, color: cfg.color }}>{group.length}</span>
-                        </div>
-                        <div className="space-y-3">
-                          {group.length === 0 ? (
-                            <div className="rounded-2xl p-6 text-center text-sm"
-                              style={{ backgroundColor: S.card, border: `1px solid ${S.border}`, color: S.sub }}>
-                              Sin pedidos
-                            </div>
-                          ) : group.map(order => (
-                            <OrderCard key={order.id} order={order} cfg={cfg} advancing={advancing} onAdvance={advance} />
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )
-            )}
+            {/* ── Vista dividida en escritorio (delivery izquierda / cocina derecha) ── */}
+            <div className="hidden md:grid md:grid-cols-2 gap-6">
 
-            {/* ── Tab: Domicilio ── */}
-            {tab === 'domicilio' && (
-              deliveryOrders.length === 0 ? (
-                <div className="text-center py-20 rounded-2xl" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-                  <p className="text-5xl mb-3">🛵</p>
-                  <p className="text-lg font-black" style={{ color: S.text }}>Sin pedidos de delivery</p>
-                  <p className="text-sm mt-1" style={{ color: S.sub }}>Usa el botón "+ Pedido domicilio" para registrar uno</p>
+              {/* IZQUIERDA: Delivery */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 pb-3" style={{ borderBottom: `2px solid ${S.border}` }}>
+                  <span className="text-base font-black" style={{ color: S.text }}>🛵 Domicilio</span>
+                  {deliveryOrders.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-black"
+                      style={{ backgroundColor: 'rgba(6,193,103,0.15)', color: '#06c167' }}>
+                      {deliveryOrders.length}
+                    </span>
+                  )}
+                  <div className="ml-auto flex gap-1.5">
+                    {(Object.values(PLATFORMS)).map(p => (
+                      deliveryOrders.some(o => getPlatform(o.notes)?.key === p.key) ? (
+                        <span key={p.key} className="text-xs px-2 py-0.5 rounded-full font-bold"
+                          style={{ backgroundColor: p.bg, color: p.color, border: `1px solid ${p.border}` }}>
+                          {p.emoji} {p.label}
+                        </span>
+                      ) : null
+                    ))}
+                  </div>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                  {deliveryGroups.map(status => {
-                    const cfg = DELIVERY_CFG[status]
-                    if (!cfg) return null
-                    const group = deliveryOrders.filter(o => o.status === status)
-                    return (
-                      <div key={status}>
-                        <div className="flex items-center gap-2 mb-3 px-1">
-                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
-                          <span className="text-sm font-black" style={{ color: cfg.color }}>{cfg.label}</span>
-                          <span className="text-xs px-2 py-0.5 rounded-full font-bold"
-                            style={{ backgroundColor: `${cfg.color}18`, color: cfg.color }}>{group.length}</span>
+
+                {deliveryOrders.length === 0 ? (
+                  <div className="space-y-3">
+                    {Object.values(PLATFORMS).map(p => (
+                      <div key={p.key} className="rounded-2xl p-4"
+                        style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{p.emoji}</span>
+                          <span className="font-black text-sm" style={{ color: p.color }}>{p.label}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full font-bold ml-auto"
+                            style={{ backgroundColor: p.bg, color: p.color, border: `1px solid ${p.border}` }}>
+                            0
+                          </span>
                         </div>
-                        <div className="space-y-3">
-                          {group.length === 0 ? (
-                            <div className="rounded-2xl p-6 text-center text-sm"
-                              style={{ backgroundColor: S.card, border: `1px solid ${S.border}`, color: S.sub }}>
-                              Sin pedidos
-                            </div>
-                          ) : group.map(order => (
-                            <OrderCard key={order.id} order={order} cfg={cfg} advancing={advancing} onAdvance={advance} />
-                          ))}
-                        </div>
+                        <p className="text-xs mt-2" style={{ color: S.sub }}>Sin pedidos</p>
                       </div>
-                    )
-                  })}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {Object.values(PLATFORMS).map(platform => {
+                      const platformOrders = deliveryOrders.filter(o => getPlatform(o.notes)?.key === platform.key)
+                      return (
+                        <div key={platform.key}>
+                          <div className="flex items-center gap-2 mb-2 px-1">
+                            <span className="text-base">{platform.emoji}</span>
+                            <span className="text-sm font-black" style={{ color: platform.color }}>{platform.label}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+                              style={{ backgroundColor: platform.bg, color: platform.color, border: `1px solid ${platform.border}` }}>
+                              {platformOrders.length}
+                            </span>
+                          </div>
+                          <div className="space-y-2">
+                            {platformOrders.length === 0 ? (
+                              <div className="rounded-2xl px-4 py-3 text-sm"
+                                style={{ backgroundColor: S.card, border: `1px solid ${S.border}`, color: S.sub }}>
+                                Sin pedidos
+                              </div>
+                            ) : platformOrders.map(order => {
+                              const cfg = DELIVERY_CFG[order.status] ?? DELIVERY_CFG.pending
+                              return (
+                                <OrderCard key={order.id} order={order} cfg={cfg} advancing={advancing} onAdvance={advance} />
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* DERECHA: Cocina / mesa */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 pb-3" style={{ borderBottom: `2px solid ${S.border}` }}>
+                  <span className="text-base font-black" style={{ color: S.text }}>🍽️ Cocina</span>
+                  {localOrders.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-black"
+                      style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                      {localOrders.length}
+                    </span>
+                  )}
                 </div>
-              )
-            )}
+
+                {localOrders.length === 0 ? (
+                  <div className="text-center py-12 rounded-2xl" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+                    <p className="text-4xl mb-2">✅</p>
+                    <p className="font-black text-sm" style={{ color: S.text }}>Cocina al día</p>
+                    <p className="text-xs mt-1" style={{ color: S.sub }}>Sin pedidos en mesa pendientes</p>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {kdsGroups.map(status => {
+                      const cfg = KDS_CFG[status]
+                      const group = localOrders.filter(o => o.status === status)
+                      return (
+                        <StatusSection key={status} status={status} orders={group} cfg={cfg}
+                          advancing={advancing} onAdvance={advance} />
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ── Vista por pestañas en móvil ── */}
+            <div className="md:hidden">
+
+              {/* Tab: Cocina KDS */}
+              {tab === 'cocina' && (
+                localOrders.length === 0 ? (
+                  <div className="text-center py-20 rounded-2xl" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+                    <p className="text-5xl mb-3">✅</p>
+                    <p className="text-lg font-black" style={{ color: S.text }}>Cocina al día</p>
+                    <p className="text-sm mt-1" style={{ color: S.sub }}>Sin pedidos en mesa pendientes</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-6">
+                    {kdsGroups.map(status => {
+                      const cfg = KDS_CFG[status]
+                      const group = localOrders.filter(o => o.status === status)
+                      return (
+                        <div key={status}>
+                          <div className="flex items-center gap-2 mb-3 px-1">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
+                            <span className="text-sm font-black" style={{ color: cfg.color }}>{cfg.label}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+                              style={{ backgroundColor: `${cfg.color}18`, color: cfg.color }}>{group.length}</span>
+                          </div>
+                          <div className="space-y-3">
+                            {group.length === 0 ? (
+                              <div className="rounded-2xl p-6 text-center text-sm"
+                                style={{ backgroundColor: S.card, border: `1px solid ${S.border}`, color: S.sub }}>
+                                Sin pedidos
+                              </div>
+                            ) : group.map(order => (
+                              <OrderCard key={order.id} order={order} cfg={cfg} advancing={advancing} onAdvance={advance} />
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              )}
+
+              {/* Tab: Domicilio */}
+              {tab === 'domicilio' && (
+                deliveryOrders.length === 0 ? (
+                  <div className="text-center py-20 rounded-2xl" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+                    <p className="text-5xl mb-3">🛵</p>
+                    <p className="text-lg font-black" style={{ color: S.text }}>Sin pedidos de delivery</p>
+                    <p className="text-sm mt-1" style={{ color: S.sub }}>Usa el botón "+ Pedido domicilio" para registrar uno</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-6">
+                    {deliveryGroups.map(status => {
+                      const cfg = DELIVERY_CFG[status]
+                      if (!cfg) return null
+                      const group = deliveryOrders.filter(o => o.status === status)
+                      return (
+                        <div key={status}>
+                          <div className="flex items-center gap-2 mb-3 px-1">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
+                            <span className="text-sm font-black" style={{ color: cfg.color }}>{cfg.label}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+                              style={{ backgroundColor: `${cfg.color}18`, color: cfg.color }}>{group.length}</span>
+                          </div>
+                          <div className="space-y-3">
+                            {group.length === 0 ? (
+                              <div className="rounded-2xl p-6 text-center text-sm"
+                                style={{ backgroundColor: S.card, border: `1px solid ${S.border}`, color: S.sub }}>
+                                Sin pedidos
+                              </div>
+                            ) : group.map(order => (
+                              <OrderCard key={order.id} order={order} cfg={cfg} advancing={advancing} onAdvance={advance} />
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              )}
+            </div>
           </>
         )}
       </div>
@@ -354,7 +479,6 @@ const t = setInterval(() => load(), 10000)
               <button onClick={() => setShowModal(false)} style={{ color: S.sub }} className="text-xl">✕</button>
             </div>
 
-            {/* Plataforma */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wide mb-2" style={{ color: S.sub }}>
                 Plataforma
@@ -373,45 +497,34 @@ const t = setInterval(() => load(), 10000)
               </div>
             </div>
 
-            {/* Nombre / ID del pedido */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: S.sub }}>
                 Cliente / ID del pedido
               </label>
-              <input
-                value={modalName}
-                onChange={e => setModalName(e.target.value)}
-                placeholder="Ej: #4521 · Juan García"
+              <input type="text" value={modalName} onChange={e => setModalName(e.target.value)}
+                placeholder="Nombre o número de pedido"
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-                style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}
-                autoFocus
-              />
+                style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
             </div>
 
-            {/* Notas / descripción */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: S.sub }}>
-                Descripción (opcional)
+                Nota (opcional)
               </label>
-              <textarea
-                value={modalNote}
-                onChange={e => setModalNote(e.target.value)}
-                placeholder="Ej: 2 hamburguesas sin cebolla..."
-                rows={2}
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none"
-                style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}
-              />
+              <input type="text" value={modalNote} onChange={e => setModalNote(e.target.value)}
+                placeholder="Instrucciones especiales..."
+                className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+                style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
             </div>
 
             <button onClick={createDeliveryOrder} disabled={modalSaving || !modalName.trim()}
-              className="w-full py-3.5 rounded-xl font-black text-sm disabled:opacity-50 transition-all"
-              style={{ backgroundColor: PLATFORMS[modalPlatform].color, color: '#fff' }}>
-              {modalSaving ? 'Registrando...' : `Registrar pedido ${PLATFORMS[modalPlatform].label}`}
+              className="w-full py-3.5 rounded-xl text-sm font-black transition-all disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg,#06c167,#059669)', color: '#fff' }}>
+              {modalSaving ? 'Creando...' : '+ Registrar pedido'}
             </button>
           </div>
         </div>
       )}
-
     </div>
   )
 }
