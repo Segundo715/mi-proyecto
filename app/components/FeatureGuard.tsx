@@ -20,6 +20,9 @@ const ROUTE_FEATURE: Record<string, string> = {
   '/admin/produccion':       'produccion',
   '/admin/reportes':         'reportes',
   '/admin/configuracion':    'configuracion',
+  '/admin/reviews':          'reviews',
+  '/admin/sellar':           'loyaltyCard',
+  '/admin/tarjetas':         'loyaltyCard',
 }
 
 // Employee module permissions
