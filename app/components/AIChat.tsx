@@ -265,7 +265,7 @@ export default function AIChat({
 
       {/* Botón flotante */}
       {!open && (
-        <button onClick={() => setOpen(true)}
+        <button onClick={() => setOpen(true)} aria-label="Abrir asistente"
           className={`fixed ${posClass} z-[200] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl transition-all hover:scale-110 active:scale-95`}
           style={{ background: accent, boxShadow: `0 8px 32px ${accent}55` }}>
           {cfg.icon}
@@ -300,7 +300,7 @@ export default function AIChat({
               style={{ background: 'rgba(255,255,255,0.06)', color: '#64748b' }}>
               ↺
             </button>
-            <button onClick={() => setOpen(false)}
+            <button onClick={() => setOpen(false)} aria-label="Cerrar asistente" title="Cerrar"
               className="w-8 h-8 rounded-xl flex items-center justify-center text-sm transition-all hover:text-white"
               style={{ background: 'rgba(255,255,255,0.06)', color: '#64748b' }}>
               ✕
@@ -374,6 +374,8 @@ export default function AIChat({
             <div className="flex gap-2 items-center">
               {/* Micrófono */}
               <button onClick={toggleVoiceInput} disabled={busy}
+                aria-label={listening ? 'Detener escucha de voz' : 'Hablar con el asistente'}
+                title={listening ? 'Detener' : 'Hablar'}
                 className="w-10 h-10 rounded-2xl flex items-center justify-center text-base transition-all shrink-0 disabled:opacity-30"
                 style={listening
                   ? { background: '#ef4444', color: '#fff', boxShadow: '0 0 16px #ef444466' }
@@ -391,6 +393,7 @@ export default function AIChat({
                 style={{ background: 'rgba(255,255,255,0.06)', color: '#f1f5f9', border: '1px solid rgba(255,255,255,0.09)' }} />
 
               <button onClick={() => sendMessage(input)} disabled={busy || !input.trim() || listening}
+                aria-label="Enviar mensaje" title="Enviar"
                 className="w-10 h-10 rounded-2xl flex items-center justify-center font-black text-lg transition-all active:scale-90 disabled:opacity-30 shrink-0"
                 style={{ background: accent, color: '#fff' }}>
                 ↑

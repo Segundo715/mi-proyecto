@@ -84,18 +84,25 @@ ${recipesText}
 ${menuText}`
   }
 
-  // ── ADMIN ──
-  const [orders, menu, recipes] = await Promise.all([getAllOrders(), getAllMenuItems(), getAllRecipes()])
+  // ── ADMIN ── (cada fetch con timeout individual de 4 s)
+  const safe = <T>(p: Promise<T>, fallback: T): Promise<T> =>
+    Promise.race([p, new Promise<T>(res => setTimeout(() => res(fallback), 4000))])
+
+  const [orders, menu, recipes] = await Promise.all([
+    safe(getAllOrders(), []),
+    safe(getAllMenuItems(), []),
+    safe(getAllRecipes(), []),
+  ])
   const today       = new Date().toDateString()
-  const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today)
-  const active      = orders.filter(o => o.status !== 'delivered')
+  const todayOrders = (orders as Awaited<ReturnType<typeof getAllOrders>>).filter(o => new Date(o.createdAt).toDateString() === today)
+  const active      = (orders as Awaited<ReturnType<typeof getAllOrders>>).filter(o => o.status !== 'delivered')
   const revenue     = todayOrders.reduce((s, o) => s + (o.total ?? 0), 0)
 
   return `${base}
 Rol: ADMINISTRADOR — acceso completo a datos.
 
 ## HOY: ${todayOrders.length} pedidos | $${revenue.toFixed(2)} en ventas | ${active.length} activos
-Menú: ${menu.length} ítems | Recetas: ${recipes.length}
+Menú: ${(menu as Awaited<ReturnType<typeof getAllMenuItems>>).length} ítems | Recetas: ${(recipes as Awaited<ReturnType<typeof getAllRecipes>>).length}
 
 ## PEDIDOS ACTIVOS
 ${active.length === 0 ? 'Ninguno.' : active.map(o => `• ${o.customerName} | ${o.status} | $${o.total}`).join('\n')}
@@ -104,19 +111,28 @@ ${active.length === 0 ? 'Ninguno.' : active.map(o => `• ${o.customerName} | ${
 ${todayOrders.slice(0, 30).map(o => `${o.customerName} | ${o.status} | $${o.total} | ${new Date(o.createdAt).toLocaleTimeString('es-MX')}`).join('\n')}`
 }
 
+function streamText(text: string): Response {
+  const enc = new TextEncoder()
+  return new Response(
+    new ReadableStream({ start(c) { c.enqueue(enc.encode(text)); c.close() } }),
+    { headers: { 'Content-Type': 'text/plain; charset=utf-8' } },
+  )
+}
+
 export async function POST(req: Request) {
   const apiKey = process.env.GROQ_API_KEY
-  if (!apiKey) return Response.json({ error: 'GROQ_API_KEY no configurada' }, { status: 500 })
+  if (!apiKey) return streamText('El asistente IA no está configurado en este servidor. Contacta al administrador.')
 
   const body = await req.json()
   const { messages, role = 'staff', menuContext } = body
 
-  const restaurantName = await getSetting('restaurant_name', 'Restaurante')
+  let restaurantName = 'Restaurante'
+  try { restaurantName = await getSetting('restaurant_name', 'Restaurante') } catch { /* usa fallback */ }
 
   let system: string
   try {
     system = await buildSystem(role as Role, restaurantName, menuContext)
-  } catch (e) {
+  } catch {
     const now = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City', hour12: true })
     system = `Eres el asistente del restaurante "${restaurantName}". Hora: ${now}. Responde en español.`
   }
@@ -140,8 +156,12 @@ export async function POST(req: Request) {
   })
 
   if (!groqRes.ok) {
-    const err = await groqRes.text()
-    return Response.json({ error: err }, { status: groqRes.status })
+    const err = await groqRes.text().catch(() => 'Error desconocido')
+    // Devuelve el error como texto en el stream (no como JSON 500)
+    const msg = groqRes.status === 429
+      ? 'El asistente alcanzó su límite de uso. Intenta en unos minutos.'
+      : `Error al contactar la IA (${groqRes.status}). Intenta de nuevo.`
+    return streamText(msg)
   }
 
   const encoder = new TextEncoder()
