@@ -420,25 +420,25 @@ export default function AdminMenuPage() {
 
             {/* Nombre */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Nombre *</label>
-              <input className={inp} style={inpStyle} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Ej: Salmon Bowl" />
+              <label htmlFor="dish-name" className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Nombre *</label>
+              <input id="dish-name" name="dish_name" autoComplete="off" className={inp} style={inpStyle} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Ej: Salmon Bowl" />
             </div>
 
             {/* Descripción */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Descripción</label>
-              <textarea className={`${inp} resize-none`} style={inpStyle} rows={2} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Descripción del platillo..." />
+              <label htmlFor="dish-description" className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Descripción</label>
+              <textarea id="dish-description" name="dish_description" className={`${inp} resize-none`} style={inpStyle} rows={2} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Descripción del platillo..." />
             </div>
 
             {/* Precio y categoría */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Precio *</label>
-                <input type="number" className={inp} style={inpStyle} value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} placeholder="150" />
+                <label htmlFor="dish-price" className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Precio *</label>
+                <input id="dish-price" name="dish_price" type="number" className={inp} style={inpStyle} value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} placeholder="150" />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Categoría</label>
-                <select className={inp} style={inpStyle} value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}>
+                <label htmlFor="dish-category" className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Categoría</label>
+                <select id="dish-category" name="dish_category" className={inp} style={inpStyle} value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}>
                   {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
