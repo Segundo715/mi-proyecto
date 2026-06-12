@@ -4,6 +4,7 @@
 // textos de registro y perfiles de administrador.
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { uploadWebp } from '@/lib/uploadWebp'
 
 const S = {
   bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
@@ -81,13 +82,10 @@ export default function AdminConfiguracionPage() {
   async function uploadLogo(file: File, key: string, setLoading: (v: boolean) => void) {
     setLoading(true)
     try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const r = await fetch('/api/settings/upload', { method: 'POST', body: fd })
-      const d = await r.json()
-      if (d.url) {
-        setValues(p => ({ ...p, [key]: d.url }))
-        await saveSetting(key, d.url)
+      const url = await uploadWebp(file, '/api/settings/upload')
+      if (url) {
+        setValues(p => ({ ...p, [key]: url }))
+        await saveSetting(key, url)
       }
     } finally {
       setLoading(false)

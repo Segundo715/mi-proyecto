@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 import { RewardIcon, REWARD_ICON_KEYS, isCustomIcon } from '@/app/components/RewardIcon'
+import { uploadWebp } from '@/lib/uploadWebp'
 
 const S = {
   bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
@@ -131,11 +132,8 @@ export default function AdminTarjetasPage() {
   async function uploadImage(field: 'logo' | 'image' | 'icon' | 'brandLogo', file: File) {
     setUploading(field)
     try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const r = await fetch('/api/settings/upload', { method: 'POST', body: fd })
-      const d = await r.json()
-      if (d.url) setDraft(prev => ({ ...prev, [field]: d.url }))
+      const url = await uploadWebp(file, '/api/settings/upload')
+      if (url) setDraft(prev => ({ ...prev, [field]: url }))
     } finally {
       setUploading(null)
     }

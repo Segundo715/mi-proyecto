@@ -1,18 +1,20 @@
-import sharp from 'sharp'
-
-// Convierte cualquier imagen a WebP (quality 82).
-// SVG se devuelve sin modificar (es vector, no tiene sentido rasterizar).
+// Conversión WebP en el servidor.
+// Sharp tiene binarios nativos que no están disponibles en Vercel Hobby.
+// Por eso el servidor sube el archivo original y la conversión WebP
+// ocurre en el navegador (ver lib/uploadWebp.ts).
 export async function toWebp(
   buffer: Buffer,
   mimeType: string,
 ): Promise<{ data: Buffer; contentType: string; ext: string }> {
-  if (mimeType === 'image/svg+xml') {
-    return { data: buffer, contentType: 'image/svg+xml', ext: '.svg' }
+  const extMap: Record<string, string> = {
+    'image/jpeg': '.jpg',
+    'image/jpg':  '.jpg',
+    'image/png':  '.png',
+    'image/gif':  '.gif',
+    'image/webp': '.webp',
+    'image/avif': '.avif',
+    'image/svg+xml': '.svg',
   }
-
-  const data = await sharp(buffer)
-    .webp({ quality: 82, effort: 4 })
-    .toBuffer()
-
-  return { data, contentType: 'image/webp', ext: '.webp' }
+  const ext = extMap[mimeType] ?? '.jpg'
+  return { data: buffer, contentType: mimeType, ext }
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { uploadWebp } from '@/lib/uploadWebp'
 
 const S = {
   bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
@@ -64,14 +65,8 @@ export default function AdminRecipesPage() {
 
   async function uploadBrandLogo(file: File) {
     setUploadingBrandLogo(true)
-    const fd = new FormData()
-    fd.append('file', file)
-    const r = await fetch('/api/settings/upload', { method: 'POST', body: fd })
-    const d = await r.json()
-    if (d.url) {
-      setBrandLogo(d.url)
-      await saveBrand('recetario_logo', d.url)
-    }
+    const url = await uploadWebp(file, '/api/settings/upload')
+    if (url) { setBrandLogo(url); await saveBrand('recetario_logo', url) }
     setUploadingBrandLogo(false)
   }
 
@@ -109,27 +104,19 @@ export default function AdminRecipesPage() {
 
   async function uploadImage(file: File) {
     setUploading(true)
-    const fd = new FormData()
-    fd.append('file', file)
-    const r = await fetch('/api/recipes/upload', { method: 'POST', body: fd })
-    if (r.ok) {
-      const d = await r.json()
-      setForm(p => ({ ...p, imageUrl: d.url }))
-    }
+    const url = await uploadWebp(file, '/api/recipes/upload')
+    if (url) setForm(p => ({ ...p, imageUrl: url }))
     setUploading(false)
   }
 
   async function uploadCardImage(file: File, recipeId: string) {
     setUploadingCardId(recipeId)
-    const fd = new FormData()
-    fd.append('file', file)
-    const r = await fetch('/api/recipes/upload', { method: 'POST', body: fd })
-    if (r.ok) {
-      const d = await r.json()
+    const url = await uploadWebp(file, '/api/recipes/upload')
+    if (url) {
       await fetch(`/api/recipes/${recipeId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl: d.url }),
+        body: JSON.stringify({ imageUrl: url }),
       })
       load()
     }

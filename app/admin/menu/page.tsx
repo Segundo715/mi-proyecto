@@ -4,6 +4,7 @@
 // Imágenes se suben a Supabase Storage vía /api/menu/upload y /api/settings/upload.
 import { useState, useEffect, useRef } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { uploadWebp } from '@/lib/uploadWebp'
 
 const S = {
   bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
@@ -77,24 +78,15 @@ export default function AdminMenuPage() {
 
   async function uploadMenuLogo(file: File) {
     setUploadingMenuLogo(true)
-    const fd = new FormData()
-    fd.append('file', file)
-    const r = await fetch('/api/settings/upload', { method: 'POST', body: fd })
-    const d = await r.json()
-    if (d.url) {
-      setMenuLogo(d.url)
-      await saveMenuSetting('menu_logo', d.url)
-    }
+    const url = await uploadWebp(file, '/api/settings/upload')
+    if (url) { setMenuLogo(url); await saveMenuSetting('menu_logo', url) }
     setUploadingMenuLogo(false)
   }
 
   async function addSlide(file: File) {
     setUploadingSlide(true)
-    const fd = new FormData()
-    fd.append('file', file)
-    const r = await fetch('/api/settings/upload', { method: 'POST', body: fd })
-    const d = await r.json()
-    if (d.url) setCarousel(prev => [...prev, { imageUrl: d.url, linkUrl: '' }])
+    const url = await uploadWebp(file, '/api/settings/upload')
+    if (url) setCarousel(prev => [...prev, { imageUrl: url, linkUrl: '' }])
     setUploadingSlide(false)
   }
 
@@ -154,9 +146,8 @@ export default function AdminMenuPage() {
 
   async function uploadImage(file: File) {
     setUploading(true)
-    const fd = new FormData(); fd.append('file', file)
-    const r = await fetch('/api/menu/upload', { method: 'POST', body: fd })
-    if (r.ok) { const d = await r.json(); setForm(p => ({ ...p, imageUrl: d.url })) }
+    const url = await uploadWebp(file, '/api/menu/upload')
+    if (url) setForm(p => ({ ...p, imageUrl: url }))
     setUploading(false)
   }
 

@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 import { DEFAULT_NAV, normalizeNavConfig, BUILTIN_ICONS, type NavConfig, type NavTab } from '@/app/components/CustomerNav'
+import { uploadWebp } from '@/lib/uploadWebp'
 
 const S = {
   bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
@@ -68,12 +69,9 @@ export default function AdminNavegadorPage() {
 
   async function uploadIcon(idx: number, file: File) {
     setUploadingIdx(idx)
-    const fd = new FormData()
-    fd.append('file', file)
     try {
-      const r = await fetch('/api/settings/upload', { method: 'POST', body: fd })
-      const d = await r.json()
-      if (d.url) updateTab(idx, { icon: d.url })
+      const url = await uploadWebp(file, '/api/settings/upload')
+      if (url) updateTab(idx, { icon: url })
     } finally {
       setUploadingIdx(null)
     }
