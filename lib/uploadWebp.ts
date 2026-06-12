@@ -28,8 +28,20 @@ async function browserToWebp(file: File): Promise<File> {
   })
 }
 
-export async function uploadWebp(file: File, apiUrl: string): Promise<string | null> {
+export function fmtBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+}
+
+// onSize recibe (bytesOriginal, bytesWebP) justo antes de subir — úsalo para mostrar en UI.
+export async function uploadWebp(
+  file: File,
+  apiUrl: string,
+  onSize?: (original: number, webp: number) => void,
+): Promise<string | null> {
   const webpFile = await browserToWebp(file)
+  onSize?.(file.size, webpFile.size)
   const fd = new FormData()
   fd.append('file', webpFile)
   try {

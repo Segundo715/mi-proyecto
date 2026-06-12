@@ -4,7 +4,7 @@
 // Imágenes se suben a Supabase Storage vía /api/menu/upload y /api/settings/upload.
 import { useState, useEffect, useRef } from 'react'
 import AdminNav from '@/app/components/AdminNav'
-import { uploadWebp } from '@/lib/uploadWebp'
+import { uploadWebp, fmtBytes } from '@/lib/uploadWebp'
 
 const S = {
   bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
@@ -28,6 +28,7 @@ export default function AdminMenuPage() {
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [imgSize, setImgSize] = useState<{ original: number; webp: number } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Personalización de /menu (logo, hover, fondo y botones inactivos)
@@ -146,7 +147,8 @@ export default function AdminMenuPage() {
 
   async function uploadImage(file: File) {
     setUploading(true)
-    const url = await uploadWebp(file, '/api/menu/upload')
+    setImgSize(null)
+    const url = await uploadWebp(file, '/api/menu/upload', (original, webp) => setImgSize({ original, webp }))
     if (url) setForm(p => ({ ...p, imageUrl: url }))
     setUploading(false)
   }
@@ -399,11 +401,24 @@ export default function AdminMenuPage() {
                   ? <img src={form.imageUrl} alt="" className="w-16 h-16 rounded-2xl object-cover shrink-0" />
                   : <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: S.bg }}>🍽️</div>
                 }
-                <button onClick={() => fileRef.current?.click()} disabled={uploading}
-                  className="flex-1 py-2.5 rounded-2xl text-sm font-bold border-dashed border-2 transition-all"
-                  style={{ borderColor: S.border, color: S.sub }}>
-                  {uploading ? 'Subiendo...' : 'Subir imagen'}
-                </button>
+                <div className="flex-1">
+                  <button onClick={() => fileRef.current?.click()} disabled={uploading}
+                    className="w-full py-2.5 rounded-2xl text-sm font-bold border-dashed border-2 transition-all"
+                    style={{ borderColor: S.border, color: S.sub }}>
+                    {uploading ? 'Convirtiendo y subiendo...' : 'Subir imagen'}
+                  </button>
+                  {imgSize && (
+                    <p className="text-xs mt-1.5 text-center" style={{ color: S.sub }}>
+                      {fmtBytes(imgSize.original)} → WebP {fmtBytes(imgSize.webp)}
+                      {' '}
+                      <span style={{ color: imgSize.webp < imgSize.original ? '#4ade80' : S.sub }}>
+                        ({imgSize.webp < imgSize.original
+                          ? `−${Math.round((1 - imgSize.webp / imgSize.original) * 100)}%`
+                          : `+${Math.round((imgSize.webp / imgSize.original - 1) * 100)}%`})
+                      </span>
+                    </p>
+                  )}
+                </div>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden"
                   onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0])} />
               </div>
