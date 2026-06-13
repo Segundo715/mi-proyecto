@@ -65,7 +65,7 @@ export default function EmployeeLoginPage() {
         <form onSubmit={handleSubmit} className="px-5 pb-5 pt-4 space-y-3">
           <div>
             <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#6b7a94' }}>Nombre</label>
-            <input type="text" value={name} onChange={e => setName(e.target.value)}
+            <input id="emp-username" name="username" type="text" value={name} onChange={e => setName(e.target.value)}
               placeholder="Ej. Carlos" autoComplete="username" autoFocus
               className={INPUT}
               style={{ backgroundColor: '#0a0e1c', border: '1px solid rgba(0,230,118,0.3)' }}
@@ -74,7 +74,7 @@ export default function EmployeeLoginPage() {
           </div>
           <div>
             <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#6b7a94' }}>Contraseña</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+            <input id="emp-password" name="password" type="password" value={password} onChange={e => setPassword(e.target.value)}
               placeholder="••••••••" autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
               className={INPUT}
               style={{ backgroundColor: '#0a0e1c', border: '1px solid rgba(0,230,118,0.3)' }}

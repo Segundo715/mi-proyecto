@@ -99,7 +99,7 @@ export default function Resta3LoginPage() {
         <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3">
           <div>
             <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#475569' }}>Nombre</label>
-            <input type="text" value={name} onChange={e => { setName(e.target.value); setError('') }}
+            <input id="r3-username" name="username" type="text" value={name} onChange={e => { setName(e.target.value); setError('') }}
               placeholder="Ej. Carlos" autoComplete="username" autoFocus
               className={INPUT} style={inputStyle}
               onFocus={e => e.currentTarget.style.borderColor = accentHex}
@@ -107,7 +107,7 @@ export default function Resta3LoginPage() {
           </div>
           <div>
             <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#475569' }}>Contraseña</label>
-            <input type="password" value={password} onChange={e => { setPassword(e.target.value); setError('') }}
+            <input id="r3-password" name="password" type="password" value={password} onChange={e => { setPassword(e.target.value); setError('') }}
               placeholder="••••••••" autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
               className={INPUT} style={inputStyle}
               onFocus={e => e.currentTarget.style.borderColor = accentHex}
@@ -117,7 +117,7 @@ export default function Resta3LoginPage() {
           {tab === 'register' && (
             <div>
               <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#475569' }}>Confirmar contraseña</label>
-              <input type="password" value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); setError('') }}
+              <input id="r3-confirm-password" name="confirm_password" type="password" value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); setError('') }}
                 placeholder="••••••••" autoComplete="new-password"
                 className={INPUT} style={inputStyle}
                 onFocus={e => e.currentTarget.style.borderColor = accentHex}
