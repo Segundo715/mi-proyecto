@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
 
-export type AIRole = 'cook' | 'staff' | 'customer' | 'admin' | 'recipe'
+export type AIRole = 'cook' | 'staff' | 'customer' | 'admin' | 'recipe' | 'resta3' | 'employee'
 export interface QuickAction { label: string; message: string; emoji?: string }
 interface MenuItem { id: string; name: string; price: number; imageUrl?: string; description: string; available: boolean }
 interface Msg { role: 'user' | 'assistant'; content: string; cards?: MenuItem[]; isError?: boolean }
@@ -12,13 +12,16 @@ const CFG: Record<AIRole, { title: string; icon: string; placeholder: string; gr
   cook:     { title: 'Chef Asistente',  icon: '👨‍🍳', placeholder: '¿Pasos de receta? ¿Pedidos activos?',   greeting: '¡Hola chef! Tengo el recetario completo y pedidos en tiempo real. Toca una receta o pregúntame algo.',            accent: '#f97316' },
   staff:    { title: 'Asistente',       icon: '🤖',   placeholder: '¿Pedidos pendientes? ¿Estado de mesa?', greeting: '¡Hola! Puedo darte info de pedidos, tiempos y menú. ¿En qué te ayudo?',                                        accent: '#06b6d4' },
   customer: { title: 'Asistente',       icon: '✨',   placeholder: '¿Qué se te antoja hoy?',               greeting: '¡Hola! Puedo recomendarte platillos, darte el estado de tu pedido o el tiempo estimado.\n\nToca 🎤 para hablar.', accent: '#ec4899' },
-  admin:    { title: 'Admin IA',        icon: '📊',   placeholder: 'Ventas, pedidos, tendencias…',          greeting: '¡Hola! Tengo todos los datos del restaurante en tiempo real. ¿Qué quieres analizar?',                            accent: '#a78bfa' },
+  admin:    { title: 'Admin IA',        icon: '📊',   placeholder: 'Ventas, pedidos, tendencias…',          greeting: '¡Hola! Tengo acceso completo: ventas, pedidos, reseñas, menú, tarjetas de lealtad. ¿Qué analizamos?',             accent: '#a78bfa' },
   recipe:   { title: 'Chef Virtual',    icon: '📖',   placeholder: '¿Cómo se prepara…? ¿Puedo sustituir…?', greeting: '¡Hola! Soy tu chef virtual. Explico recetas paso a paso y sugiero variaciones. ¿En qué te ayudo?',                accent: '#22d3ee' },
+  resta3:   { title: 'Operaciones',     icon: '🏪',   placeholder: 'Mesas, inventario, pedidos, ventas…',   greeting: '¡Hola! Tengo el estado en tiempo real: mesas, pedidos activos, inventario y ventas del día. ¿Qué necesitas?',    accent: '#00e676' },
+  employee: { title: 'Asistente',       icon: '🛎️',   placeholder: '¿Pedidos? ¿Tarjetas pendientes?',       greeting: '¡Hola! Puedo mostrarte pedidos activos, tarjetas de lealtad pendientes y disponibilidad del menú.',               accent: '#38bdf8' },
 }
 
 function getRoleFromPath(path: string): AIRole {
   if (path.includes('/resta3/cocina'))                       return 'cook'
-  if (path.includes('/resta3'))                              return 'staff'
+  if (path.includes('/resta3'))                              return 'resta3'
+  if (path.includes('/employee'))                            return 'employee'
   if (path.includes('/admin'))                               return 'admin'
   if (path.includes('/reseta') || path.includes('/receta'))  return 'recipe'
   return 'customer'
