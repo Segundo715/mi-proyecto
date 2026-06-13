@@ -17,9 +17,17 @@ const nextConfig: NextConfig = {
       {
         source: '/(.*)',
         headers: [
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options',        value: 'SAMEORIGIN' },
-          { key: 'Referrer-Policy',         value: 'strict-origin-when-cross-origin' },
+          { key: 'X-Content-Type-Options',  value: 'nosniff' },
+          { key: 'Referrer-Policy',          value: 'strict-origin-when-cross-origin' },
+          { key: 'Content-Security-Policy',  value: "frame-ancestors 'self'" },
+          { key: 'Permissions-Policy',       value: 'camera=(), microphone=(self), geolocation=()' },
+        ],
+      },
+      {
+        // Páginas HTML dinámicas — sin caché para que siempre sean frescas
+        source: '/((?!_next/static|_next/image|favicon.ico).*)',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache' },
         ],
       },
     ]

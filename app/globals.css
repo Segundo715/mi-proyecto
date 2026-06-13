@@ -57,7 +57,7 @@
 }
 
 html {
-  -webkit-text-size-adjust: 100%;
+  /* text-size-adjust: prefixed ya lo añade Tailwind preflight; solo incluimos el estándar */
   text-size-adjust: 100%;
 }
 
