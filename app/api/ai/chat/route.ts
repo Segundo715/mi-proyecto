@@ -1,6 +1,6 @@
-// Groq (Llama 3.3 70B) — streaming de texto.
-// Para el rol "customer" el cliente envía menuContext para evitar
-// llamadas extra a Supabase y cumplir el timeout de 10 s de Vercel Hobby.
+// Edge Runtime: sin cold starts, límite 30s (vs 10s Lambda). Resuelve timeouts en Vercel Hobby.
+export const runtime = 'edge'
+
 import { getAllOrders } from '@/lib/ordersDb'
 import { getAllMenuItems } from '@/lib/menuDb'
 import { getAllRecipes } from '@/lib/recipeDb'
@@ -176,7 +176,7 @@ export async function POST(req: Request) {
           model,
           messages: [{ role: 'system', content: system }, ...cleanMsgs],
           stream: true,
-          max_tokens: isCustomer ? 500 : 600,
+          max_tokens: isCustomer ? 200 : 600,
           temperature: 0.65,
         }),
         signal: groqCtrl.signal,
