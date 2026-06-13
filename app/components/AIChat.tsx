@@ -15,7 +15,7 @@ const CFG: Record<AIRole, { title: string; icon: string; placeholder: string; gr
   admin:    { title: 'Admin IA',        icon: '📊',   placeholder: 'Ventas, pedidos, tendencias…',          greeting: '¡Hola! Tengo acceso completo: ventas, pedidos, reseñas, menú, tarjetas de lealtad. ¿Qué analizamos?',             accent: '#a78bfa' },
   recipe:   { title: 'Chef Virtual',    icon: '📖',   placeholder: '¿Cómo se prepara…? ¿Puedo sustituir…?', greeting: '¡Hola! Soy tu chef virtual. Explico recetas paso a paso y sugiero variaciones. ¿En qué te ayudo?',                accent: '#22d3ee' },
   resta3:   { title: 'Operaciones',     icon: '🏪',   placeholder: 'Mesas, inventario, pedidos, ventas…',   greeting: '¡Hola! Tengo el estado en tiempo real: mesas, pedidos activos, inventario y ventas del día. ¿Qué necesitas?',    accent: '#00e676' },
-  employee: { title: 'Asistente',       icon: '🛎️',   placeholder: '¿Pedidos? ¿Tarjetas pendientes?',       greeting: '¡Hola! Puedo mostrarte pedidos activos, tarjetas de lealtad pendientes y disponibilidad del menú.',               accent: '#38bdf8' },
+  employee: { title: 'Asistente',       icon: '🛎️',   placeholder: '¿Receta? ¿Pedidos? ¿Tarjetas?',         greeting: '¡Hola! Tengo el recetario completo, pedidos activos y tarjetas de lealtad. Toca una receta o pregúntame algo.',  accent: '#38bdf8' },
 }
 
 function getRoleFromPath(path: string): AIRole {
@@ -108,7 +108,7 @@ export default function AIChat({
   }, [])
 
   useEffect(() => {
-    if (role !== 'cook') return
+    if (role !== 'cook' && role !== 'employee') return
     fetch('/api/recipes').then(r => r.json()).then((d: { name: string }[]) => {
       if (!Array.isArray(d)) return
       setAutoActions(d.map(r => ({
@@ -253,7 +253,7 @@ export default function AIChat({
     setBusy(false)
   }
 
-  const effectiveActions = quickActions ?? (role === 'cook' && autoActions.length > 0 ? autoActions : undefined)
+  const effectiveActions = quickActions ?? ((role === 'cook' || role === 'employee') && autoActions.length > 0 ? autoActions : undefined)
   const posClass = position === 'bottom-left' ? 'bottom-6 left-6' : 'bottom-6 right-6'
 
   return (

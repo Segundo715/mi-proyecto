@@ -79,8 +79,8 @@ ${menu.map(m => `${m.name} $${m.price} (${m.available ? '✓ disponible' : '✗ 
 ${recipesText}`
   }
 
-  // ── MESERO / STAFF (panel empleado) ──
-  if (role === 'staff' || role === 'employee') {
+  // ── MESERO / STAFF (resta3) ──
+  if (role === 'staff') {
     const [orders, menu, cards] = await Promise.all([
       safe(getAllOrders(), []),
       safe(getAllMenuItems(), []),
@@ -94,8 +94,7 @@ ${recipesText}`
     }).join('\n')
 
     return `${base}
-Rol: MESERO/EMPLEADO — gestionas pedidos, tarjetas de lealtad y atención al cliente.
-Puedes informar sobre el estado de cualquier pedido, qué hay en el menú y cuántos sellos tiene un cliente.
+Rol: MESERO — gestionas pedidos, tarjetas de lealtad y atención al cliente.
 
 ## PEDIDOS ACTIVOS (${active.length})
 ${ordersText}
@@ -104,7 +103,42 @@ ${ordersText}
 ${menu.filter(m => m.available).map(m => `${m.name} $${m.price} — ${m.category}`).join('\n')}
 
 ## TARJETAS DE LEALTAD
-Total registradas: ${cards.length} | Activas: ${cards.filter(c => c.active).length} | Pendientes de activar: ${pending}`
+Total: ${cards.length} | Activas: ${cards.filter(c => c.active).length} | Pendientes de activar: ${pending}`
+  }
+
+  // ── EMPLEADO (panel /employee) — pedidos + recetario completo + menú + tarjetas ──
+  if (role === 'employee') {
+    const [orders, menu, recipes, cards] = await Promise.all([
+      safe(getAllOrders(), []),
+      safe(getAllMenuItems(), []),
+      safe(getAllRecipes(), []),
+      safe(getAllCards(), []),
+    ])
+    const active  = orders.filter(o => o.status !== 'delivered').slice(0, 40)
+    const pending = cards.filter(c => !c.active).length
+    const ordersText = active.length === 0 ? 'Sin pedidos activos.' : active.map(o => {
+      const loc = o.notes?.match(/^\[(\w+)\]/)?.[1] ?? (o.tableNumber ? `Mesa ${o.tableNumber}` : 'sin mesa')
+      return `• [${o.id.slice(-4)}] ${o.customerName} | ${loc} | ${labels[o.status] ?? o.status} | ${age(o.createdAt)} | ${o.items.map(i => `${i.quantity}×${i.name}`).join(', ')} | $${o.total ?? 0}`
+    }).join('\n')
+    const recipesText = recipes.map(r =>
+      `▸ ${r.name}\n  Ingredientes: ${r.ingredients.join(', ')}\n  Pasos: ${r.steps.map((s, i) => `${i + 1}. ${s}`).join(' → ')}`
+    ).join('\n\n')
+
+    return `${base}
+Rol: EMPLEADO — conoces pedidos en tiempo real, el recetario completo y tarjetas de lealtad.
+Cuando te pregunten por una receta da los pasos NUMERADOS uno por uno. Si dicen "siguiente" continúa donde quedaste.
+
+## PEDIDOS ACTIVOS (${active.length})
+${ordersText}
+
+## MENÚ DISPONIBLE
+${menu.filter(m => m.available).map(m => `${m.name} $${m.price} — ${m.category}`).join('\n')}
+
+## RECETARIO COMPLETO
+${recipesText}
+
+## TARJETAS DE LEALTAD
+Total: ${cards.length} | Activas: ${cards.filter(c => c.active).length} | Pendientes de activar: ${pending}`
   }
 
   // ── RESTA3 ──
