@@ -1,5 +1,6 @@
-// Edge Runtime: sin cold starts, límite 30s (vs 10s Lambda). Resuelve timeouts en Vercel Hobby.
-export const runtime = 'edge'
+// maxDuration extiende el tiempo de ejecución para funciones de streaming en Vercel.
+// Edge Runtime causaba 401 porque Vercel no inyecta env vars sensibles en ese contexto.
+export const maxDuration = 60
 
 import { getAllOrders } from '@/lib/ordersDb'
 import { getAllMenuItems } from '@/lib/menuDb'
@@ -130,7 +131,7 @@ function streamText(text: string): Response {
 
 export async function POST(req: Request) {
   try {
-    const apiKey = process.env.GROQ_API_KEY
+    const apiKey = (process.env.GROQ_API_KEY ?? '').trim()
     if (!apiKey) return streamText('El asistente IA no está configurado en este servidor. Contacta al administrador.')
 
     const body = await req.json()
@@ -163,7 +164,7 @@ export async function POST(req: Request) {
     )
 
     const model       = isCustomer ? MODEL_FAST : MODEL_POWERFUL
-    const groqMs      = isCustomer ? 8000 : 6000
+    const groqMs      = isCustomer ? 25000 : 20000
 
     const groqCtrl    = new AbortController()
     const groqTimeout = setTimeout(() => groqCtrl.abort(), groqMs)
@@ -190,6 +191,8 @@ export async function POST(req: Request) {
     if (!groqRes.ok) {
       const msg = groqRes.status === 429
         ? 'El asistente alcanzó su límite de uso. Intenta en unos minutos.'
+        : groqRes.status === 401
+        ? 'La clave de IA no es válida. Verifica GROQ_API_KEY en Vercel → Settings → Environment Variables.'
         : `Error al contactar la IA (${groqRes.status}). Intenta de nuevo.`
       return streamText(msg)
     }
