@@ -149,13 +149,33 @@ export default function AIChat({
     const R = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     const rec = new R()
     rec.lang = 'es-MX'; rec.continuous = false; rec.interimResults = false
+
+    let handled = false
+
     rec.onresult = (e: any) => {
-      const text: string = e.results[0][0].transcript
+      handled = true
+      const text: string = (e.results[0][0].transcript ?? '').trim()
       setListening(false)
+      if (!text) { showToast('No se entendió. Intenta de nuevo.'); return }
+      if (busy) {
+        setInput(text)
+        showToast('Escrito en el campo — espera a que termine la respuesta.')
+        return
+      }
       sendMessage(text)
     }
-    rec.onerror = () => setListening(false)
-    rec.onend   = () => setListening(false)
+    rec.onerror = (e: any) => {
+      if (handled) return
+      handled = true
+      setListening(false)
+      if (e.error === 'no-speech')   showToast('No se detectó voz. Habla más cerca del micrófono.')
+      else if (e.error === 'network') showToast('Sin conexión para reconocimiento de voz.')
+      else if (e.error !== 'aborted') showToast('Error de micrófono. Intenta de nuevo.')
+    }
+    rec.onend = () => {
+      if (!handled) showToast('No se detectó voz. Intenta de nuevo.')
+      setListening(false)
+    }
     recogRef.current = rec; rec.start(); setListening(true)
   }
 
