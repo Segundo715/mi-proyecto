@@ -63,7 +63,7 @@ const MODULOS: Modulo[] = [
     id: 4, icono: '📖', titulo: 'Recetario con IA',
     grupo: 'empleado', rol: 'Empleado', rolIcon: '👷', color: '#10b981',
     desc: 'El empleado consulta recetas paso a paso. El asistente de IA le guía en ingredientes y preparación.',
-    url: '/resetas', urlLabel: 'Ver recetario',
+    url: '/employee/recipes', urlLabel: 'Ver recetario del empleado',
   },
   {
     id: 5, icono: '🛎️', titulo: 'Gestión de Pedidos',
