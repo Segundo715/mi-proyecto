@@ -9,70 +9,101 @@ const S = {
 }
 
 const TABS = [
-  { id: 'diagnostico',   icono: '🔍', titulo: 'Diagnóstico',   color: '#ef4444' },
-  { id: 'analisis',      icono: '📋', titulo: 'Análisis',       color: '#f59e0b' },
-  { id: 'diseno',        icono: '🏗️', titulo: 'Diseño',         color: '#06b6d4' },
-  { id: 'elaboracion',   icono: '⚙️', titulo: 'Elaboración',    color: '#10b981' },
-  { id: 'implantacion',  icono: '🚀', titulo: 'Implantación',   color: '#a78bfa' },
+  { id: 'diagnostico',  icono: '🔍', titulo: 'Diagnóstico',  color: '#ef4444' },
+  { id: 'analisis',     icono: '📋', titulo: 'Análisis',      color: '#f59e0b' },
+  { id: 'diseno',       icono: '🏗️', titulo: 'Diseño',        color: '#06b6d4' },
+  { id: 'elaboracion',  icono: '⚙️', titulo: 'Elaboración',   color: '#10b981' },
+  { id: 'implantacion', icono: '🚀', titulo: 'Implantación',  color: '#a78bfa' },
 ]
 
-type FaseEstado = 'idle' | 'loading' | 'done' | 'error'
+// Cada módulo se revela uno por uno durante la presentación
+interface Modulo {
+  id: number
+  icono: string
+  titulo: string
+  rol: string
+  rolIcon: string
+  color: string
+  desc: string
+  url: string
+  urlLabel: string
+  seed?: () => Promise<{ ok: boolean; created?: number }>
+}
 
-const FASES = [
+const MODULOS: Modulo[] = [
   {
-    num: 1, titulo: 'Menú Digital', color: '#ec4899', icono: '🍽️',
-    rol: 'Usuario / Cliente', rolIcon: '👥',
-    desc: 'El cliente escanea el QR del restaurante y ve el menú completo desde su teléfono, sin instalar ninguna app.',
-    acciones: [
-      { label: 'Ver menú como cliente', url: '/menu', principal: true },
-      { label: 'Registrarse en lealtad', url: '/registro' },
-    ],
+    id: 1, icono: '🍽️', titulo: 'Menú Digital',
+    rol: 'Usuario / Cliente', rolIcon: '👥', color: '#ec4899',
+    desc: 'El cliente escanea el QR y ve el menú completo desde su teléfono. Sin app.',
+    url: '/menu', urlLabel: 'Ver menú',
+    seed: () => fetch('/api/menu/seed', { method: 'POST' }).then(r => r.json()),
   },
   {
-    num: 2, titulo: 'Recetario y Pedidos', color: '#06b6d4', icono: '👨‍🍳',
-    rol: 'Empleado', rolIcon: '👷',
-    desc: 'El empleado consulta recetas paso a paso con la IA, gestiona pedidos y sella tarjetas de lealtad.',
-    acciones: [
-      { label: 'Panel de empleado', url: '/employee', principal: true },
-      { label: 'Ver recetario', url: '/resetas' },
-    ],
+    id: 2, icono: '⭐', titulo: 'Reseñas',
+    rol: 'Usuario / Cliente', rolIcon: '👥', color: '#f59e0b',
+    desc: 'El cliente deja una reseña al terminar. Las negativas llegan por email al dueño al instante.',
+    url: '/review', urlLabel: 'Ver reseñas',
   },
   {
-    num: 3, titulo: 'Panel Administrativo', color: '#a78bfa', icono: '📊',
-    rol: 'Administrador', rolIcon: '👑',
-    desc: 'El administrador ve analíticas de ventas, gestiona el menú, reseñas, inventario y configuración del restaurante.',
-    acciones: [
-      { label: 'Abrir panel admin', url: '/admin', principal: true },
-      { label: 'Ver analíticas', url: '/admin/analytics' },
-    ],
+    id: 3, icono: '💳', titulo: 'Tarjetas de Lealtad',
+    rol: 'Usuario / Cliente', rolIcon: '👥', color: '#06b6d4',
+    desc: 'El cliente acumula sellos digitales. A los 5 sella, gana su recompensa.',
+    url: '/card', urlLabel: 'Ver tarjeta',
+  },
+  {
+    id: 4, icono: '📖', titulo: 'Recetario',
+    rol: 'Empleado', rolIcon: '👷', color: '#10b981',
+    desc: 'El empleado consulta recetas paso a paso. La IA le guía si tiene dudas.',
+    url: '/resetas', urlLabel: 'Ver recetario',
+  },
+  {
+    id: 5, icono: '📦', titulo: 'Pedidos en Tiempo Real',
+    rol: 'Empleado', rolIcon: '👷', color: '#38bdf8',
+    desc: 'Los pedidos pasan de pendiente → preparando → listo → entregado en segundos.',
+    url: '/employee', urlLabel: 'Panel empleado',
+  },
+  {
+    id: 6, icono: '📊', titulo: 'Panel Administrativo',
+    rol: 'Administrador', rolIcon: '👑', color: '#a78bfa',
+    desc: 'El dueño ve ventas, analíticas, inventario y configura el sistema completo.',
+    url: '/admin', urlLabel: 'Abrir admin',
   },
 ]
 
 export default function SeleiPage() {
-  const [activa, setActiva]   = useState(0)
-  const [faseEst, setFaseEst] = useState<Record<number, FaseEstado>>({})
-  const [faseMsg, setFaseMsg] = useState<Record<number, string>>({})
+  const [activa,    setActiva]    = useState(0)
+  // cuántos módulos están visibles (empieza en 0 = ninguno revelado)
+  const [revelados, setRevelados] = useState(0)
+  const [sembrando, setSembrando] = useState(false)
+  const [seedMsg,   setSeedMsg]   = useState('')
 
-  async function activarFase(num: number) {
-    if (num !== 1) return // solo fase 1 requiere seed
-    setFaseEst(p => ({ ...p, [num]: 'loading' }))
-    try {
-      const res = await fetch('/api/menu/seed', { method: 'POST' }).then(r => r.json())
-      if (res.ok) {
-        const txt = res.created === 0 ? 'Datos ya cargados — listo para mostrar' : `${res.created} platillos insertados correctamente`
-        setFaseMsg(p => ({ ...p, [num]: txt }))
-        setFaseEst(p => ({ ...p, [num]: 'done' }))
-      } else {
-        setFaseEst(p => ({ ...p, [num]: 'error' }))
-        setFaseMsg(p => ({ ...p, [num]: 'Error al cargar datos' }))
+  async function revelarSiguiente() {
+    const siguiente = revelados + 1
+    if (siguiente > MODULOS.length) return
+
+    const modulo = MODULOS[siguiente - 1]
+
+    // Si el módulo tiene seed (solo menú), lo ejecuta primero
+    if (modulo.seed) {
+      setSembrando(true)
+      setSeedMsg('')
+      try {
+        const res = await modulo.seed()
+        setSeedMsg(res.created === 0 ? 'Datos ya cargados' : `${res.created} platillos insertados`)
+      } catch {
+        setSeedMsg('Error al cargar datos')
       }
-    } catch {
-      setFaseEst(p => ({ ...p, [num]: 'error' }))
-      setFaseMsg(p => ({ ...p, [num]: 'Error de conexión' }))
+      setSembrando(false)
     }
+
+    setRevelados(siguiente)
   }
 
+  function reiniciar() { setRevelados(0); setSeedMsg('') }
+
   const tab = TABS[activa]
+  const modulosVisibles = MODULOS.slice(0, revelados)
+  const hayMas = revelados < MODULOS.length
 
   function renderContenido() {
     switch (tab.id) {
@@ -85,17 +116,17 @@ export default function SeleiPage() {
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
-                { prob: 'Menú solo en papel',       imp: 'Clientes no pueden verlo desde su teléfono' },
-                { prob: 'Sin sistema de lealtad',   imp: 'Se pierden clientes frecuentes, sin registro' },
-                { prob: 'Pedidos por libreta',      imp: 'Errores, pedidos perdidos, sin trazabilidad' },
-                { prob: 'Recetas solo en memoria',  imp: 'Si falta el chef, la producción se para' },
-                { prob: 'Sin analíticas de ventas', imp: 'El dueño no sabe qué platillos venden más' },
-                { prob: 'Reseñas ignoradas',        imp: 'La reputación cae sin que el dueño lo note' },
-              ].map((item, i) => (
+                ['Menú solo en papel',       'Clientes no pueden verlo desde su teléfono'],
+                ['Sin sistema de lealtad',   'Se pierden clientes frecuentes, sin registro'],
+                ['Pedidos por libreta',      'Errores, pedidos perdidos, sin trazabilidad'],
+                ['Recetas solo en memoria',  'Si falta el chef, la producción se para'],
+                ['Sin analíticas de ventas', 'El dueño no sabe qué platillos venden más'],
+                ['Reseñas ignoradas',        'La reputación cae sin que el dueño lo note'],
+              ].map(([prob, imp], i) => (
                 <div key={i} className="rounded-xl p-3.5 space-y-1"
                   style={{ backgroundColor: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
-                  <p className="text-xs font-black" style={{ color: '#f87171' }}>❌ {item.prob}</p>
-                  <p className="text-xs" style={{ color: S.sub }}>{item.imp}</p>
+                  <p className="text-xs font-black" style={{ color: '#f87171' }}>❌ {prob}</p>
+                  <p className="text-xs" style={{ color: S.sub }}>{imp}</p>
                 </div>
               ))}
             </div>
@@ -106,9 +137,9 @@ export default function SeleiPage() {
         return (
           <div className="space-y-4">
             {[
-              { rol: '🛒 Clientes', color: '#ec4899', items: ['Ver menú digital escaneando un QR', 'Registrarse en programa de lealtad', 'Ver sellos acumulados y recompensas', 'Consultar el recetario', 'Dejar reseña del servicio'] },
-              { rol: '👷 Empleados', color: '#06b6d4', items: ['Iniciar sesión con usuario y contraseña', 'Sellar tarjetas escaneando el QR del cliente', 'Consultar recetas con asistente de IA', 'Ver y actualizar estado de pedidos'] },
-              { rol: '📊 Administradores', color: '#a78bfa', items: ['Analíticas de ventas del día, semana y mes', 'Gestionar menú (agregar, editar, desactivar)', 'Alertas automáticas de reseñas negativas', 'Configurar logo, colores y nombre del restaurante', 'Plano de mesas y reservaciones'] },
+              { rol: '👥 Usuarios / Clientes', color: '#ec4899', items: ['Ver menú digital escaneando un QR','Registrarse en programa de lealtad','Ver sellos acumulados y recompensas','Consultar el recetario','Dejar reseña del servicio'] },
+              { rol: '👷 Empleados', color: '#06b6d4', items: ['Iniciar sesión con usuario y contraseña','Sellar tarjetas escaneando QR del cliente','Consultar recetas con asistente de IA','Ver y actualizar estado de pedidos'] },
+              { rol: '👑 Administradores', color: '#a78bfa', items: ['Analíticas de ventas del día, semana y mes','Gestionar menú (agregar, editar, desactivar)','Alertas automáticas de reseñas negativas','Configurar logo, colores y nombre','Plano de mesas y reservaciones'] },
             ].map((g, i) => (
               <div key={i} className="rounded-xl p-4" style={{ border: `1px solid ${g.color}25`, backgroundColor: `${g.color}08` }}>
                 <p className="text-sm font-black mb-2.5" style={{ color: g.color }}>{g.rol}</p>
@@ -133,27 +164,23 @@ export default function SeleiPage() {
                 { label: 'Empleados  /employee/*', color: '#06b6d4', icon: '👷' },
                 { label: 'RESTA3  /resta3/*', color: '#00e676', icon: '🏪' },
                 { label: 'Administrador  /admin/*', color: '#a78bfa', icon: '👑' },
-                { label: 'API Propia  /api/*  →  Autenticación · Datos · IA', color: '#f59e0b', icon: '⚙️' },
-                { label: 'Supabase  Base de datos en la nube', color: '#3b82f6', icon: '🗄️' },
-              ].map((capa, i, arr) => (
+                { label: 'API Propia  /api/*', color: '#f59e0b', icon: '⚙️' },
+                { label: 'Supabase — Base de datos en la nube', color: '#3b82f6', icon: '🗄️' },
+              ].map((c, i, arr) => (
                 <div key={i} className="flex items-center gap-3 px-4 py-3"
-                  style={{ borderBottom: i < arr.length - 1 ? '1px solid var(--ad-border)' : 'none', backgroundColor: `${capa.color}08` }}>
-                  <span className="text-lg">{capa.icon}</span>
-                  <span className="text-xs font-bold" style={{ color: capa.color }}>{capa.label}</span>
+                  style={{ borderBottom: i < arr.length - 1 ? '1px solid var(--ad-border)' : 'none', backgroundColor: `${c.color}08` }}>
+                  <span className="text-lg">{c.icon}</span>
+                  <span className="text-xs font-bold" style={{ color: c.color }}>{c.label}</span>
                 </div>
               ))}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {[
-                ['🍽️','Menú Digital'],['💳','Tarjetas Lealtad'],['📦','Pedidos'],
-                ['👨‍🍳','Recetario IA'],['⭐','Reseñas'],['📦','Inventario'],
-                ['📊','Analíticas'],['📺','Señalización TV'],['🗓️','Reservaciones'],['⚙️','Configuración'],
-              ].map(([ic, nm], i) => (
+              {[['🍽️','Menú Digital'],['💳','Lealtad'],['📦','Pedidos'],['👨‍🍳','Recetario IA'],['⭐','Reseñas'],['📦','Inventario'],['📊','Analíticas'],['📺','TV'],['🗓️','Reservaciones'],['⚙️','Config']].map(([ic, nm], i) => (
                 <div key={i} className="rounded-xl p-3 flex items-center gap-2"
                   style={{ backgroundColor: S.bg, border: '1px solid var(--ad-border)' }}>
-                  <span className="text-base">{ic}</span>
+                  <span>{ic}</span>
                   <div>
-                    <p className="text-[10px] font-black" style={{ color: 'var(--ad-accent)' }}>M{String(i + 1).padStart(2, '0')}</p>
+                    <p className="text-[10px] font-black" style={{ color: 'var(--ad-accent)' }}>M{String(i+1).padStart(2,'0')}</p>
                     <p className="text-xs font-bold" style={{ color: S.text }}>{nm}</p>
                   </div>
                 </div>
@@ -164,93 +191,88 @@ export default function SeleiPage() {
 
       case 'elaboracion':
         return (
-          <div className="space-y-6">
-            {/* Stack */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {[
-                ['Interfaz','Next.js 16 + React 19','Velocidad y SEO'],
-                ['Base de datos','Supabase (PostgreSQL)','Tiempo real, nube'],
-                ['Inteligencia Artificial','Groq API · Llama 3','Respuestas rápidas'],
-                ['Deploy','Vercel','HTTPS, CDN global, gratis'],
-              ].map(([capa, tech, desc], i) => (
-                <div key={i} className="rounded-xl p-3 flex justify-between items-start gap-2"
-                  style={{ backgroundColor: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: '#10b981' }}>{capa}</p>
-                    <p className="text-xs font-black mt-0.5" style={{ color: S.text }}>{tech}</p>
+          <div className="space-y-4">
+            <p className="text-sm leading-relaxed" style={{ color: S.sub }}>
+              El sistema se presenta módulo por módulo. Empieza con el menú y activa cada función cuando el público esté listo.
+            </p>
+
+            {/* Módulos revelados */}
+            <div className="space-y-3">
+              {modulosVisibles.map((mod, idx) => (
+                <div key={mod.id}
+                  className="rounded-xl p-4 flex items-start gap-3 animate-[fadeIn_0.4s_ease]"
+                  style={{ border: `1px solid ${mod.color}35`, backgroundColor: `${mod.color}08` }}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
+                    style={{ backgroundColor: mod.color, color: '#fff' }}>{mod.icono}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-black" style={{ color: mod.color }}>{mod.titulo}</p>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: `${mod.color}20`, color: mod.color }}>
+                        {mod.rolIcon} {mod.rol}
+                      </span>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#10b981' }}>
+                        ✓ Activo
+                      </span>
+                    </div>
+                    <p className="text-xs mt-1" style={{ color: S.sub }}>{mod.desc}</p>
+                    {/* Mensaje seed si aplica */}
+                    {idx === 0 && seedMsg && (
+                      <p className="text-[11px] mt-1 font-medium" style={{ color: '#10b981' }}>📦 {seedMsg}</p>
+                    )}
+                    <a href={mod.url} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-2 text-xs font-bold px-3 py-1.5 rounded-xl transition-all hover:scale-105"
+                      style={{ backgroundColor: `${mod.color}20`, color: mod.color, border: `1px solid ${mod.color}40` }}>
+                      ↗ {mod.urlLabel}
+                    </a>
                   </div>
-                  <p className="text-[10px]" style={{ color: S.sub }}>{desc}</p>
                 </div>
               ))}
             </div>
 
-            {/* Método de inserción por fases */}
-            <div>
-              <p className="text-xs font-black uppercase tracking-widest mb-3" style={{ color: 'var(--ad-accent)' }}>
-                Método de inserción por fases
-              </p>
-              <div className="space-y-3">
-                {FASES.map(fase => {
-                  const st  = faseEst[fase.num] ?? 'idle'
-                  const msg = faseMsg[fase.num]
-                  return (
-                    <div key={fase.num} className="rounded-xl p-4 space-y-3"
-                      style={{ border: `1px solid ${fase.color}30`, backgroundColor: `${fase.color}08` }}>
-
-                      {/* Cabecera */}
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black shrink-0"
-                          style={{ backgroundColor: fase.color, color: '#000' }}>{fase.num}</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-black" style={{ color: fase.color }}>{fase.icono} {fase.titulo}</p>
-                            {st === 'done' && (
-                              <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
-                                style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#10b981' }}>✓ Activa</span>
-                            )}
-                          </div>
-                          {/* Badge de rol */}
-                          <span className="inline-flex items-center gap-1 mt-1 text-[11px] font-black px-2.5 py-0.5 rounded-full"
-                            style={{ backgroundColor: `${fase.color}22`, color: fase.color }}>
-                            {fase.rolIcon} {fase.rol}
-                          </span>
-                          <p className="text-xs mt-2 leading-relaxed" style={{ color: S.sub }}>{fase.desc}</p>
-                        </div>
-                      </div>
-
-                      {/* Mensaje resultado */}
-                      {msg && (
-                        <p className="text-xs px-3 py-2 rounded-lg font-medium"
-                          style={{
-                            backgroundColor: st === 'done' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                            color: st === 'done' ? '#10b981' : '#f87171',
-                          }}>{msg}</p>
-                      )}
-
-                      {/* Botones */}
-                      <div className="flex flex-wrap gap-2">
-                        {fase.num === 1 && (
-                          <button onClick={() => activarFase(1)}
-                            disabled={st === 'loading' || st === 'done'}
-                            className="px-4 py-2 rounded-xl text-xs font-black disabled:opacity-50 transition-all hover:scale-105"
-                            style={{ backgroundColor: fase.color, color: '#fff' }}>
-                            {st === 'loading' ? 'Cargando…' : st === 'done' ? '✓ Activada' : '⚡ Activar Fase 1'}
-                          </button>
-                        )}
-                        {fase.acciones.map(a => (
-                          <a key={a.url} href={a.url} target="_blank" rel="noopener noreferrer"
-                            className="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105"
-                            style={a.principal
-                              ? { backgroundColor: `${fase.color}20`, color: fase.color, border: `1px solid ${fase.color}40` }
-                              : { backgroundColor: S.bg, color: S.sub, border: `1px solid ${S.border}` }}>
-                            ↗ {a.label}
-                          </a>
-                        ))}
-                      </div>
+            {/* Módulos aún ocultos — se muestran como bloqueados */}
+            {revelados < MODULOS.length && (
+              <div className="space-y-2">
+                {MODULOS.slice(revelados).map(mod => (
+                  <div key={mod.id} className="rounded-xl px-4 py-3 flex items-center gap-3 opacity-30"
+                    style={{ border: '1px solid var(--ad-border)', backgroundColor: S.bg }}>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0"
+                      style={{ backgroundColor: S.card }}>🔒</div>
+                    <div>
+                      <p className="text-xs font-black" style={{ color: S.sub }}>{mod.icono} {mod.titulo}</p>
+                      <p className="text-[10px]" style={{ color: S.sub }}>{mod.rolIcon} {mod.rol}</p>
                     </div>
-                  )
-                })}
+                  </div>
+                ))}
               </div>
+            )}
+
+            {/* Botones de control */}
+            <div className="flex gap-3 pt-2">
+              {hayMas ? (
+                <button onClick={revelarSiguiente} disabled={sembrando}
+                  className="flex-1 py-3.5 rounded-2xl text-sm font-black disabled:opacity-60 transition-all hover:scale-[1.02] active:scale-95"
+                  style={{ backgroundColor: 'var(--ad-accent)', color: '#000' }}>
+                  {sembrando
+                    ? '⏳ Cargando datos…'
+                    : revelados === 0
+                      ? `⚡ Iniciar — Mostrar ${MODULOS[0].titulo}`
+                      : `➕ Mostrar siguiente: ${MODULOS[revelados].titulo}`}
+                </button>
+              ) : (
+                <div className="flex-1 py-3.5 rounded-2xl text-sm font-black text-center"
+                  style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>
+                  ✅ Todos los módulos presentados
+                </div>
+              )}
+              {revelados > 0 && (
+                <button onClick={reiniciar}
+                  className="px-4 py-3.5 rounded-2xl text-sm font-bold transition-all"
+                  style={{ backgroundColor: S.card, color: S.sub, border: `1px solid ${S.border}` }}>
+                  ↺ Reiniciar
+                </button>
+              )}
             </div>
           </div>
         )
@@ -261,21 +283,18 @@ export default function SeleiPage() {
             <div className="rounded-xl p-4 space-y-3"
               style={{ backgroundColor: 'rgba(167,139,250,0.06)', border: '1px solid rgba(167,139,250,0.2)' }}>
               <p className="text-xs font-black" style={{ color: '#a78bfa' }}>Pipeline de despliegue</p>
-              <div className="flex items-center gap-2 flex-wrap text-xs" style={{ color: S.sub }}>
-                {['Código (VS Code)', '→', 'GitHub', '→', 'Vercel (build auto)', '→', 'Producción 24/7'].map((s, i) => (
+              <div className="flex items-center gap-2 flex-wrap text-xs">
+                {['Código (VS Code)','→','GitHub','→','Vercel (build auto)','→','Producción 24/7'].map((s, i) => (
                   <span key={i} className={s === '→' ? '' : 'px-2.5 py-1 rounded-lg font-bold'}
-                    style={s !== '→' ? { backgroundColor: S.bg, color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' } : {}}>
+                    style={s !== '→' ? { backgroundColor: S.bg, color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' } : { color: S.sub }}>
                     {s}
                   </span>
                 ))}
               </div>
-              <p className="text-xs" style={{ color: S.sub }}>
-                Cada actualización llega a producción en menos de 2 minutos. Sin tiempo de inactividad.
-              </p>
+              <p className="text-xs" style={{ color: S.sub }}>Cada actualización llega a producción en menos de 2 minutos. Sin tiempo de inactividad.</p>
             </div>
-
             <div className="space-y-2">
-              <p className="text-xs font-black uppercase tracking-widest mb-3" style={{ color: 'var(--ad-accent)' }}>Resultados</p>
+              <p className="text-xs font-black uppercase tracking-widest mb-3" style={{ color: 'var(--ad-accent)' }}>Antes vs Después</p>
               {[
                 ['Menú en papel, se mancha y pierde',       'Menú digital actualizable en segundos'],
                 ['Sellos en tarjeta física que se olvidan', 'Tarjeta digital con QR, nunca se pierde'],
@@ -342,7 +361,7 @@ export default function SeleiPage() {
             <div>
               <h2 className="text-base font-black" style={{ color: S.text }}>{tab.titulo}</h2>
               <p className="text-xs" style={{ color: S.sub }}>
-                {['Situación actual del restaurante','Qué necesita el sistema','Arquitectura y módulos','Cómo se construyó el sistema','Sistema en producción real'][activa]}
+                {['Situación actual del restaurante','Qué necesita el sistema','Arquitectura y módulos','Demostración por módulos','Sistema en producción'][activa]}
               </p>
             </div>
           </div>
