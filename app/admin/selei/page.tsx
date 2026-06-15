@@ -20,22 +20,31 @@ type FaseEstado = 'idle' | 'loading' | 'done' | 'error'
 
 const FASES = [
   {
-    num: 1, titulo: 'Menú Digital', color: '#f59e0b', icono: '🍽️',
-    desc: '8 platillos en 5 categorías listos para mostrar al público',
-    url: '/menu',
-    urlLabel: 'Ver menú como cliente',
+    num: 1, titulo: 'Menú Digital', color: '#ec4899', icono: '🍽️',
+    rol: 'Usuario / Cliente', rolIcon: '👥',
+    desc: 'El cliente escanea el QR del restaurante y ve el menú completo desde su teléfono, sin instalar ninguna app.',
+    acciones: [
+      { label: 'Ver menú como cliente', url: '/menu', principal: true },
+      { label: 'Registrarse en lealtad', url: '/registro' },
+    ],
   },
   {
-    num: 2, titulo: 'Recetario y Empleados', color: '#10b981', icono: '👨‍🍳',
-    desc: 'Recetas paso a paso + asistente de IA para el personal',
-    url: '/resetas',
-    urlLabel: 'Ver recetario',
+    num: 2, titulo: 'Recetario y Pedidos', color: '#06b6d4', icono: '👨‍🍳',
+    rol: 'Empleado', rolIcon: '👷',
+    desc: 'El empleado consulta recetas paso a paso con la IA, gestiona pedidos y sella tarjetas de lealtad.',
+    acciones: [
+      { label: 'Panel de empleado', url: '/employee', principal: true },
+      { label: 'Ver recetario', url: '/resetas' },
+    ],
   },
   {
-    num: 3, titulo: 'Sistema Completo', color: '#a78bfa', icono: '📊',
-    desc: 'Analíticas, lealtad, inventario, reservaciones y más',
-    url: '/admin',
-    urlLabel: 'Abrir panel admin',
+    num: 3, titulo: 'Panel Administrativo', color: '#a78bfa', icono: '📊',
+    rol: 'Administrador', rolIcon: '👑',
+    desc: 'El administrador ve analíticas de ventas, gestiona el menú, reseñas, inventario y configuración del restaurante.',
+    acciones: [
+      { label: 'Abrir panel admin', url: '/admin', principal: true },
+      { label: 'Ver analíticas', url: '/admin/analytics' },
+    ],
   },
 ]
 
@@ -187,18 +196,26 @@ export default function SeleiPage() {
                   return (
                     <div key={fase.num} className="rounded-xl p-4 space-y-3"
                       style={{ border: `1px solid ${fase.color}30`, backgroundColor: `${fase.color}08` }}>
+
                       {/* Cabecera */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black shrink-0"
                           style={{ backgroundColor: fase.color, color: '#000' }}>{fase.num}</div>
-                        <div className="flex-1">
-                          <p className="text-sm font-black" style={{ color: fase.color }}>{fase.icono} {fase.titulo}</p>
-                          <p className="text-xs mt-0.5" style={{ color: S.sub }}>{fase.desc}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-black" style={{ color: fase.color }}>{fase.icono} {fase.titulo}</p>
+                            {st === 'done' && (
+                              <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                                style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#10b981' }}>✓ Activa</span>
+                            )}
+                          </div>
+                          {/* Badge de rol */}
+                          <span className="inline-flex items-center gap-1 mt-1 text-[11px] font-black px-2.5 py-0.5 rounded-full"
+                            style={{ backgroundColor: `${fase.color}22`, color: fase.color }}>
+                            {fase.rolIcon} {fase.rol}
+                          </span>
+                          <p className="text-xs mt-2 leading-relaxed" style={{ color: S.sub }}>{fase.desc}</p>
                         </div>
-                        {st === 'done' && (
-                          <span className="text-[11px] font-black px-2 py-0.5 rounded-full shrink-0"
-                            style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#10b981' }}>✓ Lista</span>
-                        )}
                       </div>
 
                       {/* Mensaje resultado */}
@@ -216,15 +233,19 @@ export default function SeleiPage() {
                           <button onClick={() => activarFase(1)}
                             disabled={st === 'loading' || st === 'done'}
                             className="px-4 py-2 rounded-xl text-xs font-black disabled:opacity-50 transition-all hover:scale-105"
-                            style={{ backgroundColor: fase.color, color: '#000' }}>
+                            style={{ backgroundColor: fase.color, color: '#fff' }}>
                             {st === 'loading' ? 'Cargando…' : st === 'done' ? '✓ Activada' : '⚡ Activar Fase 1'}
                           </button>
                         )}
-                        <a href={fase.url} target="_blank" rel="noopener noreferrer"
-                          className="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105"
-                          style={{ backgroundColor: `${fase.color}20`, color: fase.color, border: `1px solid ${fase.color}40` }}>
-                          ↗ {fase.urlLabel}
-                        </a>
+                        {fase.acciones.map(a => (
+                          <a key={a.url} href={a.url} target="_blank" rel="noopener noreferrer"
+                            className="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105"
+                            style={a.principal
+                              ? { backgroundColor: `${fase.color}20`, color: fase.color, border: `1px solid ${fase.color}40` }
+                              : { backgroundColor: S.bg, color: S.sub, border: `1px solid ${S.border}` }}>
+                            ↗ {a.label}
+                          </a>
+                        ))}
                       </div>
                     </div>
                   )
