@@ -21,6 +21,7 @@ interface Modulo {
   id: number
   icono: string
   titulo: string
+  grupo: 'usuario' | 'empleado' | 'admin'
   rol: string
   rolIcon: string
   color: string
@@ -30,43 +31,64 @@ interface Modulo {
   seed?: () => Promise<{ ok: boolean; created?: number }>
 }
 
+const GRUPOS = {
+  usuario:  { label: 'Usuario / Cliente',  icon: '👥', color: '#ec4899' },
+  empleado: { label: 'Empleado',           icon: '👷', color: '#38bdf8' },
+  admin:    { label: 'Administrador',      icon: '👑', color: '#a78bfa' },
+}
+
 const MODULOS: Modulo[] = [
+  // ── Usuarios / Clientes ──────────────────────────────────
   {
     id: 1, icono: '🍽️', titulo: 'Menú Digital',
-    rol: 'Usuario / Cliente', rolIcon: '👥', color: '#ec4899',
-    desc: 'El cliente escanea el QR y ve el menú completo desde su teléfono. Sin app.',
-    url: '/menu', urlLabel: 'Ver menú',
+    grupo: 'usuario', rol: 'Usuario / Cliente', rolIcon: '👥', color: '#ec4899',
+    desc: 'El cliente escanea el QR y ve el menú completo desde su teléfono. Sin instalar ninguna app.',
+    url: '/menu', urlLabel: 'Ver menú como cliente',
     seed: () => fetch('/api/menu/seed', { method: 'POST' }).then(r => r.json()),
   },
   {
     id: 2, icono: '⭐', titulo: 'Reseñas',
-    rol: 'Usuario / Cliente', rolIcon: '👥', color: '#f59e0b',
-    desc: 'El cliente deja una reseña al terminar. Las negativas llegan por email al dueño al instante.',
-    url: '/review', urlLabel: 'Ver reseñas',
+    grupo: 'usuario', rol: 'Usuario / Cliente', rolIcon: '👥', color: '#f59e0b',
+    desc: 'El cliente deja una reseña al terminar su visita. Las negativas generan alerta por email al dueño.',
+    url: '/review', urlLabel: 'Dejar reseña',
   },
   {
     id: 3, icono: '💳', titulo: 'Tarjetas de Lealtad',
-    rol: 'Usuario / Cliente', rolIcon: '👥', color: '#06b6d4',
-    desc: 'El cliente acumula sellos digitales. A los 5 sella, gana su recompensa.',
-    url: '/card', urlLabel: 'Ver tarjeta',
+    grupo: 'usuario', rol: 'Usuario / Cliente', rolIcon: '👥', color: '#06b6d4',
+    desc: 'El cliente acumula sellos digitales. Al completar los sellos, gana su recompensa automáticamente.',
+    url: '/card', urlLabel: 'Ver mi tarjeta',
   },
+  // ── Empleados ────────────────────────────────────────────
   {
-    id: 4, icono: '📖', titulo: 'Recetario',
-    rol: 'Empleado', rolIcon: '👷', color: '#10b981',
-    desc: 'El empleado consulta recetas paso a paso. La IA le guía si tiene dudas.',
+    id: 4, icono: '📖', titulo: 'Recetario con IA',
+    grupo: 'empleado', rol: 'Empleado', rolIcon: '👷', color: '#10b981',
+    desc: 'El empleado consulta recetas paso a paso. El asistente de IA le guía en ingredientes y preparación.',
     url: '/resetas', urlLabel: 'Ver recetario',
   },
   {
-    id: 5, icono: '📦', titulo: 'Pedidos en Tiempo Real',
-    rol: 'Empleado', rolIcon: '👷', color: '#38bdf8',
-    desc: 'Los pedidos pasan de pendiente → preparando → listo → entregado en segundos.',
-    url: '/employee', urlLabel: 'Panel empleado',
+    id: 5, icono: '🛎️', titulo: 'Gestión de Pedidos',
+    grupo: 'empleado', rol: 'Empleado', rolIcon: '👷', color: '#38bdf8',
+    desc: 'Los pedidos avanzan en tiempo real: pendiente → preparando → listo → entregado.',
+    url: '/employee', urlLabel: 'Panel de empleado',
   },
   {
-    id: 6, icono: '📊', titulo: 'Panel Administrativo',
-    rol: 'Administrador', rolIcon: '👑', color: '#a78bfa',
-    desc: 'El dueño ve ventas, analíticas, inventario y configura el sistema completo.',
-    url: '/admin', urlLabel: 'Abrir admin',
+    id: 6, icono: '💠', titulo: 'Sellar Tarjetas',
+    grupo: 'empleado', rol: 'Empleado', rolIcon: '👷', color: '#818cf8',
+    desc: 'El empleado escanea el QR del cliente con la cámara para agregar un sello a su tarjeta digital.',
+    url: '/employee', urlLabel: 'Panel de empleado',
+  },
+  // ── Administrador ────────────────────────────────────────
+  {
+    id: 7, icono: '📊', titulo: 'Analíticas y Ventas',
+    grupo: 'admin', rol: 'Administrador', rolIcon: '👑', color: '#a78bfa',
+    desc: 'El dueño ve ventas del día, semana y mes. Identifica los platillos más populares.',
+    url: '/admin/analytics', urlLabel: 'Ver analíticas',
+  },
+  {
+    id: 8, icono: '⚙️', titulo: 'Configuración General',
+    grupo: 'admin', rol: 'Administrador', rolIcon: '👑', color: '#c084fc',
+    desc: 'Logo, colores, nombre del restaurante y todos los módulos desde un solo panel.',
+    url: '/admin', urlLabel: 'Abrir panel admin',
   },
 ]
 
@@ -198,37 +220,50 @@ export default function SeleiPage() {
 
             {/* Módulos revelados */}
             <div className="space-y-3">
-              {modulosVisibles.map((mod, idx) => (
-                <div key={mod.id}
-                  className="rounded-xl p-4 flex items-start gap-3 animate-[fadeIn_0.4s_ease]"
-                  style={{ border: `1px solid ${mod.color}35`, backgroundColor: `${mod.color}08` }}>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-                    style={{ backgroundColor: mod.color, color: '#fff' }}>{mod.icono}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-black" style={{ color: mod.color }}>{mod.titulo}</p>
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: `${mod.color}20`, color: mod.color }}>
-                        {mod.rolIcon} {mod.rol}
-                      </span>
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#10b981' }}>
-                        ✓ Activo
-                      </span>
+              {modulosVisibles.map((mod, idx) => {
+                const g = GRUPOS[mod.grupo]
+                const anteriorGrupo = idx > 0 ? modulosVisibles[idx - 1].grupo : null
+                const esNuevoGrupo  = mod.grupo !== anteriorGrupo
+                return (
+                <div key={mod.id}>
+                  {/* Separador de grupo cuando cambia el rol */}
+                  {esNuevoGrupo && (
+                    <div className="flex items-center gap-2 mb-2 mt-1">
+                      <span className="text-sm">{g.icon}</span>
+                      <p className="text-xs font-black uppercase tracking-widest" style={{ color: g.color }}>{g.label}</p>
+                      <div className="flex-1 h-px" style={{ backgroundColor: `${g.color}30` }} />
                     </div>
-                    <p className="text-xs mt-1" style={{ color: S.sub }}>{mod.desc}</p>
-                    {/* Mensaje seed si aplica */}
-                    {idx === 0 && seedMsg && (
-                      <p className="text-[11px] mt-1 font-medium" style={{ color: '#10b981' }}>📦 {seedMsg}</p>
-                    )}
-                    <a href={mod.url} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 mt-2 text-xs font-bold px-3 py-1.5 rounded-xl transition-all hover:scale-105"
-                      style={{ backgroundColor: `${mod.color}20`, color: mod.color, border: `1px solid ${mod.color}40` }}>
-                      ↗ {mod.urlLabel}
-                    </a>
+                  )}
+                  <div className="rounded-xl p-4 flex items-start gap-3"
+                    style={{ border: `1px solid ${mod.color}35`, backgroundColor: `${mod.color}08` }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
+                      style={{ backgroundColor: mod.color, color: '#fff' }}>{mod.icono}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-black" style={{ color: mod.color }}>{mod.titulo}</p>
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${mod.color}20`, color: mod.color }}>
+                          {mod.rolIcon} {mod.rol}
+                        </span>
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#10b981' }}>
+                          ✓ Activo
+                        </span>
+                      </div>
+                      <p className="text-xs mt-1" style={{ color: S.sub }}>{mod.desc}</p>
+                      {idx === 0 && seedMsg && (
+                        <p className="text-[11px] mt-1 font-medium" style={{ color: '#10b981' }}>📦 {seedMsg}</p>
+                      )}
+                      <a href={mod.url} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 mt-2 text-xs font-bold px-3 py-1.5 rounded-xl transition-all hover:scale-105"
+                        style={{ backgroundColor: `${mod.color}20`, color: mod.color, border: `1px solid ${mod.color}40` }}>
+                        ↗ {mod.urlLabel}
+                      </a>
+                    </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
 
             {/* Módulos aún ocultos — se muestran como bloqueados */}
