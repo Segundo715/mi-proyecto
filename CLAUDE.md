@@ -13,17 +13,18 @@ npm run lint     # Run ESLint
 npx tsc --noEmit # Type-check without emitting files
 ```
 
-No test suite is configured.
+No test suite is configured. Always run `npx tsc --noEmit` to verify — IDE diagnostics are frequently stale and unreliable.
 
 ## What This App Does
 
-Restaurant/coffee-shop SaaS platform ("Chubis", white-labeled per tenant). It started as a single loyalty-card system and has grown into a multi-module product with three audiences:
+Restaurant/coffee-shop SaaS platform ("Chubis", white-labeled per tenant). Three audiences:
 
-- **Customers** (public, no chrome): digital menu (`/menu`), reviews (`/review`, `/resena`), recipe book (`/recetas`, `/resetas`), and several loyalty-card styles (`/card`, `/card/premium`, `/card/2x1`, `/card/descuento`, `/card/wallet`, `/card/usuario`), registration (`/registro`, `/loyalty`), and the activation page (`/activate`). The TV signage view (`/tv`) is meant for an in-store screen.
-- **Employees** (`/employee/*`): scan/stamp loyalty cards, manage orders, menu, TV slides, recipes, customers. Login at `/employee/login`.
-- **Admins** (`/admin/*`): full dashboard — analytics, marketing, CRM, sales, menu, recipes, operations, TV signage (`/admin/tv`), reservations & floor-plan ops (`/admin/reservaciones`), loyalty/stamping (`/admin/sellar`), cards (`/admin/tarjetas`), reviews, automation, content, production, reports, configuration (`/admin/configuracion`), and the customer-nav editor (`/admin/navegador`). Login at `/admin/login`.
+- **Customers** (public): digital menu (`/menu`), reviews (`/review`, `/resena`), recipe book (`/recetas`, `/resetas`), loyalty-card styles (`/card`, `/card/premium`, `/card/2x1`, `/card/descuento`, `/card/wallet`, `/card/usuario`), registration (`/registro`, `/loyalty`), activation (`/activate`). TV signage at `/tv`.
+- **Employees** (`/employee/*`): stamp loyalty cards, manage orders, menu, recipes, customers. Login at `/employee/login`.
+- **RESTA3** (`/resta3/*`): secondary staff panel with its own branding (logo/accent/name stored as `resta3_logo`, `resta3_accent`, `resta3_name` in the `settings` table). Login at `/resta3/login`.
+- **Admins** (`/admin/*`): full dashboard — analytics, CRM, sales, menu, recipes, TV signage, reservations & floor-plan, loyalty/stamping, reviews, automation, content, production, reports, configuration (`/admin/configuracion`), customer-nav editor (`/admin/navegador`). Login at `/admin/login`.
 
-The classic loyalty flow still exists: 5 stamps → free coffee. `app/page.tsx` redirects `/` → `/menu`.
+`app/page.tsx` redirects `/` → `/menu`.
 
 ## Architecture
 
@@ -31,111 +32,151 @@ The classic loyalty flow still exists: 5 stamps → free coffee. `app/page.tsx` 
 
 > ⚠️ This is Next.js 16 with breaking changes vs. older versions. See `AGENTS.md` — read `node_modules/next/dist/docs/` before writing framework code.
 
-### Data layer — Supabase (NOT flat-file JSON anymore)
+### Data layer — Supabase
 
-All persistence goes through Supabase (`lib/supabase.ts`, a single anon-key client). Each domain has its own `lib/*Db.ts` module that owns a table and exposes async functions returning camelCase domain types via a `toX(row)` mapper (DB columns are snake_case):
+All persistence goes through Supabase (`lib/supabase.ts`, single anon-key client). Each domain has its own `lib/*Db.ts` module owning a table and exposing async functions returning camelCase types via a `toX(row)` mapper (DB columns are snake_case):
 
 | Module | Table | Notes |
 |---|---|---|
-| `lib/db.ts` | `customers` | Legacy loyalty customers + customer accounts (`createCustomerAccount`/`authenticateCustomer`, SHA-256 password hash). Activation state machine lives here. |
-| `lib/loyaltyDb.ts` | `loyalty_cards` | Newer card model: `active` flag, 90-day rolling `expires_at` (refreshed on each stamp/redeem). `findOrCreate` matches by name + normalized phone. |
-| `lib/menuDb.ts` | `menu_items` | Menu CRUD, `likes` counter, `available` flag. |
+| `lib/db.ts` | `customers` | Legacy loyalty customers + customer accounts (SHA-256 password hash). Activation state machine. |
+| `lib/loyaltyDb.ts` | `loyalty_cards` | `active` flag, 90-day rolling `expires_at`. `findOrCreate` matches by name + normalized phone. |
+| `lib/menuDb.ts` | `menu_items` | CRUD, `likes` counter, `available` flag. |
 | `lib/ordersDb.ts` | `orders` | `status`: pending → preparing → ready → delivered. |
-| `lib/recipeDb.ts` | `recipes` | Recipe book; seeded from `data/recipes.json` via `POST /api/recipes/seed`. |
-| `lib/reviewDb.ts` | `reviews` | Auto: `bad = rating <= 3`, `published = rating >= 4`. Bad reviews trigger an email. |
-| `lib/tvDb.ts` | `tv_slides` | Ordered slides (`slide_order`), `active`, `is_offer`. |
-| `lib/settingsDb.ts` | `settings` | Generic key/value store: `getSetting(key, fallback)` / `setSetting(key, value)` (upsert). Drives all branding/config. |
-| `lib/adminDb.ts` | `admins` | Admin accounts, SHA-256(`ADMIN_SECRET:name:password`). |
-| `lib/employeeDb.ts` | `employees` | Employee accounts, SHA-256(`emp:ADMIN_SECRET:name:password`). |
+| `lib/recipeDb.ts` | `recipes` | Seeded from `data/recipes.json` via `POST /api/recipes/seed`. |
+| `lib/reviewDb.ts` | `reviews` | `bad = rating <= 3`, `published = rating >= 4`. Bad reviews trigger email. |
+| `lib/tvDb.ts` | `tv_slides` | `slide_order`, `active`, `is_offer`. |
+| `lib/settingsDb.ts` | `settings` | Generic key/value: `getSetting(key, fallback)` / `setSetting(key, value)` (upsert). |
+| `lib/adminDb.ts` | `admins` | SHA-256(`ADMIN_SECRET:name:password`). |
+| `lib/employeeDb.ts` | `employees` | SHA-256(`emp:ADMIN_SECRET:name:password`). |
+| `lib/tablesDb.ts` | `tables` | Restaurant tables: `status` = `libre \| ocupada \| reservada \| limpieza`. |
+| `lib/inventoryDb.ts` | `inventory` | `stock`, `minStock` (alert threshold), `unit`, `cost`. |
 
-These modules are **server-only** — never import them from client components; clients reach data through the API routes under `app/api/`. The legacy `data/*.json` files (except `recipes.json`) are stale leftovers from the old flat-file design and are not used at runtime.
+These modules are **server-only** — never import from client components. Legacy `data/*.json` (except `recipes.json`) are stale and unused.
 
-**Image uploads:** `app/api/{menu,tv,recipes,settings}/upload/route.ts` accept multipart form data, push the file to the Supabase Storage bucket `uploads/` (path prefixed per domain, e.g. `menu/<uuid>.jpg`), and return the public URL.
+**Image uploads:** `app/api/{menu,tv,recipes,settings}/upload/route.ts` accept multipart, push to Supabase Storage bucket `uploads/` (prefixed per domain), return public URL. Upload routes are **pass-through** — they store whatever they receive. Conversion to WebP happens **in the browser** via `lib/uploadWebp.ts` before upload.
+
+### Image handling — client-side WebP
+
+`lib/uploadWebp.ts` is a `'use client'` utility — only import from client components, never from server routes:
+
+- `browserToWebp(file)` — converts via Canvas API at 0.82 quality (skips SVG/WebP)
+- `uploadWebp(file, apiUrl, onSize?)` — converts then uploads; `onSize(originalBytes, webpBytes)` callback for UI feedback
+- `fmtBytes(n)` — formats bytes as B / KB / MB
+
+`lib/imageWebp.ts` is now a pass-through (no sharp dependency — sharp native binaries fail on Vercel).
 
 ### Auth & sessions
 
-- **Admin/employee:** `lib/auth.ts` issues a stateless HMAC session token `"<id>.<hmac(id)>"` signed with `ADMIN_SECRET`, stored in the `admin_session` httpOnly cookie (+ readable `admin_name` cookie). API routes guard writes with `verifySession(req.cookies.get('admin_session')?.value)`. Login/logout: `POST`/`DELETE /api/auth` (admin), `/api/employee/auth`.
-- **Customer accounts:** name + password (`/api/customer-auth`), hashed in `lib/db.ts`. Most customer-facing reads/writes are unauthenticated.
+- **Admin/employee/resta3:** `lib/auth.ts` issues a stateless HMAC token `"<id>.<hmac(id)>"` signed with `ADMIN_SECRET`, stored in the `admin_session` httpOnly cookie. API routes guard writes with `verifySession(req.cookies.get('admin_session')?.value)`. Login/logout: `POST`/`DELETE /api/auth` (admin), `/api/employee/auth`, `/api/resta3/auth`.
+- **Customer accounts:** name + password (`/api/customer-auth`), hashed in `lib/db.ts`.
 
-### Branding & configuration (the `settings` table)
+### Branding & configuration (`settings` table)
 
-Branding is data-driven, not hardcoded. The admin/employee layouts (`app/{admin,employee}/layout.tsx`) read settings **on the server** and pass them through `BrandProvider` (`useBrand()`) so the sidebar name/logo/accent render with no flash; they also inline a `data-admin-theme` init script and accent-colored scrollbar CSS. Known settings keys (set via `/admin/configuracion`, `/admin/navegador`, `/admin/menu`, `/admin/recipes`):
+Branding is data-driven. The admin/employee/resta3 layouts read settings **on the server** and inject them via `BrandProvider` + a `data-admin-theme` init script to avoid flash. Known keys:
 
-- `restaurant_name`, `profile_logo`, `sidebar_accent` — admin/employee chrome branding
-- `registro_titulo`, `registro_subtitulo` — `/registro` welcome copy
-- `customer_nav` — JSON config for the bottom `CustomerNav` (tabs, colors, radius, logout) — see `normalizeNavConfig` in `app/components/CustomerNav.tsx`
-- `reward_categories` — JSON driving the loyalty card reward tiers (consumed by every `/card/*` variant and `/admin/tarjetas`)
+- `restaurant_name`, `profile_logo`, `sidebar_accent` — admin/employee chrome
+- `resta3_logo`, `resta3_accent`, `resta3_name` — RESTA3 overrides (fallback to general if empty)
+- `employee_logo`, `employee_accent` — employee panel overrides
+- `registro_titulo`, `registro_subtitulo` — `/registro` copy
+- `customer_nav` — JSON for `CustomerNav` bottom tabs (see `normalizeNavConfig`)
+- `reward_categories` — JSON for loyalty card tiers
 - `recetario_color`, `recetario_logo` — recipe-book branding
-- plus per-page keys read in `/admin/menu`, `/menu`, `/resetas`, `/admin/produccion`
+
+### AI assistant (`app/api/ai/chat/route.ts`)
+
+Streaming chat endpoint backed by Groq API. Key constraints:
+
+- **Must use Node.js Lambda** — `export const maxDuration = 60`. Never use `export const runtime = 'edge'`; Vercel does not inject `GROQ_API_KEY` into Edge Runtime V8 isolates (causes 401).
+- Models: `llama-3.1-8b-instant` (customer role, fast) · `llama-3.3-70b-versatile` (all staff/admin roles)
+- `buildSystem(role, restaurantName, menuContext?)` fetches real-time data from Supabase per role (2.5 s timeout per call via `Promise.race`):
+
+| Role | Data fetched |
+|---|---|
+| `customer` | Uses `menuContext` sent by client — no Supabase calls |
+| `cook` | Orders + menu + full recipes (step-by-step) |
+| `staff` | Orders + menu + loyalty card counts |
+| `employee` | Orders + menu + full recipes + loyalty cards |
+| `resta3` | Tables (status counts) + orders + inventory alerts + menu + daily/weekly sales |
+| `admin` | Orders + menu + reviews (avg rating, negatives) + loyalty cards + inventory alerts + sales |
+| `recipe` | Full recipes + menu |
+
+**`AIChat` component** (`app/components/AIChat.tsx`):
+- `AIRole` type: `'cook' | 'staff' | 'customer' | 'admin' | 'recipe' | 'resta3' | 'employee'`
+- `getRoleFromPath(path)` auto-detects role from URL: `/resta3/cocina` → `cook`, `/resta3` → `resta3`, `/employee` → `employee`, `/admin` → `admin`, `/reseta|/receta` → `recipe`, else `customer`
+- Cook and employee roles auto-load the recipe list as quick-action buttons
+- Customer role sends `menuContext` (already fetched client-side) to avoid double Supabase calls
+- Voice input uses Web Speech API (`SpeechRecognition`). Requires HTTPS. If `busy`, captured text goes to input field instead of being sent immediately.
+- Included in: `app/admin/layout.tsx`, `app/employee/layout.tsx`, resta3 pages
 
 ### Feature flags
 
-`lib/features.ts` exports `FEATURES` (key → `{ enabled, label, emoji }`). `AdminNav` (`app/components/AdminNav.tsx`) greys out and shows a "PRO" badge on links whose feature is disabled. Toggling a flag is the lever for gating modules per tenant. `AdminNav` is also drag-reorderable (order persisted in localStorage `admin_nav_order`).
+`lib/features.ts` exports `FEATURES` (key → `{ enabled, label, emoji }`). `AdminNav` greys out and shows "PRO" badge on disabled features. `AdminNav` is drag-reorderable (order in localStorage `admin_nav_order`). Feature flag UI was **removed from** `/admin/configuracion` — flags are only toggled in code.
 
-### Customer state machine (`app/components/LoyaltyCard.tsx` / card pages)
+### Customer state machine
 
 ```
-loading → form → confirm → waiting → (employee sends activation link) → card
+loading → form → confirm → waiting → (activation link sent) → card
 ```
-- `loyalty_pending_id` in localStorage = registered, not yet activated
-- `loyalty_id` / `loyalty_card_id` in localStorage = confirmed, active card
-- On mount the component checks these keys and routes to the correct step.
+- `loyalty_pending_id` in localStorage = registered, not activated
+- `loyalty_id` / `loyalty_card_id` = confirmed, active
 
-**Activation flow:**
-1. Customer submits form → `POST /api/customers` (`confirmed: false`) → ID saved as `loyalty_pending_id`
-2. Employee sees the pending customer → taps "Enviar por WhatsApp/SMS" → opens `wa.me/${phone}?text=...${origin}/activate?id=${uuid}`
-3. Customer taps the link → `/activate?id=UUID` → `PATCH /api/customers/:id { action: 'confirm' }` → `loyalty_id` set → redirect to `/`
+**Activation:** Customer submits form → `POST /api/customers` → employee sends `wa.me/...?text=.../activate?id=UUID` → customer taps link → confirmed.
 
 ### API routes (`app/api/`)
 
-Each domain has a collection route (`GET` list / `POST` create) and an `[id]` route (`GET`/`PATCH`/`DELETE`). `PATCH` routes dispatch on an `action` field. Notable ones:
-- `customers/[id]` — `action`: `confirm` | `stamp` | `redeem` (`stamp` no-ops if `confirmed === false`)
-- `loyalty/[id]` — `action`: `stamp` | `redeem` | `activate` | `deactivate` (all admin-guarded)
-- `menu/[id]/like` — public increment of `likes`
-- `settings` — `GET ?key=` public read; `POST` admin-only write
-- `recipes/seed` — fills/creates recipes from `data/recipes.json` without overwriting captured ingredients/steps
-- `analytics`, `tv`, `reviews`, `orders`, `admins`, `auth`, `employee/auth`, `customer-auth`
+Collection route (`GET`/`POST`) + `[id]` route (`GET`/`PATCH`/`DELETE`). `PATCH` dispatches on `action` field:
+- `customers/[id]`: `confirm | stamp | redeem`
+- `loyalty/[id]`: `stamp | redeem | activate | deactivate` (admin-guarded)
+- `menu/[id]/like`: public `likes` increment
+- `settings`: `GET ?key=` public; `POST` admin-only
+- `recipes/seed`: fills from `data/recipes.json` without overwriting existing ingredients/steps
+- `ai/chat`: streaming Groq proxy — see AI section above
 
 ### QR codes & scanner
 
-- Shop QR (`/admin`): encodes `window.location.origin` — customers scan to open registration
-- Customer QR (on the card): encodes the UUID — employee scans to add a stamp
-- `QRScanner` (`app/components/QRScanner.tsx`): dynamically imports `html5-qrcode` (SSR-unsafe) inside `useEffect`, guards double-fire with `didScanRef`. The `div#qr-reader` must be in the DOM before `Html5Qrcode.start()`; the parent re-mounts it via a `scanKey` ref bump.
-- `/activate` uses `<Suspense>` (`page.tsx`) + inner client component (`ActivateClient.tsx`) because `useSearchParams()` requires Suspense in the App Router.
+- Shop QR (`/admin`): encodes `window.location.origin`
+- Customer QR: encodes the UUID — employee scans to stamp
+- `QRScanner` dynamically imports `html5-qrcode` inside `useEffect` (SSR-unsafe). The `div#qr-reader` must exist before `Html5Qrcode.start()`; parent re-mounts via `scanKey` ref bump.
+- `/activate` wraps `useSearchParams()` in `<Suspense>` (required by App Router).
 
-### Client-only modules (Konva canvas + localStorage)
+### Client-only modules (Konva + localStorage)
 
-Two newer feature areas run **entirely in the browser** — no Supabase, no API routes. State lives in React and persists to `localStorage`. Most live in a **repo-root `components/` folder** (distinct from `app/components/`), imported via `@/components/...` (the `@/*` alias maps to the repo root — see `tsconfig.json`).
+Root `components/` folder (not `app/components/`), imported via `@/components/...`.
 
-- **TV digital signage** — `/admin/tv` is a "Gestión de Pantallas" editor (clients → TVs → screens) with a Lottie animation system; per-screen fullscreen public view at `/admin/tv/pantalla/[id]`. Components in `app/components/` (`LottiePlayer`, `AnimationRenderer`, `AnimationEditorModal`, `animations/` registry). Lottie JSON lives in `public/animations/`; register a new animation by adding its `<id>.tsx` `AnimationDef` to `app/components/animations/registry.ts`. localStorage key: `pantalla_dashboard_v1`. Uses `lottie-react` (client-only).
-- **Reservations operations** — `/admin/reservaciones` is tabbed: Reservaciones (list) · Servicio · Plano de mesas · Perfiles · Timeline · Consumo · Turnos. Modules under root `components/{floor-plan,service,guests,timeline,spend,shifts}/`:
-  - `floor-plan/` — interactive table-layout editor (react-konva). Domain types in `floor-plan/types.ts` (`RestaurantTable`, `FloorPlan`). localStorage key: `floor_plan_v1`.
-  - `service/` — host/service panel (waitlist + reservation rows) beside a live read-only floor plan; seating a party updates the table status and re-persists `floor_plan_v1`.
-  - `guests/` (`guest_profiles_v1`) and `shifts/` (`shift_plan_v1`) are localStorage-backed; `timeline/` and `spend/` read the saved floor plan for table names and otherwise use demo data.
+- **TV signage** — `/admin/tv` editor + `/admin/tv/pantalla/[id]` fullscreen view. Lottie animations in `public/animations/`; register via `app/components/animations/registry.ts`. localStorage: `pantalla_dashboard_v1`.
+- **Reservations** — `/admin/reservaciones` with tabs: floor plan (react-konva, `floor_plan_v1`), service panel, guests (`guest_profiles_v1`), shifts (`shift_plan_v1`), timeline, spend.
 
-**Konva/SSR rule:** `react-konva`/`konva` are not SSR-safe. The canvas (`FloorCanvas`) is loaded with `next/dynamic(() => import('./FloorCanvas'), { ssr: false })` from a `"use client"` parent — never import react-konva from a Server Component. All these modules theme via the admin `--ad-*` CSS vars, so they follow the light/dark toggle.
+**Konva/SSR rule:** load canvas with `next/dynamic(() => import('./FloorCanvas'), { ssr: false })` from a `'use client'` parent — never import react-konva from a Server Component.
+
+### Security headers (`next.config.ts`)
+
+- `poweredByHeader: false` — removes `X-Powered-By`
+- All routes: `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Content-Security-Policy: frame-ancestors 'self'`, `Permissions-Policy: microphone=(self)`
+- Dynamic pages: `Cache-Control: no-cache`
+- `X-Frame-Options` is **not used** — replaced by CSP `frame-ancestors`.
 
 ### Email
 
-`lib/email.ts` uses `nodemailer` (Gmail). `createReview` with `rating <= 3` sends a "reseña negativa" alert. No-ops silently if `GMAIL_USER` / `GMAIL_APP_PASSWORD` are unset.
+`lib/email.ts` uses nodemailer (Gmail). `createReview` with `rating <= 3` sends alert. No-ops if `GMAIL_USER`/`GMAIL_APP_PASSWORD` unset.
 
 ## Environment Variables
 
-Set in `.env.local` (only Supabase is currently configured locally):
-
 - `NEXT_PUBLIC_SUPABASE_URL` — **required**
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — **required**
-- `ADMIN_SECRET` — HMAC session + password-hash secret. **Set in production** (falls back to `'dev-secret'`, which makes sessions forgeable).
-- `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `REVIEW_EMAIL` — optional, enable bad-review email alerts
+- `ADMIN_SECRET` — HMAC session + password hash secret. Falls back to `'dev-secret'` (insecure).
+- `GROQ_API_KEY` — **required for AI chat**. Must be set in Vercel → Settings → Environment Variables (not just `.env.local`).
+- `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `REVIEW_EMAIL` — optional, bad-review email alerts
 
-`app/components/LoyaltyCard.tsx` also has a `BUSINESS_WA` constant (WhatsApp number, no `+`/spaces) to change per deployment. The activation-link domain comes from `window.location.origin` at runtime.
+`app/components/LoyaltyCard.tsx` has a `BUSINESS_WA` constant (WhatsApp number, no `+`/spaces) to change per deployment.
 
 ## Important Constraints
 
-- **Add a new persisted field** → update the table's `toX(row)` mapper, the insert/update payloads, and the `interface` in the relevant `lib/*Db.ts` (DB is snake_case, domain types are camelCase).
-- Tailwind CSS 4 uses `@import "tailwindcss"` in `globals.css` — there is no `tailwind.config.js`. Custom theme tokens go in `@theme inline {}`. Admin/employee theming uses CSS vars (`--ad-bg`, `--ad-accent`, …) toggled by `data-admin-theme`.
+- **Add a new persisted field** → update `toX(row)` mapper, insert/update payloads, and `interface` in `lib/*Db.ts`.
+- Tailwind CSS 4: `@import "tailwindcss"` in `globals.css`, no `tailwind.config.js`. Custom tokens in `@theme inline {}`. Admin theming via `--ad-*` CSS vars toggled by `data-admin-theme`.
 - `RouteContext<'/api/.../[id]'>` is a globally available Next.js 16 type — no import needed.
-- `html5-qrcode` must never be statically imported; always `import()` inside `useEffect`.
-- `react-konva`/`konva` must never be statically imported either; load the canvas with `next/dynamic(..., { ssr: false })` from a client component (not SSR-safe).
-- The `@/*` alias points at the **repo root**, so root-level `components/` (the Konva/localStorage modules) imports as `@/components/...` — distinct from the server-adjacent `app/components/`.
-- Server-only `lib/*Db.ts` and `lib/auth.ts`/`lib/email.ts` must not be imported from client components.
+- `html5-qrcode` — never statically import; always `import()` inside `useEffect`.
+- `react-konva`/`konva` — never statically import; use `next/dynamic(..., { ssr: false })` from a client component.
+- `lib/uploadWebp.ts` — `'use client'` only; never import from server routes or `lib/*Db.ts`.
+- `app/api/ai/chat/route.ts` — must stay as Node.js Lambda (`maxDuration = 60`); Edge Runtime breaks `GROQ_API_KEY` injection.
+- `@/*` alias → repo root, so `@/components/...` = root `components/` (Konva modules), not `app/components/`.
+- Server-only: `lib/*Db.ts`, `lib/auth.ts`, `lib/email.ts` — never import from client components.
