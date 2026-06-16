@@ -6,7 +6,13 @@
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "node --env-file=.env.local scripts/seed.mjs",
+    "seed:1": "node --env-file=.env.local scripts/seed.mjs 1",
+    "seed:2": "node --env-file=.env.local scripts/seed.mjs 2",
+    "seed:3": "node --env-file=.env.local scripts/seed.mjs 3",
+    "seed:emp": "node --env-file=.env.local scripts/seed.mjs emp",
+    "seed:adm": "node --env-file=.env.local scripts/seed.mjs adm"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
