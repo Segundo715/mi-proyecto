@@ -106,6 +106,7 @@ const ACCIONES: Record<string, () => Promise<string>> = {
     const r = await fetch('/api/customers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'María García', phone: '6641234567', age: 28 }) }).then(r => r.json())
     return r.id ? 'María García — cliente demo creada' : 'Cliente ya existe'
   },
+  dash: async () => 'Abre el dashboard con el botón Ver ↗',
 }
 
 // ── Secciones de la página ───────────────────────────────────────────────────
@@ -159,7 +160,7 @@ const SECCIONES = [
     sub:    'Inserta datos para mostrar el panel de administrador',
     botones: [
       { id: 'res',  label: '⭐ Reseñas',        desc: '1 buena + 1 mala (alerta roja)',       href: '/admin/reviews',       color: '#ec4899' },
-      { id: 'inv',  label: '📊 Inventario',     desc: 'Tocino y Fresas con stock bajo',       href: '/admin/inventario',    color: '#ef4444' },
+      { id: 'dash', label: '📊 Dashboard',      desc: 'Resumen general — ventas y analíticas', href: '/admin',               color: '#6366f1' },
       { id: 'tv',   label: '📺 Pantalla TV',    desc: '3 slides de ofertas del día',          href: '/admin/tv',            color: '#14b8a6' },
     ] as Boton[],
   },
