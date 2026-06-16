@@ -118,6 +118,22 @@ interface Boton {
   color: string
 }
 
+// Links directos del admin (sin acción, solo navegación)
+interface Link { label: string; href: string; desc: string }
+
+const ADMIN_LINKS: Link[] = [
+  { label: '📊 Dashboard',      href: '/admin',                  desc: 'Resumen general del negocio' },
+  { label: '📈 Analíticas',     href: '/admin/analytics',        desc: 'Ventas por día y semana' },
+  { label: '⭐ Reseñas',        href: '/admin/reviews',          desc: 'Buenas y malas — alerta roja' },
+  { label: '📦 Inventario',     href: '/admin/inventario',       desc: 'Stock bajo en Tocino y Fresas' },
+  { label: '🍽️ Gestión Menú',  href: '/admin/menu',             desc: 'Agregar, editar y desactivar platillos' },
+  { label: '🃏 Tarjetas',       href: '/admin/tarjetas',         desc: 'Historial de lealtad de clientes' },
+  { label: '👥 Clientes CRM',   href: '/admin/customers',        desc: 'Base de datos de clientes registrados' },
+  { label: '📺 Pantalla TV',    href: '/admin/tv',               desc: 'Señalización digital del negocio' },
+  { label: '🪑 Reservaciones',  href: '/admin/reservaciones',    desc: 'Plano de mesas y turnos' },
+  { label: '⚙️ Configuración',  href: '/admin/configuracion',    desc: 'Logo, colores y nombre del restaurante' },
+]
+
 const SECCIONES = [
   {
     titulo: '👥 Cliente — Visibilidad por fases',
@@ -129,16 +145,22 @@ const SECCIONES = [
     ] as Boton[],
   },
   {
-    titulo: '🍽️ Módulos — Datos de demo',
-    sub:    'Inserta datos para mostrar cada módulo. Idempotentes — no duplican.',
+    titulo: '👷 Empleado — Datos de demo',
+    sub:    'Inserta datos para mostrar el panel del empleado',
     botones: [
       { id: 'menu', label: '🍽️ Menú',          desc: '4 platillos en 4 categorías',          href: '/menu',                color: '#f59e0b' },
       { id: 'rec',  label: '📖 Recetas',        desc: '2 recetas con pasos para la IA',       href: '/employee/recipes',    color: '#06b6d4' },
       { id: 'ped',  label: '📦 Pedido activo',  desc: 'Mesa 4 — pendiente $330',              href: '/employee/orders',     color: '#8b5cf6' },
+      { id: 'leal', label: '🃏 Lealtad',        desc: 'Cliente demo con 4 sellos',            href: '/employee',            color: '#f97316' },
+    ] as Boton[],
+  },
+  {
+    titulo: '👑 Admin — Datos de demo',
+    sub:    'Inserta datos para mostrar el panel de administrador',
+    botones: [
       { id: 'res',  label: '⭐ Reseñas',        desc: '1 buena + 1 mala (alerta roja)',       href: '/admin/reviews',       color: '#ec4899' },
       { id: 'inv',  label: '📊 Inventario',     desc: 'Tocino y Fresas con stock bajo',       href: '/admin/inventario',    color: '#ef4444' },
       { id: 'tv',   label: '📺 Pantalla TV',    desc: '3 slides de ofertas del día',          href: '/admin/tv',            color: '#14b8a6' },
-      { id: 'leal', label: '🃏 Lealtad',        desc: 'Cliente demo con 4 sellos',            href: '/employee',            color: '#f97316' },
     ] as Boton[],
   },
 ]
@@ -233,6 +255,24 @@ export default function DemoPage() {
             </div>
           </div>
         ))}
+
+        {/* Admin — accesos directos */}
+        <div>
+          <div className="mb-3">
+            <h2 className="text-base font-black" style={{ color: S.text }}>👑 Admin — Accesos directos</h2>
+            <p className="text-xs" style={{ color: S.sub }}>Abre cada sección del panel de administrador para mostrarla</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {ADMIN_LINKS.map(l => (
+              <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer"
+                className="rounded-xl p-3 flex flex-col gap-0.5 transition-all hover:scale-[1.02]"
+                style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+                <span className="text-sm font-black" style={{ color: S.text }}>{l.label} ↗</span>
+                <span className="text-[11px]" style={{ color: S.sub }}>{l.desc}</span>
+              </a>
+            ))}
+          </div>
+        </div>
 
         <p className="text-xs text-center pb-4" style={{ color: S.sub }}>
           Esta página es solo para la presentación — no la ven los clientes ni empleados.
