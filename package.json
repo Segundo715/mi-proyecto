@@ -11,8 +11,16 @@
     "seed:1": "node --env-file=.env.local scripts/seed.mjs 1",
     "seed:2": "node --env-file=.env.local scripts/seed.mjs 2",
     "seed:3": "node --env-file=.env.local scripts/seed.mjs 3",
+    "seed:menu": "node --env-file=.env.local scripts/seed.mjs menu",
+    "seed:rec": "node --env-file=.env.local scripts/seed.mjs rec",
+    "seed:ped": "node --env-file=.env.local scripts/seed.mjs ped",
+    "seed:res": "node --env-file=.env.local scripts/seed.mjs res",
+    "seed:inv": "node --env-file=.env.local scripts/seed.mjs inv",
+    "seed:tv": "node --env-file=.env.local scripts/seed.mjs tv",
+    "seed:leal": "node --env-file=.env.local scripts/seed.mjs leal",
     "seed:emp": "node --env-file=.env.local scripts/seed.mjs emp",
-    "seed:adm": "node --env-file=.env.local scripts/seed.mjs adm"
+    "seed:adm": "node --env-file=.env.local scripts/seed.mjs adm",
+    "seed:todo": "node --env-file=.env.local scripts/seed.mjs todo"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
