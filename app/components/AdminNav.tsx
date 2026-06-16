@@ -34,7 +34,6 @@ const NAV_LINKS: NavLink[] = [
   { href: '/admin/configuracion',   icon: 'settings',         label: 'Configuración',       feature: 'configuracion' },
   { href: '/admin/navegador',       icon: 'navbar',           label: 'Navegador' },
   { href: '/admin/resta3',          icon: 'resta3',           label: 'RESTA3' },
-  { href: '/admin/demo',            icon: 'demo',             label: 'Demo' },
 ]
 
 const ORDER_KEY = 'admin_nav_order'
