@@ -575,7 +575,7 @@ export default function MenuPage() {
               <h2 className="text-lg font-black text-white">Tu pedido</h2>
               <button type="button" onClick={resetOrderForm}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-lg"
-                style={{ backgroundColor: '#1a1a1a' }>×</button>
+                style={{ backgroundColor: '#1a1a1a' }}>×</button>
             </div>
 
             {/* Items con notas por platillo */}

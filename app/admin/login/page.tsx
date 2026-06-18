@@ -2,17 +2,32 @@
 
 // POST /api/auth escribe la cookie httpOnly admin_session en éxito.
 // Soporta registro de nuevas cuentas desde la misma pantalla (tab "Crear cuenta").
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 type Tab = 'login' | 'register'
+
+const STORAGE_KEY = 'admin_remembered_name'
+
+function validatePassword(pw: string) {
+  if (pw.length < 12) return 'La contraseña debe tener al menos 12 caracteres'
+  if (!/[a-zA-ZáéíóúñÁÉÍÓÚÑ]/.test(pw)) return 'La contraseña debe incluir letras'
+  if (!/[0-9]/.test(pw)) return 'La contraseña debe incluir números'
+  return ''
+}
 
 export default function LoginPage() {
   const [tab, setTab] = useState<Tab>('login')
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [remember, setRemember] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) { setName(saved); setRemember(true) }
+  }, [])
 
   const INPUT = 'w-full rounded-2xl px-4 py-3.5 text-white text-sm transition-colors focus:outline-none'
   const inputStyle = { backgroundColor: '#0a0e1c', border: '1px solid rgba(0,230,118,0.3)' }
@@ -22,8 +37,15 @@ export default function LoginPage() {
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!name.trim() || !password) { setError('Completa todos los campos'); return }
-    if (tab === 'register' && password !== confirmPassword) { setError('Las contraseñas no coinciden'); return }
-    if (tab === 'register' && password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
+    if (tab === 'register') {
+      const words = name.trim().split(/\s+/)
+      if (words.length < 2) { setError('Ingresa tu nombre completo (nombre y apellido)'); return }
+      if (password !== confirmPassword) { setError('Las contraseñas no coinciden'); return }
+      const pwErr = validatePassword(password)
+      if (pwErr) { setError(pwErr); return }
+    }
+    if (remember) localStorage.setItem(STORAGE_KEY, name.trim())
+    else localStorage.removeItem(STORAGE_KEY)
     setError('')
     setLoading(true)
     try {
@@ -73,9 +95,9 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3">
           <div>
-            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ad-sub)' }}>Nombre</label>
+            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ad-sub)' }}>Nombre completo</label>
             <input id="admin-username" name="username" type="text" value={name} onChange={e => { setName(e.target.value); setError('') }}
-              placeholder="Ej. Carlos" autoComplete="username" autoFocus
+              placeholder="Ej. Carlos López" autoComplete="name" autoFocus
               className={INPUT} style={inputStyle}
               onFocus={e => e.currentTarget.style.borderColor = 'var(--ad-accent)'}
               onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,230,118,0.3)'} />
@@ -83,7 +105,7 @@ export default function LoginPage() {
           <div>
             <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ad-sub)' }}>Contraseña</label>
             <input id="admin-password" name="password" type="password" value={password} onChange={e => { setPassword(e.target.value); setError('') }}
-              placeholder="••••••••" autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
+              placeholder="Mín. 12 caracteres con letras y números" autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
               className={INPUT} style={inputStyle}
               onFocus={e => e.currentTarget.style.borderColor = 'var(--ad-accent)'}
               onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,230,118,0.3)'} />
@@ -93,12 +115,19 @@ export default function LoginPage() {
             <div>
               <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ad-sub)' }}>Confirmar contraseña</label>
               <input id="admin-confirm-password" name="confirm_password" type="password" value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); setError('') }}
-                placeholder="••••••••" autoComplete="new-password"
+                placeholder="Repite la contraseña" autoComplete="new-password"
                 className={INPUT} style={inputStyle}
                 onFocus={e => e.currentTarget.style.borderColor = 'var(--ad-accent)'}
                 onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,230,118,0.3)'} />
             </div>
           )}
+
+          {/* Recordarme */}
+          <label className="flex items-center gap-2.5 cursor-pointer select-none pt-0.5">
+            <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
+              className="w-4 h-4 rounded accent-[var(--ad-accent)]" />
+            <span className="text-xs font-medium" style={{ color: 'var(--ad-sub)' }}>Recordarme</span>
+          </label>
 
           {error && (
             <div className="border rounded-2xl px-4 py-3 text-sm font-medium text-red-300"

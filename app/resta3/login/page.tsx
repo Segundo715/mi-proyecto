@@ -7,11 +7,21 @@ import { useState, useEffect } from 'react'
 
 type Tab = 'login' | 'register'
 
+const STORAGE_KEY = 'r3_remembered_name'
+
+function validatePassword(pw: string) {
+  if (pw.length < 12) return 'La contraseña debe tener al menos 12 caracteres'
+  if (!/[a-zA-ZáéíóúñÁÉÍÓÚÑ]/.test(pw)) return 'La contraseña debe incluir letras'
+  if (!/[0-9]/.test(pw)) return 'La contraseña debe incluir números'
+  return ''
+}
+
 export default function Resta3LoginPage() {
   const [tab, setTab]                     = useState<Tab>('login')
   const [name, setName]                   = useState('')
   const [password, setPassword]           = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [remember, setRemember]           = useState(false)
   const [error, setError]                 = useState('')
   const [loading, setLoading]             = useState(false)
 
@@ -22,6 +32,9 @@ export default function Resta3LoginPage() {
   const [brandSub, setBrandSub]   = useState('Panel de gestión')
 
   useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) { setName(saved); setRemember(true) }
+
     const keys = ['resta3_accent', 'resta3_logo', 'resta3_name', 'sidebar_accent', 'profile_logo', 'restaurant_name']
     Promise.all(keys.map(k => fetch(`/api/settings?key=${k}`).then(r => r.json()))).then(res => {
       const [r3a, r3l, r3n, a, l, n] = res.map((d: { value?: string }) => d.value ?? '')
@@ -39,8 +52,15 @@ export default function Resta3LoginPage() {
   async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault()
     if (!name.trim() || !password) { setError('Completa todos los campos'); return }
-    if (tab === 'register' && password !== confirmPassword) { setError('Las contraseñas no coinciden'); return }
-    if (tab === 'register' && password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
+    if (tab === 'register') {
+      const words = name.trim().split(/\s+/)
+      if (words.length < 2) { setError('Ingresa tu nombre completo (nombre y apellido)'); return }
+      if (password !== confirmPassword) { setError('Las contraseñas no coinciden'); return }
+      const pwErr = validatePassword(password)
+      if (pwErr) { setError(pwErr); return }
+    }
+    if (remember) localStorage.setItem(STORAGE_KEY, name.trim())
+    else localStorage.removeItem(STORAGE_KEY)
     setError('')
     setLoading(true)
     try {
@@ -98,9 +118,9 @@ export default function Resta3LoginPage() {
 
         <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3">
           <div>
-            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#475569' }}>Nombre</label>
+            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#475569' }}>Nombre completo</label>
             <input id="r3-username" name="username" type="text" value={name} onChange={e => { setName(e.target.value); setError('') }}
-              placeholder="Ej. Carlos" autoComplete="username" autoFocus
+              placeholder="Ej. Carlos López" autoComplete="name" autoFocus
               className={INPUT} style={inputStyle}
               onFocus={e => e.currentTarget.style.borderColor = accentHex}
               onBlur={e => e.currentTarget.style.borderColor = borderIdle} />
@@ -108,7 +128,7 @@ export default function Resta3LoginPage() {
           <div>
             <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#475569' }}>Contraseña</label>
             <input id="r3-password" name="password" type="password" value={password} onChange={e => { setPassword(e.target.value); setError('') }}
-              placeholder="••••••••" autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
+              placeholder="Mín. 12 caracteres con letras y números" autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
               className={INPUT} style={inputStyle}
               onFocus={e => e.currentTarget.style.borderColor = accentHex}
               onBlur={e => e.currentTarget.style.borderColor = borderIdle} />
@@ -118,12 +138,19 @@ export default function Resta3LoginPage() {
             <div>
               <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#475569' }}>Confirmar contraseña</label>
               <input id="r3-confirm-password" name="confirm_password" type="password" value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); setError('') }}
-                placeholder="••••••••" autoComplete="new-password"
+                placeholder="Repite la contraseña" autoComplete="new-password"
                 className={INPUT} style={inputStyle}
                 onFocus={e => e.currentTarget.style.borderColor = accentHex}
                 onBlur={e => e.currentTarget.style.borderColor = borderIdle} />
             </div>
           )}
+
+          {/* Recordarme */}
+          <label className="flex items-center gap-2.5 cursor-pointer select-none pt-0.5">
+            <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
+              className="w-4 h-4 rounded" style={{ accentColor: accentHex }} />
+            <span className="text-xs font-medium" style={{ color: '#475569' }}>Recordarme</span>
+          </label>
 
           {error && (
             <div className="border rounded-2xl px-4 py-3 text-sm font-medium text-red-300"

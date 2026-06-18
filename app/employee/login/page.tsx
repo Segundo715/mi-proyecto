@@ -1,18 +1,41 @@
 'use client'
 
 // POST /api/employee/auth escribe la cookie httpOnly employee_session en éxito.
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+
+const STORAGE_KEY = 'emp_remembered_name'
+
+function validatePassword(pw: string) {
+  if (pw.length < 12) return 'La contraseña debe tener al menos 12 caracteres'
+  if (!/[a-zA-ZáéíóúñÁÉÍÓÚÑ]/.test(pw)) return 'La contraseña debe incluir letras'
+  if (!/[0-9]/.test(pw)) return 'La contraseña debe incluir números'
+  return ''
+}
 
 export default function EmployeeLoginPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
+  const [remember, setRemember] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) { setName(saved); setRemember(true) }
+  }, [])
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!name.trim() || !password) { setError('Completa todos los campos'); return }
+    if (mode === 'register') {
+      const words = name.trim().split(/\s+/)
+      if (words.length < 2) { setError('Ingresa tu nombre completo (nombre y apellido)'); return }
+      const pwErr = validatePassword(password)
+      if (pwErr) { setError(pwErr); return }
+    }
+    if (remember) localStorage.setItem(STORAGE_KEY, name.trim())
+    else localStorage.removeItem(STORAGE_KEY)
     setError('')
     setLoading(true)
     try {
@@ -64,9 +87,9 @@ export default function EmployeeLoginPage() {
 
         <form onSubmit={handleSubmit} className="px-5 pb-5 pt-4 space-y-3">
           <div>
-            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#6b7a94' }}>Nombre</label>
-            <input id="emp-username" name="username" type="text" value={name} onChange={e => setName(e.target.value)}
-              placeholder="Ej. Carlos" autoComplete="username" autoFocus
+            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#6b7a94' }}>Nombre completo</label>
+            <input id="emp-username" name="username" type="text" value={name} onChange={e => { setName(e.target.value); setError('') }}
+              placeholder="Ej. Carlos López" autoComplete="name" autoFocus
               className={INPUT}
               style={{ backgroundColor: '#0a0e1c', border: '1px solid rgba(0,230,118,0.3)' }}
               onFocus={e => e.currentTarget.style.borderColor = '#00e676'}
@@ -74,13 +97,20 @@ export default function EmployeeLoginPage() {
           </div>
           <div>
             <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#6b7a94' }}>Contraseña</label>
-            <input id="emp-password" name="password" type="password" value={password} onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••" autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+            <input id="emp-password" name="password" type="password" value={password} onChange={e => { setPassword(e.target.value); setError('') }}
+              placeholder="Mín. 12 caracteres con letras y números" autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
               className={INPUT}
               style={{ backgroundColor: '#0a0e1c', border: '1px solid rgba(0,230,118,0.3)' }}
               onFocus={e => e.currentTarget.style.borderColor = '#00e676'}
               onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,230,118,0.3)'} />
           </div>
+
+          {/* Recordarme */}
+          <label className="flex items-center gap-2.5 cursor-pointer select-none pt-0.5">
+            <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
+              className="w-4 h-4 rounded" style={{ accentColor: '#00e676' }} />
+            <span className="text-xs font-medium" style={{ color: '#6b7a94' }}>Recordarme</span>
+          </label>
 
           {error && (
             <div className="border rounded-2xl px-4 py-3 text-sm font-medium text-red-300"
