@@ -3,6 +3,7 @@
 // Vista de menú para el empleado: solo lectura con toggle de disponibilidad por platillo.
 import { useState, useEffect } from 'react'
 import EmployeeNav from '@/app/components/EmployeeNav'
+import { Icon } from '@/app/components/Icon'
 
 interface MenuItem {
   id: string
@@ -246,7 +247,7 @@ export default function EmployeeMenuPage() {
         {!loading && items.some(i => (i.likes ?? 0) > 0) && (
           <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
             <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
-              <span className="font-bold text-sm" style={{ color: S.text }}>❤️ Ranking — Platillos más gustados</span>
+              <span className="font-bold text-sm inline-flex items-center gap-1.5" style={{ color: S.text }}><span style={{ color: '#f472b6' }}><Icon name="heart" size={14} /></span> Ranking — Platillos más gustados</span>
             </div>
             <div className="px-5 py-4 space-y-3">
               {[...items]
@@ -254,12 +255,11 @@ export default function EmployeeMenuPage() {
                 .sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0))
                 .slice(0, 5)
                 .map((item, idx) => {
-                  const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣']
                   const maxLikes = Math.max(...items.map(i => i.likes ?? 0))
                   const pct = maxLikes > 0 ? ((item.likes ?? 0) / maxLikes) * 100 : 0
                   return (
                     <div key={item.id} className="flex items-center gap-3">
-                      <span className="text-xl shrink-0">{medals[idx]}</span>
+                      <span className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-xs font-black" style={{ backgroundColor: idx === 0 ? 'rgba(245,158,11,0.18)' : 'rgba(255,255,255,0.07)', color: idx === 0 ? '#f59e0b' : S.sub }}>{idx + 1}</span>
                       {item.imageUrl && (
                         <img src={item.imageUrl} alt={item.name} className="w-10 h-10 rounded-xl object-cover shrink-0" />
                       )}
@@ -269,7 +269,7 @@ export default function EmployeeMenuPage() {
                           <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: '#f472b6' }} />
                         </div>
                       </div>
-                      <span className="text-sm font-black shrink-0" style={{ color: '#f472b6' }}>❤️ {item.likes}</span>
+                      <span className="text-sm font-black shrink-0 inline-flex items-center gap-1" style={{ color: '#f472b6' }}><Icon name="heart" size={13} /> {item.likes}</span>
                     </div>
                   )
                 })}
@@ -281,8 +281,8 @@ export default function EmployeeMenuPage() {
         {loading ? (
           <div className="text-center py-10" style={{ color: S.accent }}>Cargando...</div>
         ) : items.length === 0 ? (
-          <div className="text-center py-10" style={{ color: S.sub }}>
-            <p className="text-4xl mb-2">🍽</p>
+          <div className="flex flex-col items-center py-10" style={{ color: S.sub }}>
+            <span className="mb-2"><Icon name="utensils" size={34} /></span>
             <p>No hay productos en el menú aún</p>
           </div>
         ) : (
@@ -352,7 +352,7 @@ export default function EmployeeMenuPage() {
                             {(item.likes ?? 0) > 0 && (
                               <span className="text-xs px-2 py-0.5 rounded-full font-bold flex items-center gap-1"
                                 style={{ backgroundColor: 'rgba(185,15,69,0.15)', color: '#f472b6' }}>
-                                ❤️ {item.likes}
+                                <Icon name="heart" size={11} /> {item.likes}
                               </span>
                             )}
                             {item.available ? (

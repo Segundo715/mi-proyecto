@@ -3,6 +3,7 @@
 // Recetario de solo lectura para el empleado: mismos datos que admin/recipes pero sin edición.
 import { useState, useEffect } from 'react'
 import EmployeeNav from '@/app/components/EmployeeNav'
+import { Icon } from '@/app/components/Icon'
 
 const S = {
   bg: '#0a0a0a', card: '#111', accent: '#B90F45',
@@ -50,7 +51,7 @@ export default function EmployeeRecipesPage() {
 
         {/* Header */}
         <div className="pt-2">
-          <h1 className="text-xl font-black" style={{ color: S.text }}>📖 Recetario</h1>
+          <h1 className="text-xl font-black flex items-center gap-2" style={{ color: S.text }}><Icon name="book" size={20} /> Recetario</h1>
           <p className="text-xs mt-0.5" style={{ color: S.sub }}>
             {loading ? 'Cargando...' : `${recipes.length} receta${recipes.length !== 1 ? 's' : ''} disponibles`}
           </p>
@@ -95,7 +96,7 @@ export default function EmployeeRecipesPage() {
                 style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
                 {recipe.imageUrl
                   ? <img src={recipe.imageUrl} alt={recipe.name} className="w-full object-cover" style={{ height: '170px' }} />
-                  : <div className="w-full flex items-center justify-center text-5xl" style={{ height: '100px', backgroundColor: '#1a1a1a' }}>📖</div>
+                  : <div className="w-full flex items-center justify-center" style={{ height: '100px', backgroundColor: '#1a1a1a', color: S.sub }}><Icon name="book" size={40} /></div>
                 }
                 <div className="p-4">
                   <span className="text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
@@ -126,8 +127,8 @@ export default function EmployeeRecipesPage() {
             {selected.imageUrl
               ? <img src={selected.imageUrl} alt={selected.name}
                   className="w-full object-cover rounded-t-3xl" style={{ height: '230px' }} />
-              : <div className="w-full flex items-center justify-center text-6xl rounded-t-3xl"
-                  style={{ height: '130px', backgroundColor: '#1a1a1a' }}>📖</div>
+              : <div className="w-full flex items-center justify-center rounded-t-3xl"
+                  style={{ height: '130px', backgroundColor: '#1a1a1a', color: S.sub }}><Icon name="book" size={48} /></div>
             }
 
             <div className="p-5 space-y-5">
@@ -139,7 +140,7 @@ export default function EmployeeRecipesPage() {
                   <h2 className="text-2xl font-black mt-1" style={{ color: S.text }}>{selected.name}</h2>
                   {selected.description && <p className="text-sm mt-1" style={{ color: S.sub }}>{selected.description}</p>}
                 </div>
-                <button onClick={() => setSelected(null)} className="text-2xl leading-none shrink-0 mt-1" style={{ color: S.sub }}>✕</button>
+                <button onClick={() => setSelected(null)} aria-label="Cerrar" className="shrink-0 mt-1 inline-flex items-center" style={{ color: S.sub }}><Icon name="x" size={20} /></button>
               </div>
 
               {/* Ingredientes */}

@@ -4,6 +4,7 @@
 // Polling cada 10 s para detectar check-ins (requestedAt < 3 min) y notificarlos en tiempo real.
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { Icon, type IconName } from '@/app/components/Icon'
 
 interface Stamp { timestamp: string; visitsAfter: number }
 interface Customer {
@@ -120,7 +121,7 @@ export default function AdminCustomersPage() {
         {checkIns.map(c => (
           <div key={c.id} className="rounded-2xl p-4 flex items-center gap-3"
             style={{ backgroundColor: 'rgba(0,230,118,0.1)', border: '1px solid rgba(0,230,118,0.4)' }}>
-            <span className="text-3xl animate-bounce">🔔</span>
+            <span className="animate-bounce" style={{ color: S.accent }}><Icon name="bell" size={26} /></span>
             <div className="flex-1">
               <p className="font-black text-sm" style={{ color: S.accent }}>{c.name} está en el mostrador</p>
               <p className="text-xs" style={{ color: S.sub }}>{c.phone} · {c.visits}/{STAMPS} sellos · {timeAgo(c.requestedAt!)}</p>
@@ -131,15 +132,15 @@ export default function AdminCustomersPage() {
         {/* KPI strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Total clientes',   value: confirmed.length,  icon: '👥', color: S.accent  },
-            { label: 'Sellos totales',   value: totalStamps,       icon: '☕', color: S.accent  },
-            { label: 'Visitas promedio', value: avgVisits,         icon: '🔄', color: '#60a5fa' },
-            { label: 'Premio listo',     value: readyForCoffee,    icon: '🎉', color: '#fbbf24' },
+            { label: 'Total clientes',   value: confirmed.length,  icon: 'users' as IconName, color: S.accent  },
+            { label: 'Sellos totales',   value: totalStamps,       icon: 'coffee' as IconName, color: S.accent  },
+            { label: 'Visitas promedio', value: avgVisits,         icon: 'refresh' as IconName, color: '#60a5fa' },
+            { label: 'Premio listo',     value: readyForCoffee,    icon: 'gift' as IconName, color: '#fbbf24' },
           ].map(s => (
             <div key={s.label} className="rounded-2xl p-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
               <div className="flex items-center justify-between mb-1">
                 <p className="text-xs font-medium" style={{ color: S.sub }}>{s.label}</p>
-                <span className="text-lg">{s.icon}</span>
+                <span style={{ color: s.color }}><Icon name={s.icon} size={17} /></span>
               </div>
               <p className="text-2xl font-black" style={{ color: s.color }}>{s.value}</p>
             </div>
@@ -180,8 +181,8 @@ export default function AdminCustomersPage() {
           </div>
         ) : tab === 'pendientes' ? (
           pending.length === 0 ? (
-            <div className="text-center py-14 rounded-2xl" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-              <p className="text-4xl mb-2">✅</p>
+            <div className="flex flex-col items-center py-14 rounded-2xl" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+              <span className="mb-2" style={{ color: '#22c55e' }}><Icon name="checkCircle" size={34} /></span>
               <p className="font-semibold" style={{ color: S.text }}>Sin pendientes</p>
               <p className="text-sm mt-1" style={{ color: S.sub }}>Todos los clientes están activados</p>
             </div>
@@ -207,19 +208,19 @@ export default function AdminCustomersPage() {
                     <button onClick={() => activate(c.id)}
                       className="flex-1 font-bold py-2.5 rounded-xl text-sm"
                       style={{ backgroundColor: S.accent, color: '#000' }}>
-                      ✅ Activar
+                      <span className="inline-flex items-center justify-center gap-1.5"><Icon name="check" size={14} /> Activar</span>
                     </button>
                     {c.phone && (
                       <a href={waLink(c)} target="_blank" rel="noopener noreferrer"
                         className="flex-1 font-bold py-2.5 rounded-xl text-sm text-center"
                         style={{ backgroundColor: '#22c55e', color: '#000' }}>
-                        💬 Enviar link
+                        <span className="inline-flex items-center justify-center gap-1.5"><Icon name="message" size={14} /> Enviar link</span>
                       </a>
                     )}
                     <button onClick={() => remove(c.id)}
                       className="px-3 py-2.5 rounded-xl text-sm font-medium"
-                      style={{ border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', backgroundColor: 'transparent' }}>
-                      🗑
+                      style={{ border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', backgroundColor: 'transparent' }} aria-label="Eliminar">
+                      <Icon name="trash" size={15} />
                     </button>
                   </div>
                 </div>
@@ -227,8 +228,8 @@ export default function AdminCustomersPage() {
             </div>
           )
         ) : filtered.length === 0 ? (
-          <div className="text-center py-14 rounded-2xl" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-            <p className="text-5xl mb-3">{search ? '🔍' : '👥'}</p>
+          <div className="flex flex-col items-center py-14 rounded-2xl" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            <span className="mb-3" style={{ color: S.sub }}><Icon name={search ? 'search' : 'users'} size={42} /></span>
             <p className="font-semibold" style={{ color: S.text }}>{search ? 'Sin resultados' : 'Sin clientes activos'}</p>
           </div>
         ) : (
@@ -258,7 +259,7 @@ export default function AdminCustomersPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="font-bold text-sm truncate" style={{ color: S.text }}>{c.name}</p>
-                          {c.visits >= STAMPS && <span className="text-xs" style={{ color: '#fbbf24' }}>🎉</span>}
+                          {c.visits >= STAMPS && <span style={{ color: '#fbbf24' }}><Icon name="gift" size={12} /></span>}
                         </div>
                         <p className="text-xs" style={{ color: S.sub }}>{c.phone}</p>
                       </div>
@@ -279,7 +280,7 @@ export default function AdminCustomersPage() {
                         <div className="min-w-0">
                           <p className="font-bold text-sm truncate" style={{ color: S.text }}>{c.name}</p>
                           {c.visits >= STAMPS && (
-                            <span className="text-xs font-bold" style={{ color: '#fbbf24' }}>🎉 Premio listo</span>
+                            <span className="text-xs font-bold inline-flex items-center gap-1" style={{ color: '#fbbf24' }}><Icon name="gift" size={12} /> Premio listo</span>
                           )}
                         </div>
                       </div>

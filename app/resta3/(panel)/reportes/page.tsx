@@ -3,6 +3,7 @@
 // Reportes de ventas e inventario de RESTA3. Datos calculados desde /api/orders y /api/resta3/inventory.
 import { useState, useEffect } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
+import { Icon } from '@/app/components/Icon'
 
 const S = { bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)', text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)' }
 
@@ -70,14 +71,14 @@ export default function ReportesPage() {
 
         {/* KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { label: 'Ingresos', value: `$${revenue.toFixed(0)}`, color: S.accent, icon: '💰' },
-            { label: 'Órdenes', value: filtered.length, color: '#3b82f6', icon: '🧾' },
-            { label: 'Ticket Prom.', value: `$${avgTicket.toFixed(0)}`, color: '#a855f7', icon: '📊' },
-            { label: 'Rating Prom.', value: avgRating > 0 ? `${avgRating.toFixed(1)}★` : '—', color: '#f472b6', icon: '⭐' },
-          ].map(k => (
+          {([
+            { label: 'Ingresos', value: `$${revenue.toFixed(0)}`, color: S.accent, icon: 'cash' },
+            { label: 'Órdenes', value: filtered.length, color: '#3b82f6', icon: 'receipt' },
+            { label: 'Ticket Prom.', value: `$${avgTicket.toFixed(0)}`, color: '#a855f7', icon: 'chart' },
+            { label: 'Rating Prom.', value: avgRating > 0 ? `${avgRating.toFixed(1)}` : '—', color: '#f472b6', icon: 'star' },
+          ] as const).map(k => (
             <div key={k.label} className="rounded-2xl p-4 text-center" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-              <p className="text-2xl mb-1">{k.icon}</p>
+              <div className="mb-1 flex justify-center" style={{ color: k.color }}><Icon name={k.icon} size={22} /></div>
               <p className="text-xl font-black" style={{ color: k.color }}>{k.value}</p>
               <p className="text-xs mt-0.5" style={{ color: S.sub }}>{k.label}</p>
             </div>
@@ -98,14 +99,15 @@ export default function ReportesPage() {
                 const maxLikes = topMenu[0].likes || 1
                 return (
                   <div key={item.id} className="flex items-center gap-3">
-                    <span className="text-lg w-6">{['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</span>
+                    <span className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-xs font-black"
+                      style={{ backgroundColor: i === 0 ? 'rgba(245,158,11,0.18)' : 'rgba(255,255,255,0.06)', color: i === 0 ? '#f59e0b' : S.sub }}>{i + 1}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold truncate" style={{ color: S.text }}>{item.name}</p>
                       <div className="h-1.5 rounded-full mt-1" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
                         <div className="h-full rounded-full" style={{ width: `${(item.likes / maxLikes) * 100}%`, backgroundColor: S.accent }} />
                       </div>
                     </div>
-                    <span className="text-sm font-black shrink-0" style={{ color: S.accent }}>❤️ {item.likes}</span>
+                    <span className="text-sm font-black shrink-0 inline-flex items-center gap-1" style={{ color: S.accent }}><Icon name="heart" size={13} /> {item.likes}</span>
                   </div>
                 )
               })}
@@ -150,7 +152,7 @@ export default function ReportesPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-bold" style={{ color: S.text }}>{r.customerName}</p>
-                        <span className="text-xs" style={{ color: '#fbbf24' }}>{'★'.repeat(r.rating)}</span>
+                        <span className="inline-flex items-center gap-0.5" style={{ color: '#fbbf24' }}>{Array.from({ length: r.rating }).map((_, s) => <Icon key={s} name="star" size={11} />)}</span>
                       </div>
                       <p className="text-xs mt-0.5 line-clamp-2" style={{ color: S.sub }}>{r.comment}</p>
                     </div>

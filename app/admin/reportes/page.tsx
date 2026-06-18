@@ -3,6 +3,7 @@
 // Lista de reportes disponibles para descarga. Los botones muestran un placeholder;
 // la generación real de PDF/Excel no está implementada aún.
 import AdminNav from '@/app/components/AdminNav'
+import { Icon, type IconName } from '@/app/components/Icon'
 
 const S = {
   bg:     'var(--ad-bg)',
@@ -17,49 +18,49 @@ const REPORTS = [
   {
     title: 'Reporte de Ventas',
     description: 'Ingresos totales, ticket promedio, productos más vendidos y tendencias por período.',
-    icon: '💰', period: 'Mensual', color: S.accent,
+    icon: 'cash' as IconName, period: 'Mensual', color: S.accent,
     formats: ['PDF', 'Excel'],
   },
   {
     title: 'Reporte de Clientes',
     description: 'Análisis de fidelización, segmentación por visitas, nuevos registros y tasa de retención.',
-    icon: '👥', period: 'Mensual', color: '#4f6ef7',
+    icon: 'users' as IconName, period: 'Mensual', color: '#4f6ef7',
     formats: ['PDF', 'Excel', 'CSV'],
   },
   {
     title: 'Reporte de Inventario',
     description: 'Stock actual, rotación de productos, costo de inventario y órdenes de compra pendientes.',
-    icon: '📦', period: 'Semanal', color: '#fb923c',
+    icon: 'box' as IconName, period: 'Semanal', color: '#fb923c',
     formats: ['PDF', 'Excel'],
   },
   {
     title: 'Reporte de Fidelización',
     description: 'Sellos emitidos, premios canjeados, clientes por nivel y eficiencia del programa.',
-    icon: '☕', period: 'Mensual', color: '#fbbf24',
+    icon: 'coffee' as IconName, period: 'Mensual', color: '#fbbf24',
     formats: ['PDF'],
   },
   {
     title: 'Reporte de Marketing',
     description: 'ROI por canal, alcance total, leads generados y conversiones de campañas activas.',
-    icon: '📣', period: 'Mensual', color: '#c084fc',
+    icon: 'megaphone' as IconName, period: 'Mensual', color: '#c084fc',
     formats: ['PDF', 'Excel'],
   },
   {
     title: 'Reporte de Reseñas',
     description: 'Calificación promedio, tendencia de reputación, reseñas por plataforma y temas frecuentes.',
-    icon: '⭐', period: 'Semanal', color: '#f59e0b',
+    icon: 'star' as IconName, period: 'Semanal', color: '#f59e0b',
     formats: ['PDF'],
   },
   {
     title: 'Reporte de Operaciones',
     description: 'Tiempo promedio de preparación, órdenes por hora, mesas más ocupadas y eficiencia de cocina.',
-    icon: '🏭', period: 'Diario', color: '#06b6d4',
+    icon: 'factory' as IconName, period: 'Diario', color: '#06b6d4',
     formats: ['PDF', 'Excel'],
   },
   {
     title: 'Reporte de Reservaciones',
     description: 'Ocupación por día, cancelaciones, no-shows y reservaciones recurrentes.',
-    icon: '📅', period: 'Semanal', color: '#4ade80',
+    icon: 'calendar' as IconName, period: 'Semanal', color: '#4ade80',
     formats: ['PDF'],
   },
 ]
@@ -95,9 +96,9 @@ export default function AdminReportesPage() {
               <div key={report.title} className="rounded-2xl p-4"
                 style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
                 <div className="flex items-start gap-3">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl shrink-0"
-                    style={{ backgroundColor: `${report.color}18` }}>
-                    {report.icon}
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: `${report.color}18`, color: report.color }}>
+                    <Icon name={report.icon} size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-0.5">

@@ -3,6 +3,7 @@
 // Gestión de turnos de empleados. Estado en localStorage (no persiste en Supabase aún).
 import { useEffect, useState } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
+import { Icon } from '@/app/components/Icon'
 
 const S = { bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)', text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)' }
 
@@ -165,7 +166,7 @@ export default function EmpleadosPage() {
             style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
             <div className="flex items-center justify-between">
               <h2 className="font-black" style={{ color: S.text }}>Nuevo empleado</h2>
-              <button onClick={() => { setShowForm(false); setError('') }} style={{ color: S.sub }}>✕</button>
+              <button onClick={() => { setShowForm(false); setError('') }} aria-label="Cerrar" style={{ color: S.sub }}><Icon name="x" size={18} /></button>
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Nombre</label>

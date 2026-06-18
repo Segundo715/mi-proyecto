@@ -3,6 +3,7 @@
 // Vista CRM con búsqueda local. Datos demo; el CRM real de clientes de lealtad está en /admin/customers.
 import { useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { Icon } from '@/app/components/Icon'
 
 const S = {
   bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
@@ -28,7 +29,7 @@ export default function AdminCRMPage() {
         {/* Header */}
         <div className="flex items-center justify-between pt-1">
           <div>
-            <h1 className="text-xl font-black" style={{ color: S.text }}>👥 CRM</h1>
+            <h1 className="text-xl font-black flex items-center gap-2" style={{ color: S.text }}><Icon name="users" size={20} /> CRM</h1>
             <p className="text-xs mt-0.5" style={{ color: S.sub }}>Clientes, segmentos y lealtad</p>
           </div>
           <button className="text-sm px-4 py-2 rounded-xl font-bold" style={{ backgroundColor: S.accent, color: '#000' }}>+ Nuevo cliente</button>
@@ -55,7 +56,7 @@ export default function AdminCRMPage() {
           <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
             <span className="font-bold text-sm" style={{ color: S.text }}>Clientes recientes</span>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl" style={{ backgroundColor: 'var(--ad-overlay)', border: `1px solid ${S.border}` }}>
-              <span style={{ color: S.sub }}>🔍</span>
+              <span style={{ color: S.sub }}><Icon name="search" size={15} /></span>
               <input
                 value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar..."

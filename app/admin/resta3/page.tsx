@@ -5,6 +5,7 @@
 // Si están vacías, RESTA3 usa los valores generales del restaurante como fallback.
 import { useState, useEffect, useRef } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { Icon } from '@/app/components/Icon'
 import { uploadWebp } from '@/lib/uploadWebp'
 
 const S = {
@@ -89,7 +90,7 @@ export default function AdminResta3ConfigPage() {
                   style={{ border: `2px dashed ${S.border}`, backgroundColor: S.bg }}>
                   {previewLogo
                     ? <img src={previewLogo} alt="" className="w-full h-full object-contain p-2" />
-                    : <span className="text-3xl">🖼️</span>}
+                    : <span style={{ color: S.sub }}><Icon name="image" size={30} /></span>}
                 </div>
                 <div className="space-y-2 flex-1">
                   <button onClick={() => fileRef.current?.click()} disabled={uploading}
@@ -101,7 +102,7 @@ export default function AdminResta3ConfigPage() {
                     <button onClick={() => setLogo('')}
                       className="w-full px-3 py-1.5 rounded-xl text-xs font-bold"
                       style={{ backgroundColor: 'rgba(239,68,68,0.1)', color: '#f87171' }}>
-                      ✕ Quitar logo personalizado
+                      <span className="inline-flex items-center justify-center gap-1.5"><Icon name="x" size={13} /> Quitar logo personalizado</span>
                     </button>
                   )}
                   <p className="text-[11px]" style={{ color: S.sub }}>
@@ -222,7 +223,7 @@ export default function AdminResta3ConfigPage() {
         <button onClick={save} disabled={saving}
           className="w-full py-4 rounded-2xl font-black text-base disabled:opacity-60 transition-all"
           style={{ backgroundColor: 'var(--ad-accent)', color: '#000' }}>
-          {saving ? 'Guardando...' : saved ? '✓ Cambios guardados' : 'Guardar cambios en RESTA3'}
+          {saving ? 'Guardando...' : saved ? <span className="inline-flex items-center justify-center gap-1.5"><Icon name="check" size={16} /> Cambios guardados</span> : 'Guardar cambios en RESTA3'}
         </button>
 
       </div>

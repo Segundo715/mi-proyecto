@@ -1,11 +1,15 @@
 import { NextRequest } from 'next/server'
-import { updateOrderStatus } from '@/lib/ordersDb'
+import { updateOrderStatus, updateOrderFields } from '@/lib/ordersDb'
 
-// Solo actualización de estado (pending → preparing → ready → delivered). Sin auth: KDS lo usa.
+// PATCH de pedido. Sin auth: KDS/caja lo usan.
+// - { status }  → avanza el estado (pending → preparing → ready → delivered)
+// - { notes?, tableNumber?, customerName? } → clasifica/edita (p. ej. marcar a domicilio)
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { status } = await req.json()
-  const order = await updateOrderStatus(id, status)
+  const body = await req.json()
+  const order = typeof body.status === 'string'
+    ? await updateOrderStatus(id, body.status)
+    : await updateOrderFields(id, { notes: body.notes, tableNumber: body.tableNumber, customerName: body.customerName })
   if (!order) return Response.json({ error: 'Pedido no encontrado' }, { status: 404 })
   return Response.json(order)
 }

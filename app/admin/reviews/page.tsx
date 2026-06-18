@@ -4,6 +4,7 @@
 // Las buenas (≥ 4★) se pueden publicar/despublicar para que aparezcan en /review.
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { Icon } from '@/app/components/Icon'
 
 interface Review {
   id: string; customerName: string; rating: number; comment: string
@@ -27,9 +28,10 @@ function fmtDate(iso: string) {
 
 function StarDisplay({ rating }: { rating: number }) {
   return (
-    <span>
-      <span className="text-yellow-400">{'★'.repeat(rating)}</span>
-      <span style={{ color: 'rgba(255,255,255,0.15)' }}>{'★'.repeat(5 - rating)}</span>
+    <span className="inline-flex items-center gap-0.5">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <span key={i} style={{ color: i < rating ? '#facc15' : 'rgba(255,255,255,0.15)' }}><Icon name="star" size={13} /></span>
+      ))}
     </span>
   )
 }
@@ -83,12 +85,12 @@ export default function AdminReviewsPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Publicadas', value: goodReviews.filter(r => r.published).length, emoji: '✅', color: '#4ade80' },
-            { label: 'Promedio', value: avgGood ? `${avgGood}★` : '—', emoji: '⭐', color: '#fbbf24' },
-            { label: 'Negativas', value: badReviews.length, emoji: '📧', color: '#f87171' },
+            { label: 'Publicadas', value: goodReviews.filter(r => r.published).length, icon: 'checkCircle' as const, color: '#4ade80' },
+            { label: 'Promedio', value: avgGood ? `${avgGood}` : '—', icon: 'star' as const, color: '#fbbf24' },
+            { label: 'Negativas', value: badReviews.length, icon: 'mail' as const, color: '#f87171' },
           ].map(s => (
-            <div key={s.label} className="rounded-2xl p-3 text-center" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-              <p className="text-2xl">{s.emoji}</p>
+            <div key={s.label} className="rounded-2xl p-3 text-center flex flex-col items-center" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+              <span style={{ color: s.color }}><Icon name={s.icon} size={20} /></span>
               <p className="font-black text-xl" style={{ color: s.color }}>{s.value}</p>
               <p className="text-xs font-medium" style={{ color: S.sub }}>{s.label}</p>
             </div>
@@ -102,7 +104,7 @@ export default function AdminReviewsPage() {
             style={tab === 'good'
               ? { backgroundColor: '#22c55e', color: '#000' }
               : { color: S.sub, backgroundColor: 'transparent' }}>
-            ✅ Buenas
+            <Icon name="check" size={15} /> Buenas
             <span className="text-xs px-1.5 py-0.5 rounded-full font-black"
               style={tab === 'good'
                 ? { backgroundColor: 'rgba(0,0,0,0.2)', color: '#000' }
@@ -115,7 +117,7 @@ export default function AdminReviewsPage() {
             style={tab === 'bad'
               ? { backgroundColor: '#ef4444', color: '#fff' }
               : { color: S.sub, backgroundColor: 'transparent' }}>
-            📧 Negativas
+            <Icon name="mail" size={15} /> Negativas
             <span className="text-xs px-1.5 py-0.5 rounded-full font-black"
               style={tab === 'bad'
                 ? { backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff' }
@@ -140,8 +142,8 @@ export default function AdminReviewsPage() {
             ))}
           </div>
         ) : displayed.length === 0 ? (
-          <div className="text-center py-16" style={{ color: S.sub }}>
-            <p className="text-5xl mb-3">{tab === 'good' ? '😊' : '😌'}</p>
+          <div className="flex flex-col items-center py-16" style={{ color: S.sub }}>
+            <span className="mb-3"><Icon name={tab === 'good' ? 'message' : 'checkCircle'} size={42} /></span>
             <p className="font-semibold text-lg" style={{ color: S.text }}>
               {tab === 'good' ? 'No hay reseñas buenas aún' : '¡Sin reseñas negativas!'}
             </p>
@@ -176,11 +178,11 @@ export default function AdminReviewsPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     {review.bad && (
                       <span className="text-xs px-2.5 py-1 rounded-full font-bold"
-                        style={{ backgroundColor: 'rgba(251,146,60,0.15)', color: '#fb923c' }}>📧 Enviado por email</span>
+                        style={{ backgroundColor: 'rgba(251,146,60,0.15)', color: '#fb923c' }}><span className="inline-flex items-center gap-1"><Icon name="mail" size={11} /> Enviado por email</span></span>
                     )}
                     {review.published && (
                       <span className="text-xs px-2.5 py-1 rounded-full font-bold"
-                        style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>✅ Publicada</span>
+                        style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80' }}><span className="inline-flex items-center gap-1"><Icon name="check" size={11} /> Publicada</span></span>
                     )}
                     {!review.bad && !review.published && (
                       <span className="text-xs px-2.5 py-1 rounded-full font-bold"

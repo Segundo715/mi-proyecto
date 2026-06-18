@@ -3,6 +3,7 @@
 // Dashboard de RESTA3: KPIs del día (ventas, mesas, pedidos) con datos en tiempo real de Supabase.
 import { useEffect, useState } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
+import { Icon, type IconName } from '@/app/components/Icon'
 
 const S = {
   bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
@@ -14,13 +15,13 @@ interface Order { id: string; customerName: string; status: string; total?: numb
 interface MenuItem { id: string; name: string; category: string; price: number; likes: number; available: boolean }
 interface LoyaltyCard { id: string; name: string; visits: number; active: boolean }
 
-function StatCard({ label, value, sub, color, icon }: { label: string; value: string | number; sub?: string; color: string; icon: string }) {
+function StatCard({ label, value, sub, color, icon }: { label: string; value: string | number; sub?: string; color: string; icon: IconName }) {
   return (
     <div className="rounded-2xl p-5" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
       <div className="flex items-start justify-between mb-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-          style={{ backgroundColor: `${color}18` }}>
-          {icon}
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ backgroundColor: `${color}18`, color }}>
+          <Icon name={icon} size={20} />
         </div>
         <span className="text-xs font-bold px-2 py-0.5 rounded-full"
           style={{ backgroundColor: `${color}18`, color }}>EN VIVO</span>
@@ -110,10 +111,10 @@ export default function Resta3Dashboard() {
 
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard label="Ventas del día" value={`$${totalRevenue.toFixed(0)}`} sub={`${todayOrders.length} órdenes`} color={S.accent} icon="💰" />
-          <StatCard label="Pedidos activos" value={activeOrders.length} sub="En proceso ahora" color={S.blue} icon="🍽️" />
-          <StatCard label="Ticket promedio" value={`$${avgTicket.toFixed(0)}`} sub="Por orden" color={S.purple} icon="🧾" />
-          <StatCard label="Clientes activos" value={activeCards} sub="Tarjetas fidelización" color={S.green} icon="👥" />
+          <StatCard label="Ventas del día" value={`$${totalRevenue.toFixed(0)}`} sub={`${todayOrders.length} órdenes`} color={S.accent} icon="cash" />
+          <StatCard label="Pedidos activos" value={activeOrders.length} sub="En proceso ahora" color={S.blue} icon="utensils" />
+          <StatCard label="Ticket promedio" value={`$${avgTicket.toFixed(0)}`} sub="Por orden" color={S.purple} icon="receipt" />
+          <StatCard label="Clientes activos" value={activeCards} sub="Tarjetas fidelización" color={S.green} icon="users" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -131,8 +132,8 @@ export default function Resta3Dashboard() {
             {loading ? (
               <div className="p-8 text-center text-sm" style={{ color: S.sub }}>Cargando...</div>
             ) : activeOrders.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-3xl mb-2">✅</p>
+              <div className="p-8 flex flex-col items-center">
+                <span className="mb-2" style={{ color: '#22c55e' }}><Icon name="checkCircle" size={28} /></span>
                 <p className="text-sm font-medium" style={{ color: S.sub }}>Sin pedidos pendientes</p>
               </div>
             ) : (
@@ -183,7 +184,7 @@ export default function Resta3Dashboard() {
 
             {/* Top platillos */}
             <div className="rounded-2xl p-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-              <p className="text-sm font-bold mb-3" style={{ color: S.text }}>Top platillos ❤️</p>
+              <p className="text-sm font-bold mb-3 flex items-center gap-1.5" style={{ color: S.text }}>Top platillos <span style={{ color: '#f472b6' }}><Icon name="heart" size={14} /></span></p>
               {topMenu.length === 0 ? (
                 <p className="text-xs" style={{ color: S.sub }}>Sin datos aún</p>
               ) : (
@@ -192,7 +193,7 @@ export default function Resta3Dashboard() {
                     <div key={item.id} className="flex items-center gap-2">
                       <span className="text-sm w-4 font-black" style={{ color: S.accent }}>{i + 1}</span>
                       <p className="flex-1 text-xs truncate" style={{ color: S.text }}>{item.name}</p>
-                      <span className="text-xs font-bold" style={{ color: '#f472b6' }}>❤️ {item.likes}</span>
+                      <span className="text-xs font-bold inline-flex items-center gap-1" style={{ color: '#f472b6' }}><Icon name="heart" size={12} /> {item.likes}</span>
                     </div>
                   ))}
                 </div>
@@ -203,16 +204,16 @@ export default function Resta3Dashboard() {
             <div className="rounded-2xl p-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
               <p className="text-sm font-bold mb-3" style={{ color: S.text }}>Acceso rápido</p>
               <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: 'Nueva orden', href: '/resta3/tpv', icon: '🧾' },
-                  { label: 'Ver cocina', href: '/resta3/cocina', icon: '👨‍🍳' },
-                  { label: 'Inventario', href: '/resta3/inventario', icon: '📦' },
-                  { label: 'Reportes', href: '/resta3/reportes', icon: '📊' },
-                ].map(a => (
+                {([
+                  { label: 'Nueva orden', href: '/resta3/tpv', icon: 'receipt' },
+                  { label: 'Ver cocina', href: '/resta3/cocina', icon: 'chef' },
+                  { label: 'Inventario', href: '/resta3/inventario', icon: 'box' },
+                  { label: 'Reportes', href: '/resta3/reportes', icon: 'chart' },
+                ] as const).map(a => (
                   <a key={a.href} href={a.href}
                     className="flex flex-col items-center gap-1 py-3 rounded-xl text-center transition-all"
                     style={{ backgroundColor: '#0f1117', border: `1px solid ${S.border}` }}>
-                    <span className="text-xl">{a.icon}</span>
+                    <span style={{ color: S.text }}><Icon name={a.icon} size={20} /></span>
                     <span className="text-[10px] font-bold" style={{ color: S.sub }}>{a.label}</span>
                   </a>
                 ))}
@@ -225,18 +226,18 @@ export default function Resta3Dashboard() {
         <div>
           <p className="text-sm font-bold mb-3" style={{ color: S.sub }}>Módulos del sistema</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {[
-              { label: 'TPV / Caja', icon: '🖥️', href: '/resta3/tpv', color: S.accent, desc: 'Terminal de venta' },
-              { label: 'Mesas', icon: '🪑', href: '/resta3/mesas', color: S.blue, desc: 'Gestión del salón' },
-              { label: 'Cocina', icon: '👨‍🍳', href: '/resta3/cocina', color: '#f97316', desc: 'Pantalla KDS' },
-              { label: 'Inventario', icon: '📦', href: '/resta3/inventario', color: S.green, desc: 'Stock y productos' },
-              { label: 'Empleados', icon: '👥', href: '/resta3/empleados', color: S.purple, desc: 'Turnos y personal' },
-              { label: 'Reportes', icon: '📊', href: '/resta3/reportes', color: '#ec4899', desc: 'Analytics y Z' },
-            ].map(m => (
+            {([
+              { label: 'TPV / Caja', icon: 'monitor', href: '/resta3/tpv', color: S.accent, desc: 'Terminal de venta' },
+              { label: 'Mesas', icon: 'chair', href: '/resta3/mesas', color: S.blue, desc: 'Gestión del salón' },
+              { label: 'Cocina', icon: 'chef', href: '/resta3/cocina', color: '#f97316', desc: 'Pantalla KDS' },
+              { label: 'Inventario', icon: 'box', href: '/resta3/inventario', color: S.green, desc: 'Stock y productos' },
+              { label: 'Empleados', icon: 'users', href: '/resta3/empleados', color: S.purple, desc: 'Turnos y personal' },
+              { label: 'Reportes', icon: 'chart', href: '/resta3/reportes', color: '#ec4899', desc: 'Analytics y Z' },
+            ] as const).map(m => (
               <a key={m.href} href={m.href}
                 className="rounded-2xl p-4 text-center transition-all hover:scale-[1.02]"
                 style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-                <div className="text-3xl mb-2">{m.icon}</div>
+                <div className="mb-2 flex justify-center" style={{ color: m.color }}><Icon name={m.icon} size={26} /></div>
                 <p className="text-xs font-black" style={{ color: S.text }}>{m.label}</p>
                 <p className="text-[10px] mt-0.5" style={{ color: S.sub }}>{m.desc}</p>
               </a>

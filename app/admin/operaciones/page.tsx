@@ -3,6 +3,7 @@
 // Vista de mesas y pedidos en vivo. Mesas y pedidos vienen de Supabase (mismas tablas que RESTA3).
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { Icon, type IconName } from '@/app/components/Icon'
 
 const S = {
   bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
@@ -73,7 +74,7 @@ export default function AdminOperacionesPage() {
         {/* Header */}
         <div className="flex items-center justify-between pt-1">
           <div>
-            <h1 className="text-xl font-black" style={{ color: S.text }}>⚡ Operaciones</h1>
+            <h1 className="text-xl font-black flex items-center gap-2" style={{ color: S.text }}><Icon name="zap" size={20} /> Operaciones</h1>
             <p className="text-xs mt-0.5" style={{ color: S.sub }}>Mesas, pedidos y cocina en vivo</p>
           </div>
           <span className="flex items-center gap-1.5 text-sm font-bold px-3 py-1.5 rounded-xl"
@@ -122,8 +123,8 @@ export default function AdminOperacionesPage() {
             ) : (
               zones.map(zone => (
                 <div key={zone}>
-                  <p className="text-sm font-semibold mb-3" style={{ color: S.sub }}>
-                    {zone === 'Salón' ? '🏠' : zone === 'Terraza' ? '🌿' : zone === 'Barra' ? '🍺' : '📍'} {zone}
+                  <p className="text-sm font-semibold mb-3 flex items-center gap-1.5" style={{ color: S.sub }}>
+                    <Icon name={(zone === 'Salón' ? 'home' : zone === 'Terraza' ? 'leaf' : zone === 'Barra' ? 'coffee' : 'pin') as IconName} size={14} /> {zone}
                   </p>
                   <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
                     {tables.filter(t => t.zone === zone).map(t => {
@@ -209,8 +210,8 @@ export default function AdminOperacionesPage() {
               return (
                 <div key={status} className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}`, borderTop: `2px solid ${st.color}` }}>
                   <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
-                    <span className="font-bold text-sm" style={{ color: S.text }}>
-                      {status === 'pending' ? '📥' : status === 'preparing' ? '🔥' : '✅'} {st.label} ({col.length})
+                    <span className="font-bold text-sm inline-flex items-center gap-1.5" style={{ color: S.text }}>
+                      <Icon name={(status === 'pending' ? 'clock' : status === 'preparing' ? 'chef' : 'checkCircle') as IconName} size={15} /> {st.label} ({col.length})
                     </span>
                   </div>
                   <div className="px-5 py-4 space-y-3">

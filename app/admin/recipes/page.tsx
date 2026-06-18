@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { Icon } from '@/app/components/Icon'
 import { uploadWebp } from '@/lib/uploadWebp'
 
 const S = {
@@ -178,9 +179,9 @@ export default function AdminRecipesPage() {
               className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
               style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
             {arr.length > 1 && (
-              <button onClick={() => onChange(arr.filter((_, j) => j !== i))}
-                className="px-2.5 rounded-xl text-xs font-bold"
-                style={{ backgroundColor: 'rgba(239,68,68,.12)', color: '#f87171' }}>✕</button>
+              <button onClick={() => onChange(arr.filter((_, j) => j !== i))} aria-label="Quitar"
+                className="px-2.5 rounded-xl inline-flex items-center"
+                style={{ backgroundColor: 'rgba(239,68,68,.12)', color: '#f87171' }}><Icon name="x" size={14} /></button>
             )}
           </div>
         ))}
@@ -255,7 +256,7 @@ export default function AdminRecipesPage() {
                 <button onClick={saveBrandColor} disabled={savingColor}
                   className="px-4 py-2 rounded-2xl text-sm font-bold shrink-0"
                   style={{ backgroundColor: savedColor ? 'rgba(0,230,118,.2)' : `${S.accent}22`, color: savedColor ? '#4ade80' : S.accent }}>
-                  {savingColor ? '...' : savedColor ? '✓' : 'Guardar'}
+                  {savingColor ? '...' : savedColor ? <Icon name="check" size={15} /> : 'Guardar'}
                 </button>
               </div>
               <div className="mt-2 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-bold"
@@ -314,16 +315,16 @@ export default function AdminRecipesPage() {
                   disabled={uploadingCardId === r.id}>
                   {r.imageUrl
                     ? <img src={r.imageUrl} alt={r.name} className="w-full object-cover" style={{ height: '160px' }} />
-                    : <div className="w-full flex items-center justify-center text-5xl"
-                        style={{ height: '120px', backgroundColor: S.bg }}>📷</div>
+                    : <div className="w-full flex items-center justify-center"
+                        style={{ height: '120px', backgroundColor: S.bg, color: S.sub }}><Icon name="camera" size={40} /></div>
                   }
                   {/* Overlay al hacer hover */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}>
                     {uploadingCardId === r.id
                       ? <span className="text-white text-xs font-bold">Subiendo...</span>
-                      : <span className="text-white text-xs font-bold bg-black/60 px-3 py-1.5 rounded-full">
-                          {r.imageUrl ? '📷 Cambiar foto' : '📷 Agregar foto'}
+                      : <span className="text-white text-xs font-bold bg-black/60 px-3 py-1.5 rounded-full inline-flex items-center gap-1.5">
+                          <Icon name="camera" size={13} /> {r.imageUrl ? 'Cambiar foto' : 'Agregar foto'}
                         </span>
                     }
                   </div>
@@ -350,8 +351,8 @@ export default function AdminRecipesPage() {
                     </button>
                     <button onClick={() => remove(r.id)}
                       className="px-3 py-2 rounded-xl text-xs font-bold"
-                      style={{ backgroundColor: 'rgba(239,68,68,.12)', color: '#f87171' }}>
-                      🗑
+                      style={{ backgroundColor: 'rgba(239,68,68,.12)', color: '#f87171' }} aria-label="Eliminar">
+                      <Icon name="trash" size={14} />
                     </button>
                   </div>
                 </div>
@@ -371,7 +372,7 @@ export default function AdminRecipesPage() {
 
             {selected.imageUrl
               ? <img src={selected.imageUrl} alt={selected.name} className="w-full object-cover rounded-t-3xl" style={{ height: '220px' }} />
-              : <div className="w-full flex items-center justify-center text-5xl rounded-t-3xl" style={{ height: '120px', backgroundColor: S.bg }}>📖</div>
+              : <div className="w-full flex items-center justify-center rounded-t-3xl" style={{ height: '120px', backgroundColor: S.bg, color: S.sub }}><Icon name="book" size={40} /></div>
             }
 
             <div className="p-5 space-y-4">
@@ -382,7 +383,7 @@ export default function AdminRecipesPage() {
                   <h2 className="text-xl font-black mt-1" style={{ color: S.text }}>{selected.name}</h2>
                   {selected.description && <p className="text-sm mt-1" style={{ color: S.sub }}>{selected.description}</p>}
                 </div>
-                <button onClick={() => setSelected(null)} className="text-xl shrink-0" style={{ color: S.sub }}>✕</button>
+                <button onClick={() => setSelected(null)} aria-label="Cerrar" className="shrink-0 inline-flex items-center" style={{ color: S.sub }}><Icon name="x" size={18} /></button>
               </div>
 
               <div>
@@ -435,7 +436,7 @@ export default function AdminRecipesPage() {
 
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-black" style={{ color: S.text }}>{editing ? 'Editar receta' : 'Nueva receta'}</h2>
-              <button onClick={() => setShowForm(false)} className="text-xl" style={{ color: S.sub }}>✕</button>
+              <button onClick={() => setShowForm(false)} aria-label="Cerrar" className="inline-flex items-center" style={{ color: S.sub }}><Icon name="x" size={18} /></button>
             </div>
 
             {/* Imagen */}
@@ -444,7 +445,7 @@ export default function AdminRecipesPage() {
               <div className="flex items-center gap-3">
                 {form.imageUrl
                   ? <img src={form.imageUrl} alt="" className="w-16 h-16 rounded-2xl object-cover shrink-0" />
-                  : <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: S.bg }}>📷</div>
+                  : <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: S.bg, color: S.sub }}><Icon name="camera" size={24} /></div>
                 }
                 <button onClick={() => fileRef.current?.click()} disabled={uploading}
                   className="flex-1 py-2.5 rounded-2xl text-sm font-bold border-dashed border-2 transition-all"

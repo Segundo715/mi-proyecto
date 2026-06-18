@@ -3,6 +3,7 @@
 // Órdenes de compra a proveedores. Estado en localStorage (no persiste en Supabase aún).
 import { useState, useEffect } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
+import { Icon } from '@/app/components/Icon'
 
 const S = { bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)', text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)' }
 
@@ -133,8 +134,8 @@ export default function ComprasPage() {
                         <option value="recibida">Recibida</option>
                         <option value="cancelada">Cancelada</option>
                       </select>
-                      <button onClick={() => deleteOrder(po.id)} className="text-xs px-2 py-1 rounded-lg"
-                        style={{ backgroundColor: 'rgba(239,68,68,0.08)', color: '#f87171' }}>🗑</button>
+                      <button onClick={() => deleteOrder(po.id)} aria-label="Eliminar" className="px-2 py-1 rounded-lg inline-flex items-center"
+                        style={{ backgroundColor: 'rgba(239,68,68,0.08)', color: '#f87171' }}><Icon name="trash" size={14} /></button>
                     </div>
                   </div>
                 )
@@ -152,7 +153,7 @@ export default function ComprasPage() {
             style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
             <div className="flex items-center justify-between">
               <h2 className="font-black" style={{ color: S.text }}>Nueva orden de compra</h2>
-              <button onClick={() => setShowForm(false)} style={{ color: S.sub }}>✕</button>
+              <button onClick={() => setShowForm(false)} aria-label="Cerrar" style={{ color: S.sub }}><Icon name="x" size={18} /></button>
             </div>
             {[
               { key: 'supplier', label: 'Proveedor *', placeholder: 'Nombre del proveedor', type: 'text' },

@@ -4,6 +4,7 @@
 // El color de marca se propaga a todos los componentes internos en tiempo de render, no vía CSS vars.
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import AIChat from '@/app/components/AIChat'
+import { Icon } from '@/app/components/Icon'
 
 /* ============================================================================
  * Tema (claro / oscuro). El guinda es constante en ambos.
@@ -242,10 +243,186 @@ function RecipeBody({ recipe, t, controls, guinda, logo }: { recipe: Recipe; t: 
 }
 
 /* ============================================================================
+ * Pedidos (KDS) — mismo estado que /resta3/cocina, con el tema del recetario
+ * ========================================================================== */
+interface OrderItem { name: string; quantity: number; price: number }
+interface Order { id: string; customerName: string; tableNumber?: string; status: string; items: OrderItem[]; notes?: string; createdAt: string }
+
+const KDS = [
+  { key: 'pending',   label: 'Nuevo',      color: '#f59e0b', next: 'preparing', nextLabel: 'Iniciar',  icon: 'play'  as const, urgent: 5  },
+  { key: 'preparing', label: 'Preparando', color: '#3b82f6', next: 'ready',     nextLabel: 'Listo',    icon: 'check' as const, urgent: 15 },
+  { key: 'ready',     label: 'Listo',      color: '#22c55e', next: 'delivered', nextLabel: 'Entregar', icon: 'truck' as const, urgent: 10 },
+]
+
+function elapsedMin(iso: string) {
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
+  return { label: mins < 1 ? 'ahora' : `${mins} min`, mins }
+}
+function noteText(notes?: string) { return (notes ?? '').replace(/^\[\w+\]\s*/, '').trim() }
+
+// Meta de estado para el listado del día (incluye enviado/entregado).
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  pending:   { label: 'Nuevo',      color: '#f59e0b' },
+  preparing: { label: 'Preparando', color: '#3b82f6' },
+  ready:     { label: 'Listo',      color: '#22c55e' },
+  enviado:   { label: 'Enviado',    color: '#0ea5e9' },
+  delivered: { label: 'Entregado',  color: '#a855f7' },
+}
+function fmtClock(iso: string) { return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) }
+function isToday(iso: string) {
+  const d = new Date(iso), n = new Date()
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate()
+}
+
+function OrdersBoard({ t, guinda }: { t: Theme; guinda: string }) {
+  const [all, setAll] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  const [advancing, setAdvancing] = useState<string | null>(null)
+
+  async function load() {
+    try {
+      const r = await fetch('/api/orders')
+      if (r.ok) setAll(await r.json())
+    } catch { /* ignore */ }
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    load()
+    const id = setInterval(load, 10000)
+    return () => clearInterval(id)
+  }, [])
+
+  async function advance(id: string, next: string) {
+    setAdvancing(id)
+    await fetch(`/api/orders/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: next }),
+    })
+    await load()
+    setAdvancing(null)
+  }
+
+  if (loading) {
+    return <div className="md:flex-1 md:min-h-0 flex items-center justify-center text-sm rounded-2xl shadow-xl" style={{ color: t.sub, background: t.card }}>Cargando pedidos...</div>
+  }
+
+  const active = all.filter((o) => o.status !== 'delivered')
+  // Todos los pedidos de hoy (cualquier estado), más recientes primero.
+  const today = all
+    .filter((o) => isToday(o.createdAt))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+  return (
+    <div className="md:flex-1 md:min-h-0 flex flex-col md:flex-row gap-4 md:overflow-hidden">
+
+      {/* Tarjeta con el board por estado */}
+      <div className="flex-1 min-w-0 shadow-xl rounded-2xl overflow-hidden flex flex-col md:min-h-0" style={{ background: t.card }}>
+        <div className="recipe-scroll p-5 sm:p-7 md:flex-1 md:min-h-0 md:overflow-y-auto">
+        {active.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center py-16" style={{ color: t.sub }}>
+            <span className="mb-3" style={{ color: '#22c55e' }}><Icon name="checkCircle" size={44} /></span>
+            <p className="text-lg font-black" style={{ color: t.ink }}>Sin pedidos pendientes</p>
+            <p className="text-sm mt-1">Los pedidos en proceso aparecerán aquí</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-3 sm:gap-4 items-start">
+            {KDS.map((col) => {
+              const group = active.filter((o) => o.status === col.key)
+              return (
+                <div key={col.key}>
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: col.color }} />
+                    <span className="text-xs font-black uppercase tracking-wide" style={{ color: col.color }}>{col.label}</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded-full font-bold" style={{ background: hexA(col.color, 0.12), color: col.color }}>{group.length}</span>
+                  </div>
+                  {group.length === 0 ? (
+                    <div className="rounded-2xl p-4 text-center text-xs" style={{ color: t.sub, background: t.field, border: `1px dashed ${t.line}` }}>Sin pedidos</div>
+                  ) : (
+                  <div className="space-y-3">
+                    {group.map((o) => {
+                      const { label: elLabel, mins } = elapsedMin(o.createdAt)
+                      const urgent = mins >= col.urgent
+                      const note = noteText(o.notes)
+                      return (
+                        <div key={o.id} className="rounded-2xl p-4 space-y-3" style={{ background: t.field, border: `1px solid ${urgent ? hexA(col.color, 0.5) : t.line}` }}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-black text-sm" style={{ color: t.ink }}>{o.customerName}</p>
+                              {o.tableNumber && <p className="text-xs" style={{ color: t.sub }}>{o.tableNumber}</p>}
+                            </div>
+                            <span className="text-xs font-black px-2 py-0.5 rounded-full shrink-0 inline-flex items-center gap-1" style={{ background: hexA(col.color, urgent ? 0.25 : 0.12), color: col.color }}>
+                              {urgent && <Icon name="alert" size={11} />}{elLabel}
+                            </span>
+                          </div>
+                          {o.items.length > 0 && (
+                            <ul className="space-y-1">
+                              {o.items.map((it, i) => (
+                                <li key={i} className="flex items-center gap-2 text-sm" style={{ color: t.ink }}>
+                                  <span className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0" style={{ background: hexA(col.color, 0.14), color: col.color }}>{it.quantity}</span>
+                                  {it.name}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          {note && <p className="text-xs px-2 py-1.5 rounded-lg flex items-start gap-1.5" style={{ background: hexA(guinda, 0.08), color: t.sub }}><Icon name="note" size={13} className="shrink-0 mt-0.5" /><span>{note}</span></p>}
+                          <button onClick={() => advance(o.id, col.next)} disabled={advancing === o.id}
+                            className="w-full py-2.5 rounded-xl text-sm font-black transition-colors disabled:opacity-60 inline-flex items-center justify-center gap-1.5"
+                            style={{ background: hexA(col.color, 0.16), color: col.color, border: `1px solid ${hexA(col.color, 0.3)}` }}>
+                            {advancing === o.id ? 'Guardando...' : <><Icon name={col.icon} size={15} />{col.nextLabel}</>}
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+        </div>
+      </div>
+
+      {/* Listado de todos los pedidos del día (lado derecho, fuera de la tarjeta) */}
+      <aside className="shrink-0 md:w-[280px] flex flex-col md:min-h-0 rounded-2xl overflow-hidden shadow-xl" style={{ border: `1px solid ${t.line}`, background: t.card }}>
+        <div className="px-4 py-3 flex items-center justify-between shrink-0" style={{ borderBottom: `1px solid ${t.line}` }}>
+          <span className="font-black text-sm flex items-center gap-1.5" style={{ color: t.ink }}><Icon name="clipboard" size={15} /> Pedidos del día</span>
+          <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: hexA(guinda, 0.12), color: guinda }}>{today.length}</span>
+        </div>
+        <div className="recipe-scroll md:flex-1 md:min-h-0 md:overflow-y-auto p-2 space-y-1.5">
+          {today.length === 0 ? (
+            <p className="text-xs text-center py-8" style={{ color: t.sub }}>Sin pedidos hoy</p>
+          ) : today.map((o) => {
+            const st = STATUS_META[o.status] ?? { label: o.status, color: t.sub }
+            const itemCount = o.items.reduce((s, it) => s + it.quantity, 0)
+            return (
+              <div key={o.id} className="rounded-xl p-2.5 flex items-center gap-2.5" style={{ background: t.field, border: `1px solid ${t.line}` }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold truncate" style={{ color: t.ink }}>{o.customerName}</p>
+                  <p className="text-[11px]" style={{ color: t.sub }}>
+                    {fmtClock(o.createdAt)}{itemCount > 0 ? ` · ${itemCount} item${itemCount !== 1 ? 's' : ''}` : ''}
+                  </p>
+                </div>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full shrink-0" style={{ background: hexA(st.color, 0.14), color: st.color }}>
+                  {st.label}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </aside>
+    </div>
+  )
+}
+
+/* ============================================================================
  * Página
  * ========================================================================== */
 export default function RecetasPage() {
   const [theme, setTheme] = useState<ThemeName>('light')
+  const [view, setView] = useState<'recetas' | 'pedidos'>('recetas')
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('Todas')
   const [selectedId, setSelectedId] = useState<string>('')
@@ -335,11 +512,10 @@ export default function RecetasPage() {
           )
         })}
       </div>
-      {themeBtn}
     </div>
   )
 
-  // Controles del detalle: volver a la cuadrícula + tema.
+  // Controles del detalle: volver a la cuadrícula.
   const detailControls = (
     <div className="flex flex-wrap items-center gap-3">
       <button
@@ -349,7 +525,6 @@ export default function RecetasPage() {
       >
         ← Volver a platillos
       </button>
-      {themeBtn}
     </div>
   )
 
@@ -363,7 +538,22 @@ export default function RecetasPage() {
             <img src={logo} alt="Logo" className="h-10 w-auto object-contain" />
             <span className="text-xl font-black" style={{ color: guinda }}>Recetario</span>
           </div>
-          <div className="relative flex-1 min-w-[220px] max-w-md">
+          {themeBtn}
+          {/* Navegador: Recetas / Pedidos */}
+          <div className="flex items-center gap-1 p-1 rounded-xl shrink-0" style={{ background: t.chip, border: `1px solid ${t.line}` }}>
+            {(['recetas', 'pedidos'] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className="px-3 sm:px-3.5 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap"
+                style={view === v ? { background: guinda, color: '#fff' } : { background: 'transparent', color: t.chipInk }}
+              >
+                {v === 'recetas' ? 'Recetas' : 'Pedidos'}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative flex-1 min-w-[160px] max-w-md">
             <span className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: t.sub }}>
               <IconSearch color="currentColor" />
             </span>
@@ -377,7 +567,10 @@ export default function RecetasPage() {
           </div>
         </div>
 
-        {/* ---------- Tarjeta (con los botones adentro) ---------- */}
+        {view === 'pedidos' ? (
+          <OrdersBoard t={t} guinda={guinda} />
+        ) : (
+        /* ---------- Tarjeta (recetas) ---------- */
         <div className="w-full shadow-xl overflow-hidden flex rounded-2xl md:flex-1 md:min-h-0" style={{ background: t.card }}>
           {/* Contenido */}
           <div className="flex-1 min-w-0 p-6 sm:p-9 flex flex-col md:min-h-0">
@@ -436,6 +629,7 @@ export default function RecetasPage() {
             </div>
           )}
         </div>
+        )}
       </div>
       <AIChat role="recipe" />
     </div>

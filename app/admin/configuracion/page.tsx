@@ -4,6 +4,7 @@
 // textos de registro y perfiles de administrador.
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { Icon } from '@/app/components/Icon'
 import { uploadWebp } from '@/lib/uploadWebp'
 
 const S = {
@@ -133,7 +134,7 @@ export default function AdminConfiguracionPage() {
       disabled={saving === k}
       className="px-4 py-2 rounded-2xl text-sm font-bold shrink-0 transition-all"
       style={{ backgroundColor: saved === k ? 'rgba(0,230,118,.2)' : `${S.accent}22`, color: saved === k ? '#4ade80' : S.accent }}>
-      {saving === k ? '...' : saved === k ? '✓ Guardado' : 'Guardar'}
+      {saving === k ? '...' : saved === k ? <span className="inline-flex items-center gap-1.5"><Icon name="check" size={14} /> Guardado</span> : 'Guardar'}
     </button>
   )
 

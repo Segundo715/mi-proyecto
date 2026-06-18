@@ -54,3 +54,17 @@ export async function updateOrderStatus(id: string, status: Order['status']): Pr
   const { data } = await supabase.from('orders').update({ status }).eq('id', id).select().single()
   return data ? toOrder(data) : null
 }
+
+// Actualiza campos editables de un pedido ya creado (p. ej. clasificarlo como
+// domicilio tras enviarlo: notes con prefijo [DOMICILIO] + dirección, y limpiar mesa).
+export async function updateOrderFields(
+  id: string,
+  fields: { notes?: string; tableNumber?: string; customerName?: string },
+): Promise<Order | null> {
+  const payload: Record<string, unknown> = {}
+  if (fields.notes !== undefined)        payload.notes = fields.notes
+  if (fields.tableNumber !== undefined)  payload.table_number = fields.tableNumber || null
+  if (fields.customerName !== undefined) payload.customer_name = fields.customerName
+  const { data } = await supabase.from('orders').update(payload).eq('id', id).select().single()
+  return data ? toOrder(data) : null
+}

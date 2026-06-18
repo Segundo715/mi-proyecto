@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Resta3Nav from '@/app/components/Resta3Nav'
+import { Icon, type IconName } from '@/app/components/Icon'
 
 const FloorPlanEditor = dynamic(() => import('@/components/floor-plan/FloorPlanEditor'), { ssr: false })
 const ServiceView     = dynamic(() => import('@/components/service/ServiceView'),         { ssr: false })
@@ -28,11 +29,11 @@ const inputStyle = { backgroundColor: S.input, color: S.text, border: `1px solid
 type TableStatus = 'libre' | 'ocupada' | 'reservada' | 'limpieza'
 interface Table { id: string; label: string; seats: number; status: TableStatus; customer?: string; since?: string; zone: string }
 
-const STATUS_CFG: Record<TableStatus, { label: string; color: string; bg: string; border: string; icon: string }> = {
-  libre:     { label: 'Libre',     color: '#22c55e', bg: 'rgba(34,197,94,0.08)',  border: 'rgba(34,197,94,0.25)',  icon: '🟢' },
-  ocupada:   { label: 'Ocupada',   color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.35)', icon: '🔴' },
-  reservada: { label: 'Reservada', color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.25)', icon: '🔵' },
-  limpieza:  { label: 'Limpieza',  color: '#a855f7', bg: 'rgba(168,85,247,0.08)', border: 'rgba(168,85,247,0.25)', icon: '🟣' },
+const STATUS_CFG: Record<TableStatus, { label: string; color: string; bg: string; border: string }> = {
+  libre:     { label: 'Libre',     color: '#22c55e', bg: 'rgba(34,197,94,0.08)',  border: 'rgba(34,197,94,0.25)' },
+  ocupada:   { label: 'Ocupada',   color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.35)' },
+  reservada: { label: 'Reservada', color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.25)' },
+  limpieza:  { label: 'Limpieza',  color: '#a855f7', bg: 'rgba(168,85,247,0.08)', border: 'rgba(168,85,247,0.25)' },
 }
 
 // ── Reservaciones ─────────────────────────────────────────────────────────────
@@ -68,14 +69,14 @@ function KPI({ label, value, sub, color }: { label: string; value: string; sub?:
 
 // ── Tabs disponibles ──────────────────────────────────────────────────────────
 const TABS = [
-  { key: 'mesas',    label: '🪑 Mesas'      },
-  { key: 'plano',    label: '🗺️ Plano'      },
-  { key: 'reservas', label: '📋 Reservas'   },
-  { key: 'servicio', label: '🍽️ Servicio'   },
-  { key: 'perfiles', label: '👥 Perfiles'   },
-  { key: 'timeline', label: '⏱️ Timeline'   },
-  { key: 'consumo',  label: '📊 Consumo'    },
-  { key: 'turnos',   label: '🔄 Turnos'     },
+  { key: 'mesas',    label: 'Mesas',    icon: 'chair' },
+  { key: 'plano',    label: 'Plano',    icon: 'map' },
+  { key: 'reservas', label: 'Reservas', icon: 'clipboard' },
+  { key: 'servicio', label: 'Servicio', icon: 'utensils' },
+  { key: 'perfiles', label: 'Perfiles', icon: 'users' },
+  { key: 'timeline', label: 'Timeline', icon: 'clock' },
+  { key: 'consumo',  label: 'Consumo',  icon: 'chart' },
+  { key: 'turnos',   label: 'Turnos',   icon: 'refresh' },
 ] as const
 
 type Tab = typeof TABS[number]['key']
@@ -198,11 +199,11 @@ export default function MesasPage() {
           <div className="flex gap-1.5 p-1 rounded-xl w-max" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
             {TABS.map(t => (
               <button key={t.key} onClick={() => setTab(t.key)}
-                className="px-3.5 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap"
+                className="px-3.5 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap inline-flex items-center gap-1.5"
                 style={tab === t.key
                   ? { backgroundColor: S.accent, color: '#000' }
                   : { color: S.sub, backgroundColor: 'transparent' }}>
-                {t.label}
+                <Icon name={t.icon} size={14} />{t.label}
               </button>
             ))}
           </div>
@@ -357,7 +358,7 @@ export default function MesasPage() {
                             style={{ backgroundColor: st.bg, color: st.color }}>{st.label}</span>
                         </div>
                         <p className="text-xs" style={{ color: S.sub }}>{r.phone}</p>
-                        {r.notes && <p className="text-xs mt-0.5 font-medium" style={{ color: '#fbbf24' }}>📝 {r.notes}</p>}
+                        {r.notes && <p className="text-xs mt-0.5 font-medium flex items-center gap-1" style={{ color: '#fbbf24' }}><Icon name="note" size={12} /> {r.notes}</p>}
                       </div>
                     </div>
                     {r.status !== 'cancelled' && (
@@ -433,7 +434,7 @@ export default function MesasPage() {
                 <h2 className="font-black text-lg" style={{ color: S.text }}>{modal.label}</h2>
                 <p className="text-xs" style={{ color: S.sub }}>{modal.seats} personas · {modal.zone}</p>
               </div>
-              <button onClick={closeModal} aria-label="Cerrar" style={{ color: S.sub }} className="text-xl">✕</button>
+              <button onClick={closeModal} aria-label="Cerrar" style={{ color: S.sub }} className="inline-flex items-center"><Icon name="x" size={18} /></button>
             </div>
             <div>
               <label htmlFor="mesa-customer" className="block text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: S.sub }}>
@@ -458,7 +459,7 @@ export default function MesasPage() {
                     style={selectedStatus === status
                       ? { backgroundColor: cfg.bg, color: cfg.color, border: `2px solid ${cfg.color}` }
                       : { backgroundColor: S.bg, color: S.sub, border: `1px solid ${S.border}` }}>
-                    <span>{cfg.icon}</span>
+                    <span style={{ color: cfg.color }}><Icon name="dot" size={10} /></span>
                     <span>{cfg.label}</span>
                   </button>
                 ))}

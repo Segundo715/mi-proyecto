@@ -4,6 +4,7 @@
 // Las reservaciones solo existen en estado local; no persisten en Supabase.
 import { useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { Icon } from '@/app/components/Icon'
 import FloorPlanEditor from '@/components/floor-plan/FloorPlanEditor'
 import ServiceView from '@/components/service/ServiceView'
 import GuestProfiles from '@/components/guests/GuestProfiles'
@@ -215,7 +216,7 @@ export default function AdminReservacionesPage() {
                         style={{ backgroundColor: st.bg, color: st.color }}>{st.label}</span>
                     </div>
                     <p className="text-xs" style={{ color: S.sub }}>{r.phone}</p>
-                    {r.notes && <p className="text-xs mt-0.5 font-medium" style={{ color: '#fbbf24' }}>📝 {r.notes}</p>}
+                    {r.notes && <p className="text-xs mt-0.5 font-medium flex items-center gap-1" style={{ color: '#fbbf24' }}><Icon name="note" size={12} /> {r.notes}</p>}
                   </div>
                 </div>
                 {r.status !== 'cancelled' && (

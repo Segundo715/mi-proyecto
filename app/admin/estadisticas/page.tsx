@@ -2,6 +2,7 @@
 
 // Gráfica SVG de predicción de ventas (banda de confianza + forecast). Datos demo; no conecta a fuente real.
 import AdminNav from '@/app/components/AdminNav'
+import { Icon } from '@/app/components/Icon'
 
 const S = {
   bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
@@ -23,7 +24,7 @@ export default function AdminEstadisticasPage() {
 
         {/* Header */}
         <div className="pt-1">
-          <h1 className="text-xl font-black" style={{ color: S.text }}>📊 Analytics</h1>
+          <h1 className="text-xl font-black flex items-center gap-2" style={{ color: S.text }}><Icon name="chart" size={20} /> Analytics</h1>
           <p className="text-xs mt-0.5" style={{ color: S.sub }}>Métricas, tendencias y predicciones</p>
         </div>
 

@@ -3,6 +3,7 @@
 // Inventario CRUD conectado a Supabase (tabla inventory). Alerta visual cuando stock < minStock.
 import { useState, useEffect } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
+import { Icon } from '@/app/components/Icon'
 
 const S = { bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)', text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)' }
 
@@ -97,7 +98,7 @@ export default function InventarioPage() {
             className="rounded-2xl p-4 text-center transition-all"
             style={{ backgroundColor: S.card, border: `1px solid ${filter === 'bajo' ? 'rgba(239,68,68,0.4)' : S.border}` }}>
             <p className="text-xl font-black" style={{ color: '#f87171' }}>{lowStock}</p>
-            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Stock bajo ⚠️</p>
+            <p className="text-xs mt-0.5 inline-flex items-center gap-1" style={{ color: S.sub }}>Stock bajo <Icon name="alert" size={12} /></p>
           </button>
           <div className="rounded-2xl p-4 text-center" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
             <p className="text-xl font-black" style={{ color: '#22c55e' }}>${totalValue.toLocaleString()}</p>
@@ -144,7 +145,7 @@ export default function InventarioPage() {
                           <span className="font-black" style={{ color: low ? '#f87171' : '#22c55e' }}>
                             {item.stock} {item.unit}
                           </span>
-                          {low && <span className="ml-1 text-xs" style={{ color: '#f87171' }}>⚠️</span>}
+                          {low && <span className="ml-1 inline-flex align-middle" style={{ color: '#f87171' }}><Icon name="alert" size={12} /></span>}
                         </td>
                         <td className="px-4 py-3 text-xs" style={{ color: S.sub }}>{item.minStock} {item.unit}</td>
                         <td className="px-4 py-3 font-bold" style={{ color: S.accent }}>${item.cost}</td>
@@ -159,8 +160,8 @@ export default function InventarioPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <button onClick={() => deleteItem(item.id)} className="text-xs px-2 py-1 rounded-lg"
-                            style={{ backgroundColor: 'rgba(239,68,68,0.08)', color: '#f87171' }}>🗑</button>
+                          <button onClick={() => deleteItem(item.id)} aria-label="Eliminar" className="px-2 py-1 rounded-lg inline-flex items-center"
+                            style={{ backgroundColor: 'rgba(239,68,68,0.08)', color: '#f87171' }}><Icon name="trash" size={14} /></button>
                         </td>
                       </tr>
                     )
@@ -180,7 +181,7 @@ export default function InventarioPage() {
             style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
             <div className="flex items-center justify-between">
               <h2 className="font-black" style={{ color: S.text }}>Nuevo producto</h2>
-              <button onClick={() => setShowForm(false)} style={{ color: S.sub }}>✕</button>
+              <button onClick={() => setShowForm(false)} aria-label="Cerrar" style={{ color: S.sub }}><Icon name="x" size={18} /></button>
             </div>
             {[
               { key: 'name', label: 'Nombre *', placeholder: 'Ej: Pollo (kg)' },

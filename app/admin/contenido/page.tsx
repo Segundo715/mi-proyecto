@@ -4,6 +4,7 @@
 // Estado solo en memoria; no conecta a APIs de publicación real.
 import { useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { Icon, type IconName } from '@/app/components/Icon'
 
 const S = {
   bg:     'var(--ad-bg)',
@@ -22,11 +23,11 @@ interface Post {
   id: number; platform: string; caption: string; scheduledAt: string; status: 'scheduled' | 'published' | 'draft'
 }
 
-const PLATFORMS = [
-  { name: 'Instagram', color: '#c084fc', icon: '📸' },
-  { name: 'TikTok',    color: '#f87171', icon: '🎵' },
-  { name: 'Facebook',  color: '#60a5fa', icon: '👍' },
-  { name: 'WhatsApp',  color: S.accent,  icon: '💬' },
+const PLATFORMS: { name: string; color: string; icon: IconName }[] = [
+  { name: 'Instagram', color: '#c084fc', icon: 'camera' },
+  { name: 'TikTok',    color: '#f87171', icon: 'music' },
+  { name: 'Facebook',  color: '#60a5fa', icon: 'thumbsUp' },
+  { name: 'WhatsApp',  color: S.accent,  icon: 'message' },
 ]
 
 const INITIAL_POSTS: Post[] = [
@@ -90,7 +91,7 @@ export default function AdminContenidoPage() {
             const count = posts.filter(post => post.platform === p.name).length
             return (
               <div key={p.name} className="rounded-2xl p-3 text-center" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-                <p className="text-xl">{p.icon}</p>
+                <p className="flex justify-center mb-0.5" style={{ color: p.color }}><Icon name={p.icon} size={18} /></p>
                 <p className="font-black text-lg" style={{ color: p.color }}>{count}</p>
                 <p className="text-[10px] font-medium" style={{ color: S.sub }}>{p.name}</p>
               </div>
@@ -118,7 +119,7 @@ export default function AdminContenidoPage() {
               <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Plataforma</label>
               <select value={form.platform} onChange={e => setForm(p => ({ ...p, platform: e.target.value }))}
                 className={INPUT_CLS} style={inputStyle}>
-                {PLATFORMS.map(pl => <option key={pl.name} value={pl.name}>{pl.icon} {pl.name}</option>)}
+                {PLATFORMS.map(pl => <option key={pl.name} value={pl.name}>{pl.name}</option>)}
               </select>
             </div>
             <div>
@@ -157,7 +158,7 @@ export default function AdminContenidoPage() {
                 style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{pl?.icon}</span>
+                    {pl && <span style={{ color: pl.color }}><Icon name={pl.icon} size={16} /></span>}
                     <span className="text-sm font-bold" style={{ color: pl?.color }}>{post.platform}</span>
                     <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                       style={{ backgroundColor: st.bg, color: st.color }}>{st.label}</span>

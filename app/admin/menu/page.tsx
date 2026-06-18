@@ -4,6 +4,7 @@
 // Imágenes se suben a Supabase Storage vía /api/menu/upload y /api/settings/upload.
 import { useState, useEffect, useRef } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { Icon } from '@/app/components/Icon'
 import { uploadWebp, fmtBytes } from '@/lib/uploadWebp'
 
 const S = {
@@ -123,7 +124,7 @@ export default function AdminMenuPage() {
         <button onClick={() => saveColor(key, value)} disabled={savingKey === key}
           className="px-4 py-2 rounded-2xl text-sm font-bold shrink-0"
           style={{ backgroundColor: savedKey === key ? 'rgba(0,230,118,.2)' : `${S.accent}22`, color: savedKey === key ? '#4ade80' : S.accent }}>
-          {savingKey === key ? '...' : savedKey === key ? '✓' : 'Guardar'}
+          {savingKey === key ? '...' : savedKey === key ? <Icon name="check" size={15} /> : 'Guardar'}
         </button>
       </div>
     </div>
@@ -131,7 +132,6 @@ export default function AdminMenuPage() {
 
   const ranked = [...items].filter(i => (i.likes ?? 0) > 0).sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0))
   const maxLikes = ranked.length > 0 ? ranked[0].likes : 1
-  const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣']
 
   function openNew() {
     setEditing(null)
@@ -253,7 +253,7 @@ export default function AdminMenuPage() {
               <button onClick={saveCarousel} disabled={savingCarousel}
                 className="text-sm px-4 py-2 rounded-xl font-bold"
                 style={{ backgroundColor: savedCarousel ? 'rgba(0,230,118,.2)' : S.accent, color: savedCarousel ? '#4ade80' : '#000' }}>
-                {savingCarousel ? '...' : savedCarousel ? '✓ Guardado' : 'Guardar carrusel'}
+                {savingCarousel ? '...' : savedCarousel ? <span className="inline-flex items-center justify-center gap-1.5"><Icon name="check" size={14} /> Guardado</span> : 'Guardar carrusel'}
               </button>
             </div>
             <input ref={carouselFileRef} type="file" accept="image/*" className="hidden"
@@ -298,7 +298,7 @@ export default function AdminMenuPage() {
             <div className="px-5 py-5 space-y-3">
               {ranked.slice(0, 5).map((item, idx) => (
                 <div key={item.id} className="flex items-center gap-3">
-                  <span className="text-xl shrink-0">{medals[idx]}</span>
+                  <span className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-xs font-black" style={{ backgroundColor: idx === 0 ? 'rgba(245,158,11,0.18)' : 'var(--ad-border)', color: idx === 0 ? '#f59e0b' : S.sub }}>{idx + 1}</span>
                   {item.imageUrl && <img src={item.imageUrl} alt={item.name} className="w-10 h-10 rounded-xl object-cover shrink-0" />}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold truncate" style={{ color: S.text }}>{item.name}</p>
@@ -306,7 +306,7 @@ export default function AdminMenuPage() {
                       <div className="h-full rounded-full" style={{ width: `${((item.likes ?? 0) / maxLikes) * 100}%`, backgroundColor: '#f472b6' }} />
                     </div>
                   </div>
-                  <span className="text-sm font-black shrink-0" style={{ color: '#f472b6' }}>❤️ {item.likes}</span>
+                  <span className="text-sm font-black shrink-0 inline-flex items-center gap-1" style={{ color: '#f472b6' }}><Icon name="heart" size={13} /> {item.likes}</span>
                 </div>
               ))}
             </div>
@@ -334,7 +334,7 @@ export default function AdminMenuPage() {
                         <div className="flex items-center gap-3">
                           {p.imageUrl
                             ? <img src={p.imageUrl} alt={p.name} className="w-10 h-10 rounded-xl object-cover shrink-0" />
-                            : <div className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-lg" style={{ backgroundColor: S.bg }}>🍽️</div>
+                            : <div className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center" style={{ backgroundColor: S.bg, color: S.sub }}><Icon name="utensils" size={18} /></div>
                           }
                           <div>
                             <p className="font-bold" style={{ color: S.text }}>{p.name}</p>
@@ -346,7 +346,7 @@ export default function AdminMenuPage() {
                       <td className="px-4 py-3 font-bold" style={{ color: S.text }}>${p.price.toFixed(2)}</td>
                       <td className="px-4 py-3">
                         <span style={{ color: (p.likes ?? 0) > 0 ? '#f472b6' : S.sub }}>
-                          {(p.likes ?? 0) > 0 ? `❤️ ${p.likes}` : '—'}
+                          {(p.likes ?? 0) > 0 ? <span className="inline-flex items-center gap-1"><Icon name="heart" size={12} /> {p.likes}</span> : '—'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -390,7 +390,7 @@ export default function AdminMenuPage() {
             style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-black" style={{ color: S.text }}>{editing ? 'Editar platillo' : 'Nuevo platillo'}</h2>
-              <button onClick={() => setShowForm(false)} className="text-xl" style={{ color: S.sub }}>✕</button>
+              <button onClick={() => setShowForm(false)} aria-label="Cerrar" style={{ color: S.sub }}><Icon name="x" size={18} /></button>
             </div>
 
             {/* Imagen */}
@@ -399,7 +399,7 @@ export default function AdminMenuPage() {
               <div className="flex items-center gap-3">
                 {form.imageUrl
                   ? <img src={form.imageUrl} alt="" className="w-16 h-16 rounded-2xl object-cover shrink-0" />
-                  : <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: S.bg }}>🍽️</div>
+                  : <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: S.bg, color: S.sub }}><Icon name="utensils" size={24} /></div>
                 }
                 <div className="flex-1">
                   <button onClick={() => fileRef.current?.click()} disabled={uploading}

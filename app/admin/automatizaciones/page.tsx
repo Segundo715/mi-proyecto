@@ -4,6 +4,7 @@
 // no hay integración real con ningún servicio externo.
 import { useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { Icon } from '@/app/components/Icon'
 
 const S = {
   bg:     'var(--ad-bg)',
@@ -129,14 +130,14 @@ export default function AdminAutomatizacionesPage() {
 
                 <p className="font-bold text-sm mb-1" style={{ color: S.text }}>{a.title}</p>
                 <p className="text-xs mb-2" style={{ color: S.sub }}>{a.description}</p>
-                <p className="text-xs font-semibold mb-3" style={{ color: S.accent }}>⚡ {a.impact}</p>
+                <p className="text-xs font-semibold mb-3 flex items-center gap-1" style={{ color: S.accent }}><Icon name="zap" size={12} /> {a.impact}</p>
 
                 {a.status === 'pending' && (
                   <div className="flex gap-2">
                     <button onClick={() => applyAuto(a.id)}
                       className="flex-1 py-2 rounded-xl text-xs font-bold"
                       style={{ backgroundColor: S.accent, color: '#000' }}>
-                      ✓ Aplicar
+                      <span className="inline-flex items-center justify-center gap-1.5"><Icon name="check" size={13} /> Aplicar</span>
                     </button>
                     <button
                       className="flex-1 py-2 rounded-xl text-xs font-medium"
@@ -151,15 +152,15 @@ export default function AdminAutomatizacionesPage() {
                   </div>
                 )}
                 {a.status === 'applied' && (
-                  <p className="text-xs font-semibold" style={{ color: '#a5b4fc' }}>✓ Automatización aplicada</p>
+                  <p className="text-xs font-semibold flex items-center gap-1.5" style={{ color: '#a5b4fc' }}><Icon name="check" size={13} /> Automatización aplicada</p>
                 )}
               </div>
             )
           })}
 
           {autos.length === 0 && (
-            <div className="text-center py-16 rounded-2xl" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-              <p className="text-5xl mb-3">🤖</p>
+            <div className="flex flex-col items-center py-16 rounded-2xl" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+              <span className="mb-3" style={{ color: S.sub }}><Icon name="bot" size={44} /></span>
               <p className="font-semibold" style={{ color: S.text }}>Todas las automatizaciones atendidas</p>
               <p className="text-sm mt-1" style={{ color: S.sub }}>La IA generará nuevas sugerencias pronto</p>
             </div>

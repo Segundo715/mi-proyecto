@@ -4,6 +4,7 @@
 // Las "Categorías de Rewards" se persisten en settings (reward_categories) y las consumen todas las variantes de /card/*.
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { Icon } from '@/app/components/Icon'
 import { RewardIcon, REWARD_ICON_KEYS, isCustomIcon } from '@/app/components/RewardIcon'
 import { uploadWebp } from '@/lib/uploadWebp'
 
@@ -313,7 +314,7 @@ export default function AdminTarjetasPage() {
                               style={on
                                 ? { backgroundColor: draft.color, color: draft.iconColor || '#000' }
                                 : { backgroundColor: S.bg, color: S.sub, border: `1px solid ${S.border}` }}>
-                              <span>{on ? '✓' : '+'}</span>{item}
+                              <Icon name={on ? 'check' : 'plus'} size={13} />{item}
                             </button>
                           )
                         })}
@@ -575,7 +576,7 @@ export default function AdminTarjetasPage() {
                       )}
                     </div>
                     <div className="flex gap-3 mt-0.5 flex-wrap">
-                      <p className="text-xs" style={{ color: S.sub }}>📱 {card.phone}</p>
+                      <p className="text-xs flex items-center gap-1" style={{ color: S.sub }}><Icon name="phone" size={12} /> {card.phone}</p>
                       <p className="text-xs" style={{ color: S.sub }}>Sellos: {card.visits}/5</p>
                       <p className="text-xs" style={{ color: sinVisita > 30 ? '#fb923c' : S.sub }}>
                         Última visita: {timeAgo(sinVisita)}

@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { QRScanner } from '../../components/QRScanner'
+import { Icon } from '@/app/components/Icon'
 
 // Cargado sólo en cliente para evitar problemas de renderizado en móvil
 const QRCode = dynamic(() => import('react-qr-code'), { ssr: false })
@@ -209,9 +210,9 @@ export default function AdminPage() {
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className={`flex-1 h-8 rounded-full flex items-center justify-center text-sm ${i < scanned.visits ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-700 text-zinc-600'}`}
+              className={`flex-1 h-8 rounded-full flex items-center justify-center ${i < scanned.visits ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-700 text-zinc-600'}`}
             >
-              ☕
+              <Icon name="coffee" size={15} />
             </div>
           ))}
         </div>
@@ -222,8 +223,8 @@ export default function AdminPage() {
           Este cliente aún no activó su tarjeta. Envíale el link desde la pestaña Clientes.
         </div>
       ) : scanState === 'done' ? (
-        <div className="bg-green-500/15 text-green-300 rounded-xl p-4 text-center font-bold">
-          ✅ Visita registrada — {scanned.visits}/5 sellos
+        <div className="bg-green-500/15 text-green-300 rounded-xl p-4 text-center font-bold flex items-center justify-center gap-2">
+          <Icon name="checkCircle" size={16} /> Visita registrada — {scanned.visits}/5 sellos
         </div>
       ) : scanned.visits >= 5 ? (
         <button
@@ -231,7 +232,7 @@ export default function AdminPage() {
           disabled={scanState === 'stamping'}
           className="w-full bg-yellow-400 active:bg-yellow-500 text-amber-900 font-bold py-4 rounded-xl text-base disabled:opacity-60"
         >
-          {scanState === 'stamping' ? 'Canjeando...' : '🎉 Canjear café gratis y reiniciar'}
+          {scanState === 'stamping' ? 'Canjeando...' : <span className="inline-flex items-center justify-center gap-2"><Icon name="gift" size={16} /> Canjear café gratis y reiniciar</span>}
         </button>
       ) : (
         <button
@@ -239,7 +240,7 @@ export default function AdminPage() {
           disabled={scanState === 'stamping'}
           className="w-full bg-amber-600 active:bg-amber-800 text-white font-bold py-4 rounded-xl text-base disabled:opacity-60"
         >
-          {scanState === 'stamping' ? 'Sellando...' : '☕ Sellar visita'}
+          {scanState === 'stamping' ? 'Sellando...' : <span className="inline-flex items-center justify-center gap-2"><Icon name="coffee" size={16} /> Sellar visita</span>}
         </button>
       )}
 
@@ -254,7 +255,7 @@ export default function AdminPage() {
       {/* Header */}
       <div className="bg-zinc-900 border-b border-zinc-800 text-zinc-100 sticky top-0 z-20 shadow-lg shadow-black/40">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="font-bold text-base">☕ Panel del empleado</h1>
+          <h1 className="font-bold text-base flex items-center gap-2"><Icon name="coffee" size={18} /> Panel del empleado</h1>
           <div className="flex gap-2">
             <button
               onClick={() => setTab('scan')}
@@ -282,7 +283,7 @@ export default function AdminPage() {
             {/* Notificaciones de check-in */}
             {checkIns.map(c => (
               <div key={c.id} className="bg-green-500 text-white rounded-2xl p-4 flex items-center gap-3 shadow-lg animate-pulse">
-                <span className="text-2xl">🔔</span>
+                <span><Icon name="bell" size={22} /></span>
                 <div>
                   <p className="font-bold">{c.name} está en el mostrador</p>
                   <p className="text-xs text-green-100">{c.phone} · {c.visits}/5 sellos</p>
@@ -326,13 +327,13 @@ export default function AdminPage() {
                     onClick={() => { setScanError(''); setScanMode('camera'); setScanState('scanning') }}
                     className="w-full bg-amber-700 active:bg-amber-900 text-white font-bold py-4 rounded-xl text-base"
                   >
-                    📷 Escanear QR del cliente
+                    <span className="inline-flex items-center justify-center gap-2"><Icon name="camera" size={16} /> Escanear QR del cliente</span>
                   </button>
                   <button
                     onClick={() => { setScanError(''); setScanMode('phone') }}
                     className="w-full bg-zinc-800 border-2 border-zinc-700 text-amber-400 font-bold py-4 rounded-xl text-base active:bg-zinc-700"
                   >
-                    🔍 Buscar por teléfono
+                    <span className="inline-flex items-center justify-center gap-2"><Icon name="search" size={16} /> Buscar por teléfono</span>
                   </button>
                   <p className="text-xs text-zinc-500 text-center">
                     Si la cámara no abre, usa la búsqueda por teléfono
@@ -376,7 +377,7 @@ export default function AdminPage() {
                     disabled={searching}
                     className="w-full bg-amber-700 active:bg-amber-900 text-white font-bold py-4 rounded-xl text-base disabled:opacity-60"
                   >
-                    {searching ? 'Buscando...' : '🔍 Buscar cliente'}
+                    {searching ? 'Buscando...' : <span className="inline-flex items-center justify-center gap-2"><Icon name="search" size={16} /> Buscar cliente</span>}
                   </button>
                   <button onClick={resetScan} className="w-full text-sm text-zinc-500 underline py-1">
                     Cancelar
@@ -415,7 +416,7 @@ export default function AdminPage() {
                         onClick={() => activateCustomer(c.id)}
                         className="w-full bg-amber-600 active:bg-amber-800 text-white font-bold py-2 rounded-xl text-sm"
                       >
-                        ✅ Activar tarjeta ahora
+                        <span className="inline-flex items-center justify-center gap-2"><Icon name="check" size={15} /> Activar tarjeta ahora</span>
                       </button>
                       <div className="flex gap-2">
                         <a
@@ -424,13 +425,13 @@ export default function AdminPage() {
                           rel="noopener noreferrer"
                           className="flex-1 bg-green-500 active:bg-green-700 text-white font-bold py-2 rounded-xl text-sm text-center"
                         >
-                          💬 WhatsApp
+                          <span className="inline-flex items-center justify-center gap-1.5"><Icon name="message" size={14} /> WhatsApp</span>
                         </a>
                         <a
                           href={activationSMSLink(c)}
                           className="flex-1 bg-blue-500 active:bg-blue-700 text-white font-bold py-2 rounded-xl text-sm text-center"
                         >
-                          ✉️ SMS
+                          <span className="inline-flex items-center justify-center gap-1.5"><Icon name="mail" size={14} /> SMS</span>
                         </a>
                       </div>
                     </div>
@@ -453,8 +454,8 @@ export default function AdminPage() {
             {loadingList && <div className="text-center py-10 text-amber-400">Cargando...</div>}
 
             {!loadingList && confirmed.length === 0 && (
-              <div className="text-center py-10 text-zinc-500">
-                <p className="text-4xl mb-2">☕</p>
+              <div className="flex flex-col items-center py-10 text-zinc-500">
+                <span className="mb-2"><Icon name="coffee" size={34} /></span>
                 <p>Aún no hay clientes activos</p>
               </div>
             )}
@@ -469,7 +470,9 @@ export default function AdminPage() {
                       <p className="text-sm text-zinc-400">{c.phone}</p>
                     </div>
                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${c.visits >= 5 ? 'bg-green-500/15 text-green-300' : 'bg-amber-500/15 text-amber-300'}`}>
-                      {c.visits >= 5 ? '🎉 Premio' : `${c.visits}/5 ☕`}
+                      {c.visits >= 5
+                        ? <span className="inline-flex items-center gap-1"><Icon name="gift" size={11} /> Premio</span>
+                        : <span className="inline-flex items-center gap-1">{c.visits}/5 <Icon name="coffee" size={11} /></span>}
                     </span>
                   </div>
                   <div className="flex gap-1.5 mb-3">
@@ -484,9 +487,9 @@ export default function AdminPage() {
                   </div>
                   <button
                     onClick={() => deleteCustomerFn(c.id)}
-                    className="mt-3 w-full text-red-400 border border-red-500/30 rounded-xl py-1.5 text-sm font-medium active:bg-red-500/10"
+                    className="mt-3 w-full text-red-400 border border-red-500/30 rounded-xl py-1.5 text-sm font-medium active:bg-red-500/10 inline-flex items-center justify-center gap-1.5"
                   >
-                    🗑 Eliminar cliente
+                    <Icon name="trash" size={14} /> Eliminar cliente
                   </button>
                 </div>
               )

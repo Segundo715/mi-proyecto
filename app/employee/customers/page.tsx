@@ -3,6 +3,7 @@
 // Vista de clientes para el empleado: búsqueda y envío del link de activación por WhatsApp/SMS.
 import { useState, useEffect } from 'react'
 import EmployeeNav from '@/app/components/EmployeeNav'
+import { Icon, type IconName } from '@/app/components/Icon'
 
 interface LoyaltyCard {
   id: string; name: string; phone: string; visits: number
@@ -77,12 +78,12 @@ export default function EmployeeCustomersPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Total', value: cards.length, emoji: '👥', color: S.accent },
-            { label: 'Sellos', value: cards.reduce((s, c) => s + c.visits, 0), emoji: '☕', color: S.accent },
-            { label: 'Premio listo', value: readyForCoffee, emoji: '🎉', color: '#fbbf24' },
+            { label: 'Total', value: cards.length, icon: 'users' as IconName, color: S.accent },
+            { label: 'Sellos', value: cards.reduce((s, c) => s + c.visits, 0), icon: 'coffee' as IconName, color: S.accent },
+            { label: 'Premio listo', value: readyForCoffee, icon: 'gift' as IconName, color: '#fbbf24' },
           ].map(s => (
-            <div key={s.label} className="rounded-2xl p-3 text-center" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-              <p className="text-xl">{s.emoji}</p>
+            <div key={s.label} className="rounded-2xl p-3 text-center flex flex-col items-center" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+              <span style={{ color: s.color }}><Icon name={s.icon} size={18} /></span>
               <p className="font-black text-xl" style={{ color: s.color }}>{s.value}</p>
               <p className="text-xs font-medium" style={{ color: S.sub }}>{s.label}</p>
             </div>
@@ -108,8 +109,8 @@ export default function EmployeeCustomersPage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-14" style={{ color: S.sub }}>
-            <p className="text-5xl mb-3">{search ? '🔍' : '☕'}</p>
+          <div className="flex flex-col items-center py-14" style={{ color: S.sub }}>
+            <span className="mb-3"><Icon name={search ? 'search' : 'coffee'} size={42} /></span>
             <p className="font-semibold" style={{ color: S.text }}>
               {search ? 'Sin resultados' : 'Aún no hay clientes registrados'}
             </p>
@@ -132,7 +133,7 @@ export default function EmployeeCustomersPage() {
                       <p className="font-bold truncate" style={{ color: S.text }}>{c.name}</p>
                       {c.visits >= STAMPS && (
                         <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
-                          style={{ backgroundColor: 'rgba(251,191,36,0.2)', color: '#fbbf24' }}>🎉 Premio</span>
+                          style={{ backgroundColor: 'rgba(251,191,36,0.2)', color: '#fbbf24' }}><span className="inline-flex items-center gap-1"><Icon name="gift" size={11} /> Premio</span></span>
                       )}
                     </div>
                     <p className="text-sm" style={{ color: S.sub }}>{c.phone}</p>

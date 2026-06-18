@@ -3,6 +3,7 @@
 // Gestión de slides TV para el empleado: puede activar/desactivar slides pero no editar contenido.
 import { useState, useEffect } from 'react'
 import EmployeeNav from '@/app/components/EmployeeNav'
+import { Icon } from '@/app/components/Icon'
 
 interface TVSlide {
   id: string
@@ -208,8 +209,8 @@ export default function EmployeeTVPage() {
             {loading ? (
               <div className="text-center py-10" style={{ color: S.accent }}>Cargando...</div>
             ) : sortedSlides.length === 0 ? (
-              <div className="text-center py-10" style={{ color: S.sub }}>
-                <p className="text-4xl mb-2">📺</p>
+              <div className="flex flex-col items-center py-10" style={{ color: S.sub }}>
+                <span className="mb-2"><Icon name="tv" size={34} /></span>
                 <p>No hay slides aún</p>
               </div>
             ) : (
@@ -241,10 +242,10 @@ export default function EmployeeTVPage() {
                           {slide.active ? 'Activo' : 'Inactivo'}
                         </span>
                         {slide.isOffer
-                          ? <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                              style={{ backgroundColor: 'rgba(251,146,60,0.15)', color: '#fb923c' }}>🏷 Oferta · 30s</span>
-                          : <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                              style={{ backgroundColor: 'rgba(99,102,241,0.15)', color: '#a5b4fc' }}>🖼 Imagen · 15s</span>
+                          ? <span className="text-xs px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1"
+                              style={{ backgroundColor: 'rgba(251,146,60,0.15)', color: '#fb923c' }}><Icon name="tag" size={11} /> Oferta · 30s</span>
+                          : <span className="text-xs px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1"
+                              style={{ backgroundColor: 'rgba(99,102,241,0.15)', color: '#a5b4fc' }}><Icon name="image" size={11} /> Imagen · 15s</span>
                         }
                       </div>
                     </div>
@@ -292,8 +293,8 @@ export default function EmployeeTVPage() {
                 </>
               ) : (
                 <div className="w-full h-full flex items-center justify-center" style={{ color: S.sub }}>
-                  <div className="text-center">
-                    <p className="text-4xl">☕</p>
+                  <div className="flex flex-col items-center">
+                    <span><Icon name="coffee" size={34} /></span>
                     <p className="text-sm mt-2">Selecciona un slide para previsualizar</p>
                   </div>
                 </div>

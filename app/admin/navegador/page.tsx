@@ -4,6 +4,7 @@
 // Los botones "menu/review/card" tienen íconos SVG integrados (BUILTIN_ICONS) usados si no se sube imagen propia.
 import { useEffect, useRef, useState } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { Icon } from '@/app/components/Icon'
 import { DEFAULT_NAV, normalizeNavConfig, BUILTIN_ICONS, type NavConfig, type NavTab } from '@/app/components/CustomerNav'
 import { uploadWebp } from '@/lib/uploadWebp'
 
@@ -100,7 +101,7 @@ export default function AdminNavegadorPage() {
         {/* Header */}
         <div className="flex items-center justify-between pt-1">
           <div>
-            <h1 className="text-xl font-black" style={{ color: S.text }}>🧭 Navegador</h1>
+            <h1 className="text-xl font-black flex items-center gap-2" style={{ color: S.text }}><Icon name="compass" size={20} /> Navegador</h1>
             <p className="text-xs mt-0.5" style={{ color: S.sub }}>
               Botones, iconos y estilo de la barra de navegación del cliente
             </p>
@@ -108,7 +109,7 @@ export default function AdminNavegadorPage() {
           <button type="button" onClick={save} disabled={saving}
             className="text-sm px-4 py-2 rounded-xl font-bold disabled:opacity-60"
             style={{ backgroundColor: S.accent, color: '#000' }}>
-            {saving ? 'Guardando...' : saved ? '✓ Guardado' : 'Guardar cambios'}
+            {saving ? 'Guardando...' : saved ? <span className="inline-flex items-center gap-1.5"><Icon name="check" size={15} /> Guardado</span> : 'Guardar cambios'}
           </button>
         </div>
 
@@ -256,7 +257,7 @@ export default function AdminNavegadorPage() {
         <button type="button" onClick={save} disabled={saving}
           className="w-full py-3 rounded-xl font-black disabled:opacity-60"
           style={{ backgroundColor: S.accent, color: '#000' }}>
-          {saving ? 'Guardando...' : saved ? '✓ Guardado' : 'Guardar cambios'}
+          {saving ? 'Guardando...' : saved ? <span className="inline-flex items-center justify-center gap-1.5"><Icon name="check" size={15} /> Guardado</span> : 'Guardar cambios'}
         </button>
 
       </div>

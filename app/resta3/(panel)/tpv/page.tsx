@@ -3,7 +3,10 @@
 // TPV / Caja: carga platillos de /api/menu, envía órdenes a /api/orders con método de pago y mesa.
 // El campo quantity (no qty) es requerido por el schema de ordersDb.
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import Resta3Nav from '@/app/components/Resta3Nav'
+import { useRightRail } from '@/app/components/RightRail'
+import { Icon, type IconName } from '@/app/components/Icon'
 
 const S = { bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)', text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)' }
 
@@ -12,10 +15,16 @@ interface LineItem { item: MenuItem; qty: number }
 interface Order { id: string; customerName: string; tableNumber?: string; status: string; total: number; notes?: string; createdAt: string; items: { name: string; quantity: number; price: number }[] }
 
 const CATS = ['Todos', 'Platillos', 'Bebidas', 'Postres', 'Ensaladas', 'Entradas', 'Especiales']
-const PAYMENT_METHODS = [
-  { id: 'efectivo', label: 'Efectivo', icon: '💵' },
-  { id: 'tarjeta', label: 'Tarjeta', icon: '💳' },
-  { id: 'transferencia', label: 'Transferencia', icon: '📲' },
+const PAYMENT_METHODS: { id: string; label: string; icon: IconName }[] = [
+  { id: 'efectivo', label: 'Efectivo', icon: 'cash' },
+  { id: 'tarjeta', label: 'Tarjeta', icon: 'card' },
+  { id: 'transferencia', label: 'Transferencia', icon: 'phone' },
+]
+// Plataformas de domicilio. La key es el prefijo [KEY] en notes que cocina detecta.
+const DELIVERY_PLATFORMS: { key: string; label: string; icon: IconName; color: string }[] = [
+  { key: 'GOGO',     label: 'Gogo',      icon: 'heart', color: '#ff6b35' },
+  { key: 'RAPPI',    label: 'Rappi',     icon: 'heart', color: '#ff441b' },
+  { key: 'UBEREATS', label: 'Uber Eats', icon: 'heart', color: '#06c167' },
 ]
 
 export default function TPVPage() {
@@ -32,10 +41,26 @@ export default function TPVPage() {
   const [tab, setTab] = useState<'nueva' | 'historial'>('nueva')
   const [orders, setOrders] = useState<Order[]>([])
   const [loadingOrders, setLoadingOrders] = useState(false)
+  const { mount, setFilled, setTitle, setOpen } = useRightRail()
+
+  // Paso posterior al envío: clasificar el pedido como dentro del restaurante o a domicilio.
+  const [postSend, setPostSend] = useState<'none' | 'choose' | 'domicilio'>('none')
+  const [dName, setDName] = useState('')
+  const [dAddress, setDAddress] = useState('')
+  const [dReference, setDReference] = useState('')
+  const [savingDelivery, setSavingDelivery] = useState(false)
 
   useEffect(() => {
     fetch('/api/menu').then(r => r.json()).then(d => setMenu(Array.isArray(d) ? d.filter((m: MenuItem) => m.available) : []))
   }, [])
+
+  // La comanda llena el rail derecho solo en la pestaña "nueva".
+  useEffect(() => {
+    const fill = tab === 'nueva'
+    setFilled(fill)
+    if (fill) setTitle('Comanda')
+    return () => setFilled(false)
+  }, [tab, setFilled, setTitle])
 
   useEffect(() => {
     if (tab === 'historial') loadOrders()
@@ -55,6 +80,7 @@ export default function TPVPage() {
   })
 
   function addToCart(item: MenuItem) {
+    setOpen(true) // en móvil abre el rail para ver la comanda
     setCart(c => {
       const ex = c.find(l => l.item.id === item.id)
       if (ex) return c.map(l => l.item.id === item.id ? { ...l, qty: l.qty + 1 } : l)
@@ -86,6 +112,7 @@ export default function TPVPage() {
     if (res.ok) {
       const order = await res.json()
       setLastOrder(order)
+      setPostSend('choose') // pedir clasificación: dentro o a domicilio
       setCart([])
       setCustomer('')
       setTableNum('')
@@ -94,12 +121,37 @@ export default function TPVPage() {
     setSaving(false)
   }
 
+  // Clasifica el pedido recién enviado como a domicilio por una plataforma: marca notes
+  // con [GOGO]/[RAPPI]/[UBEREATS] (lo que cocina detecta) + domicilio/referencias, y limpia la mesa.
+  async function saveDelivery(platform: string) {
+    if (!lastOrder) return
+    setSavingDelivery(true)
+    const parts = [`Pago: ${payment.toUpperCase()}`]
+    if (dAddress.trim())   parts.push(`Dom: ${dAddress.trim()}`)
+    if (dReference.trim()) parts.push(`Ref: ${dReference.trim()}`)
+    const res = await fetch(`/api/orders/${lastOrder.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notes: `[${platform}] ${parts.join(' · ')}`,
+        tableNumber: '',
+        customerName: dName.trim() || lastOrder.customerName,
+      }),
+    })
+    setSavingDelivery(false)
+    if (res.ok) {
+      setPostSend('none')
+      setLastOrder(null)
+      setDName(''); setDAddress(''); setDReference('')
+    }
+  }
+
   function fmtTime(iso: string) {
     return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
   }
 
-  const statusColor: Record<string, string> = { pending: '#f59e0b', preparing: '#3b82f6', ready: '#22c55e', delivered: '#64748b' }
-  const statusLabel: Record<string, string> = { pending: 'Pendiente', preparing: 'En cocina', ready: 'Listo', delivered: 'Entregado' }
+  const statusColor: Record<string, string> = { pending: '#f59e0b', preparing: '#3b82f6', ready: '#22c55e', enviado: '#0ea5e9', delivered: '#64748b' }
+  const statusLabel: Record<string, string> = { pending: 'Pendiente', preparing: 'En cocina', ready: 'Listo', enviado: 'Enviado', delivered: 'Entregado' }
 
   return (
     <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
@@ -112,7 +164,7 @@ export default function TPVPage() {
             <button key={t} onClick={() => setTab(t)}
               className="px-4 py-2 rounded-xl text-sm font-bold capitalize transition-all"
               style={tab === t ? { background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' } : { backgroundColor: S.card, color: S.sub, border: `1px solid ${S.border}` }}>
-              {t === 'nueva' ? '🧾 Nueva orden' : '📋 Historial'}
+              <span className="inline-flex items-center gap-1.5">{t === 'nueva' ? <><Icon name="receipt" size={15} /> Nueva orden</> : <><Icon name="clipboard" size={15} /> Historial</>}</span>
             </button>
           ))}
         </div>
@@ -134,7 +186,8 @@ export default function TPVPage() {
                 </thead>
                 <tbody>
                   {orders.map(o => {
-                    const payNote = o.notes?.match(/\[(\w+)\]/)?.[1] ?? '—'
+                    // Domicilios llevan [DOMICILIO] como prefijo y el pago real en "Pago: X".
+                    const payNote = o.notes?.match(/Pago:\s*(\w+)/i)?.[1] ?? o.notes?.match(/\[(\w+)\]/)?.[1] ?? '—'
                     return (
                       <tr key={o.id} style={{ borderBottom: `1px solid ${S.border}` }} className="hover:bg-white/[.02]">
                         <td className="px-4 py-3 font-bold" style={{ color: S.text }}>{o.customerName}</td>
@@ -156,10 +209,9 @@ export default function TPVPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-            {/* Catálogo */}
-            <div className="lg:col-span-2 space-y-3">
+          <>
+            {/* Catálogo (ancho completo — la comanda vive en el rail derecho) */}
+            <div className="space-y-3">
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar platillo..."
                 className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
                 style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }} />
@@ -172,14 +224,14 @@ export default function TPVPage() {
                   </button>
                 ))}
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {filtered.map(item => (
                   <button key={item.id} onClick={() => addToCart(item)}
                     className="text-left rounded-2xl overflow-hidden transition-all hover:scale-[1.02] active:scale-95"
                     style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
                     {item.imageUrl
                       ? <img src={item.imageUrl} alt={item.name} className="w-full object-cover" style={{ height: '80px' }} />
-                      : <div className="w-full flex items-center justify-center text-2xl" style={{ height: '60px', backgroundColor: '#0f1117' }}>🍽️</div>
+                      : <div className="w-full flex items-center justify-center" style={{ height: '60px', backgroundColor: '#0f1117', color: S.sub }}><Icon name="utensils" size={24} /></div>
                     }
                     <div className="p-3">
                       <p className="text-xs font-bold truncate" style={{ color: S.text }}>{item.name}</p>
@@ -190,105 +242,167 @@ export default function TPVPage() {
               </div>
             </div>
 
-            {/* Comanda */}
-            <div className="rounded-2xl flex flex-col" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-              <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: `1px solid ${S.border}` }}>
-                <p className="font-black text-sm" style={{ color: S.text }}>Comanda</p>
-                {cart.length > 0 && (
-                  <button onClick={() => setCart([])} className="text-xs" style={{ color: '#f87171' }}>Limpiar</button>
-                )}
-              </div>
+            {/* Comanda — portada al rail derecho fijo del layout */}
+            {mount && createPortal(
+              <div className="flex flex-col h-full">
+                <div className="p-4 space-y-3 flex-1 overflow-y-auto">
+                  {/* Limpiar */}
+                  {cart.length > 0 && (
+                    <div className="flex justify-end">
+                      <button onClick={() => setCart([])} className="text-xs font-bold" style={{ color: '#f87171' }}>Limpiar comanda</button>
+                    </div>
+                  )}
 
-              <div className="p-4 space-y-3 flex-1">
-                {/* Cliente y mesa */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Cliente *</label>
-                    <input value={customer} onChange={e => setCustomer(e.target.value)} placeholder="Nombre"
-                      className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                      style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }} />
+                  {/* Cliente y mesa */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Cliente *</label>
+                      <input value={customer} onChange={e => setCustomer(e.target.value)} placeholder="Nombre"
+                        className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                        style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }} />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Mesa</label>
+                      <input value={tableNum} onChange={e => setTableNum(e.target.value)} placeholder="Ej: Mesa 3"
+                        className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                        style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }} />
+                    </div>
                   </div>
+
+                  {/* Items */}
+                  {cart.length === 0 ? (
+                    <div className="flex flex-col items-center py-6">
+                      <span className="mb-1" style={{ color: S.sub }}><Icon name="cart" size={22} /></span>
+                      <p className="text-xs" style={{ color: S.sub }}>Toca un platillo</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {cart.map(line => (
+                        <div key={line.item.id} className="rounded-xl p-2.5 flex items-center gap-2"
+                          style={{ backgroundColor: '#0f1117' }}>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold truncate" style={{ color: S.text }}>{line.item.name}</p>
+                            <p className="text-xs" style={{ color: S.accent }}>${(line.item.price * line.qty).toFixed(2)}</p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => changeQty(line.item.id, -1)}
+                              className="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center"
+                              style={{ backgroundColor: S.card, color: S.sub }}>−</button>
+                            <span className="text-xs font-black w-4 text-center" style={{ color: S.text }}>{line.qty}</span>
+                            <button onClick={() => changeQty(line.item.id, 1)}
+                              className="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center"
+                              style={{ backgroundColor: S.card, color: S.accent }}>+</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Método de pago */}
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Mesa</label>
-                    <input value={tableNum} onChange={e => setTableNum(e.target.value)} placeholder="Ej: Mesa 3"
-                      className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                    <label className="block text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: S.sub }}>Método de pago</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {PAYMENT_METHODS.map(p => (
+                        <button key={p.id} onClick={() => setPayment(p.id)}
+                          className="py-2 rounded-xl text-xs font-bold flex flex-col items-center gap-0.5 transition-all"
+                          style={payment === p.id ? { backgroundColor: `${S.accent}22`, color: S.accent, border: `1px solid ${S.accent}44` } : { backgroundColor: '#0f1117', color: S.sub, border: `1px solid ${S.border}` }}>
+                          <Icon name={p.icon} size={16} />
+                          <span>{p.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Notas */}
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Notas</label>
+                    <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Alergias, preferencias..."
+                      className="w-full px-3 py-2 rounded-xl text-xs outline-none"
                       style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }} />
                   </div>
                 </div>
 
-                {/* Items */}
-                {cart.length === 0 ? (
-                  <div className="text-center py-6">
-                    <p className="text-2xl mb-1">🛒</p>
-                    <p className="text-xs" style={{ color: S.sub }}>Toca un platillo</p>
-                  </div>
-                ) : (
-                  <div className="space-y-1.5 max-h-[220px] overflow-y-auto">
-                    {cart.map(line => (
-                      <div key={line.item.id} className="rounded-xl p-2.5 flex items-center gap-2"
-                        style={{ backgroundColor: '#0f1117' }}>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold truncate" style={{ color: S.text }}>{line.item.name}</p>
-                          <p className="text-xs" style={{ color: S.accent }}>${(line.item.price * line.qty).toFixed(2)}</p>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button onClick={() => changeQty(line.item.id, -1)}
-                            className="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center"
-                            style={{ backgroundColor: S.card, color: S.sub }}>−</button>
-                          <span className="text-xs font-black w-4 text-center" style={{ color: S.text }}>{line.qty}</span>
-                          <button onClick={() => changeQty(line.item.id, 1)}
-                            className="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center"
-                            style={{ backgroundColor: S.card, color: S.accent }}>+</button>
-                        </div>
+                {/* Footer */}
+                <div className="p-4 space-y-3 shrink-0" style={{ borderTop: `1px solid ${S.border}` }}>
+                  {lastOrder && postSend !== 'none' ? (
+                    /* Paso posterior al envío: ¿dónde se entrega? */
+                    <div className="rounded-xl px-3 py-3 space-y-2.5" style={{ backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
+                      <div>
+                        <p className="font-black text-xs flex items-center gap-1.5" style={{ color: '#22c55e' }}><Icon name="checkCircle" size={13} /> Orden enviada a cocina</p>
+                        <p className="text-xs" style={{ color: S.sub }}>#{lastOrder.id.slice(0, 8)} · ${lastOrder.total.toFixed(2)}</p>
                       </div>
-                    ))}
-                  </div>
-                )}
 
-                {/* Método de pago */}
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: S.sub }}>Método de pago</label>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {PAYMENT_METHODS.map(p => (
-                      <button key={p.id} onClick={() => setPayment(p.id)}
-                        className="py-2 rounded-xl text-xs font-bold flex flex-col items-center gap-0.5 transition-all"
-                        style={payment === p.id ? { backgroundColor: `${S.accent}22`, color: S.accent, border: `1px solid ${S.accent}44` } : { backgroundColor: '#0f1117', color: S.sub, border: `1px solid ${S.border}` }}>
-                        <span>{p.icon}</span>
-                        <span>{p.label}</span>
+                      {postSend === 'choose' && (
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-bold" style={{ color: S.text }}>¿Dónde se entrega?</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button onClick={() => { setPostSend('none'); setLastOrder(null) }}
+                              className="py-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-0.5 transition-all"
+                              style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }}>
+                              <Icon name="utensils" size={16} /> Dentro
+                            </button>
+                            <button onClick={() => { setDName(lastOrder.customerName); setPostSend('domicilio') }}
+                              className="py-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-0.5 transition-all"
+                              style={{ backgroundColor: 'rgba(14,165,233,0.12)', color: '#0ea5e9', border: '1px solid rgba(14,165,233,0.4)' }}>
+                              <Icon name="truck" size={16} /> A domicilio
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {postSend === 'domicilio' && (
+                        <div className="space-y-2">
+                          <div>
+                            <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}><Icon name="user" size={13} /> Quien recibe</label>
+                            <input value={dName} onChange={e => setDName(e.target.value)} placeholder="Nombre de quien recibe"
+                              className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                              style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }} />
+                          </div>
+                          <div>
+                            <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}><Icon name="pin" size={13} /> Domicilio</label>
+                            <input value={dAddress} onChange={e => setDAddress(e.target.value)} placeholder="Calle, número, colonia"
+                              className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                              style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }} />
+                          </div>
+                          <div>
+                            <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}><Icon name="bookmark" size={13} /> Referencias</label>
+                            <input value={dReference} onChange={e => setDReference(e.target.value)} placeholder="Entre calles, color de fachada..."
+                              className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                              style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: S.sub }}>Enviar por</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {DELIVERY_PLATFORMS.map(p => (
+                                <button key={p.key} onClick={() => saveDelivery(p.key)} disabled={savingDelivery}
+                                  className="py-2.5 rounded-xl text-xs font-black flex flex-col items-center gap-0.5 transition-all disabled:opacity-60"
+                                  style={{ background: `linear-gradient(135deg,${p.color},${p.color}bb)`, color: '#fff' }}>
+                                  <Icon name={p.icon} size={16} />{p.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm" style={{ color: S.sub }}>Total ({cart.reduce((s, l) => s + l.qty, 0)} items)</span>
+                        <span className="text-2xl font-black" style={{ color: S.accent }}>${total.toFixed(2)}</span>
+                      </div>
+                      <button onClick={placeOrder} disabled={saving || !canOrder}
+                        className="w-full py-3.5 rounded-xl font-black text-sm disabled:opacity-40 transition-all"
+                        style={{ background: canOrder ? 'linear-gradient(135deg,#f59e0b,#d97706)' : S.card, color: canOrder ? '#000' : S.sub }}>
+                        {saving ? 'Enviando...' : <span className="inline-flex items-center justify-center gap-1.5"><Icon name="receipt" size={15} /> Enviar a cocina</span>}
                       </button>
-                    ))}
-                  </div>
+                    </>
+                  )}
                 </div>
-
-                {/* Notas */}
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Notas</label>
-                  <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Alergias, preferencias..."
-                    className="w-full px-3 py-2 rounded-xl text-xs outline-none"
-                    style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }} />
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="p-4 space-y-3" style={{ borderTop: `1px solid ${S.border}` }}>
-                {lastOrder && (
-                  <div className="rounded-xl px-3 py-2.5 text-xs" style={{ backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
-                    <p className="font-black" style={{ color: '#22c55e' }}>✅ Orden enviada a cocina</p>
-                    <p style={{ color: S.sub }}>#{lastOrder.id.slice(0, 8)} · ${lastOrder.total.toFixed(2)}</p>
-                  </div>
-                )}
-                <div className="flex justify-between items-center">
-                  <span className="text-sm" style={{ color: S.sub }}>Total ({cart.reduce((s, l) => s + l.qty, 0)} items)</span>
-                  <span className="text-2xl font-black" style={{ color: S.accent }}>${total.toFixed(2)}</span>
-                </div>
-                <button onClick={placeOrder} disabled={saving || !canOrder}
-                  className="w-full py-3.5 rounded-xl font-black text-sm disabled:opacity-40 transition-all"
-                  style={{ background: canOrder ? 'linear-gradient(135deg,#f59e0b,#d97706)' : S.card, color: canOrder ? '#000' : S.sub }}>
-                  {saving ? 'Enviando...' : '🧾 Enviar a cocina'}
-                </button>
-              </div>
-            </div>
-          </div>
+              </div>,
+              mount
+            )}
+          </>
         )}
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
+import { Icon, type IconName } from '@/app/components/Icon'
 
 const S = { bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)', text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)' }
 
@@ -67,14 +68,14 @@ export default function AnalyticsPage() {
   const maxItem    = Math.max(...topItems.map(d => d.count), 1)
 
   const kpis = [
-    { label: 'Pedidos hoy',       value: data.orders?.pending !== undefined ? String(data.kpis?.today.orders ?? data.orders?.total ?? 0) : '—', icon: '🛒', color: '#f59e0b' },
-    { label: 'Ingresos hoy',      value: `$${(data.kpis?.today.revenue ?? 0).toFixed(0)}`,   icon: '💰', color: '#22c55e' },
-    { label: 'Esta semana',       value: `$${(data.kpis?.week.revenue  ?? 0).toFixed(0)}`,   icon: '📅', color: '#3b82f6' },
-    { label: 'Este mes',          value: `$${(data.kpis?.month.revenue ?? 0).toFixed(0)}`,   icon: '📈', color: '#a855f7' },
-    { label: 'Total histórico',   value: `$${(data.revenue?.total      ?? 0).toFixed(0)}`,   icon: '🏆', color: '#06b6d4' },
-    { label: 'Ticket promedio',   value: `$${(data.revenue?.avgOrderValue ?? 0).toFixed(0)}`, icon: '🧾', color: '#f97316' },
-    { label: 'Reseñas (★)',       value: `${(data.reviews?.avgRating ?? 0).toFixed(1)} / 5`, icon: '⭐', color: '#fbbf24' },
-    { label: 'Tarjetas lealtad',  value: String(data.loyaltyCards?.active ?? 0),              icon: '💳', color: '#ec4899' },
+    { label: 'Pedidos hoy',       value: data.orders?.pending !== undefined ? String(data.kpis?.today.orders ?? data.orders?.total ?? 0) : '—', icon: 'cart' as IconName, color: '#f59e0b' },
+    { label: 'Ingresos hoy',      value: `$${(data.kpis?.today.revenue ?? 0).toFixed(0)}`,   icon: 'cash' as IconName, color: '#22c55e' },
+    { label: 'Esta semana',       value: `$${(data.kpis?.week.revenue  ?? 0).toFixed(0)}`,   icon: 'calendar' as IconName, color: '#3b82f6' },
+    { label: 'Este mes',          value: `$${(data.kpis?.month.revenue ?? 0).toFixed(0)}`,   icon: 'trendingUp' as IconName, color: '#a855f7' },
+    { label: 'Total histórico',   value: `$${(data.revenue?.total      ?? 0).toFixed(0)}`,   icon: 'trophy' as IconName, color: '#06b6d4' },
+    { label: 'Ticket promedio',   value: `$${(data.revenue?.avgOrderValue ?? 0).toFixed(0)}`, icon: 'receipt' as IconName, color: '#f97316' },
+    { label: 'Reseñas',           value: `${(data.reviews?.avgRating ?? 0).toFixed(1)} / 5`, icon: 'star' as IconName, color: '#fbbf24' },
+    { label: 'Tarjetas lealtad',  value: String(data.loyaltyCards?.active ?? 0),              icon: 'card' as IconName, color: '#ec4899' },
   ]
 
   return (
@@ -84,7 +85,7 @@ export default function AnalyticsPage() {
 
         <div className="flex items-center justify-between pt-1">
           <div>
-            <h1 className="text-xl font-black" style={{ color: S.text }}>📊 Analytics</h1>
+            <h1 className="text-xl font-black flex items-center gap-2" style={{ color: S.text }}><Icon name="chart" size={20} /> Analytics</h1>
             <p className="text-xs mt-0.5" style={{ color: S.sub }}>Datos reales en tiempo real desde Supabase</p>
           </div>
           <button onClick={() => { setLoading(true); fetch('/api/analytics').then(r => r.json()).then(d => { setData(d); setLoading(false) }) }}
@@ -104,7 +105,7 @@ export default function AnalyticsPage() {
                 <div key={k.label} className="rounded-2xl p-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs" style={{ color: S.sub }}>{k.label}</p>
-                    <span className="text-lg">{k.icon}</span>
+                    <span style={{ color: k.color }}><Icon name={k.icon} size={17} /></span>
                   </div>
                   <p className="text-2xl font-black" style={{ color: k.color }}>{k.value}</p>
                 </div>
@@ -144,15 +145,15 @@ export default function AnalyticsPage() {
 
               {/* Top platillos */}
               <div className="rounded-2xl p-5" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-                <h2 className="font-black text-sm mb-4" style={{ color: S.text }}>🏆 Platillos más pedidos</h2>
+                <h2 className="font-black text-sm mb-4 flex items-center gap-2" style={{ color: S.text }}><Icon name="trophy" size={16} /> Platillos más pedidos</h2>
                 {topItems.length === 0 ? (
                   <p className="text-sm text-center py-8" style={{ color: S.sub }}>Sin datos aún</p>
                 ) : (
                   <div className="space-y-3">
                     {topItems.slice(0, 6).map((item, i) => (
                       <div key={item.name} className="flex items-center gap-3">
-                        <span className="text-sm font-black w-5 text-center" style={{ color: i < 3 ? S.accent : S.sub }}>
-                          {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}`}
+                        <span className="text-sm font-black w-5 text-center shrink-0" style={{ color: i < 3 ? S.accent : S.sub }}>
+                          {i + 1}
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between mb-0.5">
@@ -174,13 +175,13 @@ export default function AnalyticsPage() {
             {/* Métricas adicionales */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: 'Total pedidos',    value: data.orders?.total ?? 0,    icon: '📦', color: '#3b82f6' },
-                { label: 'Entregados',       value: data.orders?.delivered ?? 0, icon: '✅', color: '#22c55e' },
-                { label: 'Reseñas malas',    value: data.reviews?.bad ?? 0,      icon: '⚠️', color: '#ef4444' },
-                { label: 'Sellos emitidos',  value: data.loyaltyCards?.totalStamps ?? 0, icon: '🎫', color: '#a855f7' },
+                { label: 'Total pedidos',    value: data.orders?.total ?? 0,    icon: 'box' as IconName, color: '#3b82f6' },
+                { label: 'Entregados',       value: data.orders?.delivered ?? 0, icon: 'checkCircle' as IconName, color: '#22c55e' },
+                { label: 'Reseñas malas',    value: data.reviews?.bad ?? 0,      icon: 'alert' as IconName, color: '#ef4444' },
+                { label: 'Sellos emitidos',  value: data.loyaltyCards?.totalStamps ?? 0, icon: 'ticket' as IconName, color: '#a855f7' },
               ].map(m => (
                 <div key={m.label} className="rounded-2xl p-4 flex items-center gap-3" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-                  <span className="text-2xl">{m.icon}</span>
+                  <span style={{ color: m.color }}><Icon name={m.icon} size={22} /></span>
                   <div>
                     <p className="text-lg font-black" style={{ color: m.color }}>{m.value.toLocaleString()}</p>
                     <p className="text-xs" style={{ color: S.sub }}>{m.label}</p>

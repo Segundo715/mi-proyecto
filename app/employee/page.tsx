@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { QRScanner } from '../components/QRScanner'
 import EmployeeNav from '../components/EmployeeNav'
+import { Icon } from '@/app/components/Icon'
 
 const QRCode = dynamic(() => import('react-qr-code'), { ssr: false })
 
@@ -139,13 +140,13 @@ export default function EmployeePage() {
                   onClick={() => { setScanError(''); setScanMode('camera'); setScanState('scanning') }}
                   className="w-full font-black py-4 rounded-2xl text-base transition-colors"
                   style={{ backgroundColor: S.accent, color: '#000' }}>
-                  📷 Escanear QR del cliente
+                  <span className="inline-flex items-center justify-center gap-2"><Icon name="camera" size={17} /> Escanear QR del cliente</span>
                 </button>
                 <button type="button"
                   onClick={() => { setScanError(''); setScanMode('phone') }}
                   className="w-full font-bold py-4 rounded-2xl text-base transition-colors"
                   style={{ backgroundColor: 'rgba(0,230,118,0.1)', color: S.accent, border: '1px solid rgba(0,230,118,0.3)' }}>
-                  🔍 Buscar por teléfono
+                  <span className="inline-flex items-center justify-center gap-2"><Icon name="search" size={17} /> Buscar por teléfono</span>
                 </button>
               </div>
             )}
@@ -172,7 +173,7 @@ export default function EmployeePage() {
                 <button type="button" onClick={searchByPhone} disabled={searching}
                   className="w-full font-black py-4 rounded-2xl text-base disabled:opacity-60"
                   style={{ backgroundColor: S.accent, color: '#000' }}>
-                  {searching ? 'Buscando...' : '🔍 Buscar'}
+                  {searching ? 'Buscando...' : <span className="inline-flex items-center justify-center gap-2"><Icon name="search" size={17} /> Buscar</span>}
                 </button>
                 <button type="button" onClick={resetScan} className="w-full text-sm underline py-1" style={{ color: S.sub }}>
                   Cancelar
@@ -199,7 +200,7 @@ export default function EmployeePage() {
                           backgroundColor: i < scanned.visits ? 'rgba(0,230,118,0.2)' : 'rgba(255,255,255,0.05)',
                           borderColor: i < scanned.visits ? S.accent : 'rgba(255,255,255,0.1)',
                         }}>
-                        {i < scanned.visits ? '☕' : <span style={{ color: 'rgba(255,255,255,0.2)' }}>○</span>}
+                        {i < scanned.visits ? <span style={{ color: S.accent }}><Icon name="coffee" size={16} /></span> : <span style={{ color: 'rgba(255,255,255,0.2)' }}>○</span>}
                       </div>
                     ))}
                   </div>
@@ -208,19 +209,19 @@ export default function EmployeePage() {
                 {scanState === 'done' ? (
                   <div className="rounded-2xl p-4 text-center font-black text-base"
                     style={{ backgroundColor: 'rgba(0,230,118,0.1)', border: '2px solid rgba(0,230,118,0.4)', color: S.accent }}>
-                    ✅ ¡Visita sellada! — {scanned.visits}/{STAMPS} sellos
+                    <span className="inline-flex items-center justify-center gap-2"><Icon name="checkCircle" size={16} /> ¡Visita sellada! — {scanned.visits}/{STAMPS} sellos</span>
                   </div>
                 ) : scanned.visits >= STAMPS ? (
                   <button type="button" onClick={redeemCoffee} disabled={scanState === 'stamping'}
                     className="w-full font-black py-4 rounded-2xl text-base disabled:opacity-60"
                     style={{ backgroundColor: '#fbbf24', color: '#000' }}>
-                    {scanState === 'stamping' ? 'Canjeando...' : '🎉 Canjear café gratis'}
+                    {scanState === 'stamping' ? 'Canjeando...' : <span className="inline-flex items-center justify-center gap-2"><Icon name="gift" size={17} /> Canjear café gratis</span>}
                   </button>
                 ) : (
                   <button type="button" onClick={stampVisit} disabled={scanState === 'stamping'}
                     className="w-full font-black py-4 rounded-2xl text-base disabled:opacity-60"
                     style={{ backgroundColor: S.accent, color: '#000' }}>
-                    {scanState === 'stamping' ? 'Sellando...' : '☕ Sellar visita'}
+                    {scanState === 'stamping' ? 'Sellando...' : <span className="inline-flex items-center justify-center gap-2"><Icon name="coffee" size={17} /> Sellar visita</span>}
                   </button>
                 )}
 
@@ -235,7 +236,7 @@ export default function EmployeePage() {
         {/* Active loyalty cards */}
         <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
           <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: `1px solid ${S.border}` }}>
-            <h2 className="font-black text-base" style={{ color: S.text }}>☕ Tarjetas activas</h2>
+            <h2 className="font-black text-base flex items-center gap-2" style={{ color: S.text }}><Icon name="coffee" size={18} /> Tarjetas activas</h2>
             <span className="text-xs font-bold" style={{ color: S.accent }}>{loyaltyCards.length}</span>
           </div>
           <div className="p-3 space-y-2">
@@ -269,7 +270,7 @@ export default function EmployeePage() {
                   </div>
                   <div className="text-right shrink-0">
                     {c.visits >= STAMPS
-                      ? <span className="text-lg">🎉</span>
+                      ? <span style={{ color: '#fbbf24' }}><Icon name="gift" size={17} /></span>
                       : <span className="text-sm font-black" style={{ color: S.accent }}>{c.visits}/{STAMPS}</span>
                     }
                   </div>

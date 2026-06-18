@@ -3,6 +3,7 @@
 // Dashboard de fidelización con KPIs y distribución por tier.
 // Datos estáticos/demo — sirve como wireframe visual del módulo de lealtad.
 import AdminNav from '@/app/components/AdminNav'
+import { Icon, type IconName } from '@/app/components/Icon'
 
 const S = {
   bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
@@ -35,7 +36,7 @@ export default function AdminFidelizacionPage() {
         {/* Header */}
         <div className="flex items-center justify-between pt-1">
           <div>
-            <h1 className="text-xl font-black" style={{ color: S.text }}>💎 Fidelización</h1>
+            <h1 className="text-xl font-black flex items-center gap-2" style={{ color: S.text }}><Icon name="gem" size={20} /> Fidelización</h1>
             <p className="text-xs mt-0.5" style={{ color: S.sub }}>Programa de lealtad, puntos, tarjetas y rewards</p>
           </div>
           <button className="text-sm px-4 py-2 rounded-xl font-bold" style={{ backgroundColor: S.accent, color: '#000' }}>+ Nuevo reward</button>
@@ -44,16 +45,16 @@ export default function AdminFidelizacionPage() {
         {/* KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[
-            { label: 'Miembros activos',    value: '2,847', delta: '↑ 12.4% vs mes ant.', icon: '💳', iconBg: 'rgba(168,85,247,.12)', sc: '#c084fc', spark: [18,22,20,26,24,30,28,34,32,38] },
-            { label: 'Puntos emitidos (mes)',value: '184K',  delta: '↑ 8.7% vs mes ant.',  icon: '⭐', iconBg: 'rgba(0,230,118,.10)',  sc: 'var(--ad-accent)', spark: [12,14,13,16,15,18,17,20,19,22] },
-            { label: 'Canjes realizados',   value: '342',   delta: '↑ 15.2%',              icon: '🎁', iconBg: 'rgba(251,191,36,.12)', sc: '#fbbf24', spark: [5,8,7,10,9,14,12,16,14,18]  },
-            { label: 'Tasa de retención',   value: '78%',   delta: '↑ 3.1pp',              icon: '🔄', iconBg: 'rgba(59,130,246,.12)', sc: '#60a5fa', spark: [60,62,64,66,68,70,72,74,76,78] },
-            { label: 'LTV miembros vs no',  value: '3.4x',  delta: '↑ 0.3x',               icon: '📈', iconBg: 'rgba(6,182,212,.12)',  sc: '#22d3ee', spark: [2.4,2.6,2.7,2.9,3.0,3.1,3.2,3.3,3.3,3.4] },
+            { label: 'Miembros activos',    value: '2,847', delta: '↑ 12.4% vs mes ant.', icon: 'card', iconBg: 'rgba(168,85,247,.12)', sc: '#c084fc', spark: [18,22,20,26,24,30,28,34,32,38] },
+            { label: 'Puntos emitidos (mes)',value: '184K',  delta: '↑ 8.7% vs mes ant.',  icon: 'star', iconBg: 'rgba(0,230,118,.10)',  sc: 'var(--ad-accent)', spark: [12,14,13,16,15,18,17,20,19,22] },
+            { label: 'Canjes realizados',   value: '342',   delta: '↑ 15.2%',              icon: 'gift', iconBg: 'rgba(251,191,36,.12)', sc: '#fbbf24', spark: [5,8,7,10,9,14,12,16,14,18]  },
+            { label: 'Tasa de retención',   value: '78%',   delta: '↑ 3.1pp',              icon: 'refresh', iconBg: 'rgba(59,130,246,.12)', sc: '#60a5fa', spark: [60,62,64,66,68,70,72,74,76,78] },
+            { label: 'LTV miembros vs no',  value: '3.4x',  delta: '↑ 0.3x',               icon: 'trendingUp', iconBg: 'rgba(6,182,212,.12)',  sc: '#22d3ee', spark: [2.4,2.6,2.7,2.9,3.0,3.1,3.2,3.3,3.3,3.4] },
           ].map(k => (
             <div key={k.label} className="rounded-2xl p-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-medium" style={{ color: S.sub }}>{k.label}</p>
-                <span className="w-8 h-8 rounded-lg flex items-center justify-center text-base" style={{ backgroundColor: k.iconBg }}>{k.icon}</span>
+                <span className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: k.iconBg, color: k.sc }}><Icon name={k.icon as IconName} size={16} /></span>
               </div>
               <p className="text-[1.7rem] font-black leading-none mb-2" style={{ color: S.text }}>{k.value}</p>
               <div className="flex items-end justify-between">
@@ -121,7 +122,7 @@ export default function AdminFidelizacionPage() {
           <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
             <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
               <span className="font-bold text-sm" style={{ color: S.text }}>Actividad de puntos</span>
-              <span className="text-xs px-2 py-1 rounded-lg" style={{ backgroundColor: 'var(--ad-overlay)', color: S.sub }}>Este mes ▾</span>
+              <span className="text-xs px-2 py-1 rounded-lg inline-flex items-center gap-1" style={{ backgroundColor: 'var(--ad-overlay)', color: S.sub }}>Este mes <Icon name="chevronDown" size={12} /></span>
             </div>
             <div className="px-5 py-4">
               <div className="grid grid-cols-3 gap-2 mb-4">
@@ -165,11 +166,11 @@ export default function AdminFidelizacionPage() {
             </div>
             <div className="px-5 py-4 space-y-3">
               {[
-                { icon: '🍎', bg: 'rgba(168,85,247,.1)', text: 'Apple Wallet',  sub: '1,245 tarjetas activas', pct: '62%' },
-                { icon: '🤖', bg: 'rgba(59,130,246,.1)', text: 'Google Wallet', sub: '768 tarjetas activas',   pct: '38%' },
+                { icon: 'wallet', bg: 'rgba(168,85,247,.1)', text: 'Apple Wallet',  sub: '1,245 tarjetas activas', pct: '62%' },
+                { icon: 'wallet', bg: 'rgba(59,130,246,.1)', text: 'Google Wallet', sub: '768 tarjetas activas',   pct: '38%' },
               ].map(w => (
                 <div key={w.text} className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: w.bg }}>{w.icon}</div>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: w.bg, color: S.text }}><Icon name={w.icon as IconName} size={18} /></div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium" style={{ color: S.text }}>{w.text}</p>
                     <p className="text-xs" style={{ color: S.sub }}>{w.sub}</p>
@@ -187,11 +188,11 @@ export default function AdminFidelizacionPage() {
                 </div>
               </div>
               {[
-                { icon: '📲', bg: 'rgba(0,230,118,.1)',  text: 'Push enviados (mes)',  sub: '4,520 notificaciones',           pct: '89% entrega' },
-                { icon: '🔄', bg: 'rgba(251,191,36,.1)', text: 'Updates de tarjeta',   sub: 'Puntos y tier en tiempo real',   pct: null },
+                { icon: 'send', bg: 'rgba(0,230,118,.1)',  text: 'Push enviados (mes)',  sub: '4,520 notificaciones',           pct: '89% entrega' },
+                { icon: 'refresh', bg: 'rgba(251,191,36,.1)', text: 'Updates de tarjeta',   sub: 'Puntos y tier en tiempo real',   pct: null },
               ].map(a => (
                 <div key={a.text} className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: a.bg }}>{a.icon}</div>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: a.bg, color: S.text }}><Icon name={a.icon as IconName} size={18} /></div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium" style={{ color: S.text }}>{a.text}</p>
                     <p className="text-xs" style={{ color: S.sub }}>{a.sub}</p>
@@ -216,14 +217,14 @@ export default function AdminFidelizacionPage() {
             </div>
             <div className="px-5 py-4 space-y-3">
               {[
-                { rank: 1, rc: '#c084fc', bg: 'linear-gradient(135deg,#c084fc,#7c3aed)', emoji: '💎', name: 'Roberto García', tier: 'Platinum · 45 visitas', pts: '15,200 pts', ltv: '$89,200 LTV' },
-                { rank: 2, rc: '#fbbf24', bg: 'linear-gradient(135deg,#fbbf24,#f59e0b)', emoji: '⭐', name: 'Ana Martínez',   tier: 'Gold · 23 visitas',     pts: '8,450 pts',  ltv: '$47,500 LTV' },
-                { rank: 3, rc: '#f59e0b', bg: 'linear-gradient(135deg,#fbbf24,#b45309)', emoji: '⭐', name: 'Lucía Pérez',    tier: 'Gold · 15 visitas',     pts: '6,800 pts',  ltv: '$31,000 LTV' },
-                { rank: 4, rc: '#60a5fa', bg: 'linear-gradient(135deg,#60a5fa,#3b82f6)', emoji: '🥈', name: 'Carlos Mendoza', tier: 'Silver · 12 visitas',   pts: '3,200 pts',  ltv: '$22,800 LTV' },
+                { rank: 1, rc: '#c084fc', bg: 'linear-gradient(135deg,#c084fc,#7c3aed)', icon: 'gem', name: 'Roberto García', tier: 'Platinum · 45 visitas', pts: '15,200 pts', ltv: '$89,200 LTV' },
+                { rank: 2, rc: '#fbbf24', bg: 'linear-gradient(135deg,#fbbf24,#f59e0b)', icon: 'star', name: 'Ana Martínez',   tier: 'Gold · 23 visitas',     pts: '8,450 pts',  ltv: '$47,500 LTV' },
+                { rank: 3, rc: '#f59e0b', bg: 'linear-gradient(135deg,#fbbf24,#b45309)', icon: 'star', name: 'Lucía Pérez',    tier: 'Gold · 15 visitas',     pts: '6,800 pts',  ltv: '$31,000 LTV' },
+                { rank: 4, rc: '#60a5fa', bg: 'linear-gradient(135deg,#60a5fa,#3b82f6)', icon: 'star', name: 'Carlos Mendoza', tier: 'Silver · 12 visitas',   pts: '3,200 pts',  ltv: '$22,800 LTV' },
               ].map(p => (
                 <div key={p.rank} className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-black shrink-0" style={{ backgroundColor: `${p.rc}20`, color: p.rc }}>{p.rank}</div>
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0" style={{ background: p.bg }}>{p.emoji}</div>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white" style={{ background: p.bg }}><Icon name={p.icon as IconName} size={18} /></div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold truncate" style={{ color: S.text }}>{p.name}</p>
                     <p className="text-xs" style={{ color: S.sub }}>{p.tier}</p>
@@ -247,14 +248,14 @@ export default function AdminFidelizacionPage() {
             </div>
             <div className="px-5 py-4 space-y-3">
               {[
-                { rank: 1, rc: '#c084fc', emoji: '🍰', name: 'Postre gratis',         sub: '500 pts · 142 canjes',   pct: '41.5%' },
-                { rank: 2, rc: '#fbbf24', emoji: '🍹', name: 'Bebida 2x1',            sub: '300 pts · 98 canjes',    pct: '28.6%' },
-                { rank: 3, rc: '#60a5fa', emoji: '💸', name: '$200 de descuento',     sub: '1,000 pts · 64 canjes',  pct: '18.7%' },
-                { rank: 4, rc: '#94a3b8', emoji: '🍽️', name: 'Plato principal gratis', sub: '2,500 pts · 38 canjes', pct: '11.1%' },
+                { rank: 1, rc: '#c084fc', icon: 'gift', name: 'Postre gratis',         sub: '500 pts · 142 canjes',   pct: '41.5%' },
+                { rank: 2, rc: '#fbbf24', icon: 'coffee', name: 'Bebida 2x1',            sub: '300 pts · 98 canjes',    pct: '28.6%' },
+                { rank: 3, rc: '#60a5fa', icon: 'cash', name: '$200 de descuento',     sub: '1,000 pts · 64 canjes',  pct: '18.7%' },
+                { rank: 4, rc: '#94a3b8', icon: 'utensils', name: 'Plato principal gratis', sub: '2,500 pts · 38 canjes', pct: '11.1%' },
               ].map(p => (
                 <div key={p.rank} className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-black shrink-0" style={{ backgroundColor: `${p.rc}20`, color: p.rc }}>{p.rank}</div>
-                  <span className="text-xl shrink-0">{p.emoji}</span>
+                  <span className="shrink-0" style={{ color: p.rc }}><Icon name={p.icon as IconName} size={18} /></span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold truncate" style={{ color: S.text }}>{p.name}</p>
                     <p className="text-xs" style={{ color: S.sub }}>{p.sub}</p>
@@ -275,13 +276,13 @@ export default function AdminFidelizacionPage() {
             </div>
             <div className="px-5 py-4 space-y-3">
               {[
-                { icon: '🎂', bg: 'rgba(251,191,36,.1)', name: 'Cupón Cumpleaños',   sub: 'Postre gratis · 34 enviados' },
-                { icon: '💔', bg: 'rgba(239,68,68,.1)',  name: 'Recuperación churn', sub: '20% off · 15d sin volver'    },
-                { icon: '👋', bg: 'rgba(0,230,118,.1)',  name: 'Bienvenida',          sub: '10% primera compra'          },
-                { icon: '🏆', bg: 'rgba(168,85,247,.1)', name: 'Ascenso de tier',    sub: 'Reward sorpresa al subir'    },
+                { icon: 'gift', bg: 'rgba(251,191,36,.1)', name: 'Cupón Cumpleaños',   sub: 'Postre gratis · 34 enviados' },
+                { icon: 'heart', bg: 'rgba(239,68,68,.1)',  name: 'Recuperación churn', sub: '20% off · 15d sin volver'    },
+                { icon: 'user', bg: 'rgba(0,230,118,.1)',  name: 'Bienvenida',          sub: '10% primera compra'          },
+                { icon: 'trophy', bg: 'rgba(168,85,247,.1)', name: 'Ascenso de tier',    sub: 'Reward sorpresa al subir'    },
               ].map(c => (
                 <div key={c.name} className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: c.bg }}>{c.icon}</div>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: c.bg, color: S.text }}><Icon name={c.icon as IconName} size={18} /></div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium" style={{ color: S.text }}>{c.name}</p>
                     <p className="text-xs" style={{ color: S.sub }}>{c.sub}</p>

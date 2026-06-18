@@ -3,6 +3,7 @@
 // Gestión de pedidos para el empleado: polling cada 10 s, avanza estado igual que admin/orders.
 import { useState, useEffect } from 'react'
 import EmployeeNav from '@/app/components/EmployeeNav'
+import { Icon } from '@/app/components/Icon'
 
 interface OrderItem { name: string; quantity: number; price: number }
 interface Order {
@@ -121,8 +122,8 @@ export default function EmployeeOrdersPage() {
         )}
 
         {!loading && active.length === 0 && (
-          <div className="text-center py-20" style={{ color: S.sub }}>
-            <p className="text-6xl mb-4">🍽</p>
+          <div className="flex flex-col items-center py-20" style={{ color: S.sub }}>
+            <span className="mb-4"><Icon name="utensils" size={52} /></span>
             <p className="font-semibold text-lg" style={{ color: S.text }}>No hay pedidos activos</p>
             <p className="text-sm mt-1">Los nuevos pedidos aparecerán aquí</p>
           </div>
@@ -144,9 +145,9 @@ export default function EmployeeOrdersPage() {
               }}>
               <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: cfg.headerBg }}>
                 <div className="flex items-center gap-2">
-                  {order.status === 'pending' && <span className="text-white text-lg animate-bounce">🔔</span>}
-                  {order.status === 'preparing' && <span className="text-white text-lg">🍳</span>}
-                  {order.status === 'ready' && <span className="text-white text-lg">✅</span>}
+                  {order.status === 'pending' && <span className="text-white animate-bounce"><Icon name="bell" size={17} /></span>}
+                  {order.status === 'preparing' && <span className="text-white"><Icon name="chef" size={17} /></span>}
+                  {order.status === 'ready' && <span className="text-white"><Icon name="checkCircle" size={17} /></span>}
                   <span className="text-white font-black text-sm uppercase tracking-wide">{cfg.label}</span>
                   {nuevo && <span className="bg-white/30 text-white text-xs font-bold px-2 py-0.5 rounded-full">NUEVO</span>}
                 </div>
@@ -187,7 +188,7 @@ export default function EmployeeOrdersPage() {
                 {order.notes && (
                   <div className="flex items-start gap-2 rounded-xl px-3 py-2"
                     style={{ backgroundColor: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)' }}>
-                    <span className="text-yellow-400 text-sm">📝</span>
+                    <span className="text-yellow-400 mt-0.5"><Icon name="note" size={14} /></span>
                     <p className="text-sm font-medium" style={{ color: '#fde68a' }}>{order.notes}</p>
                   </div>
                 )}
@@ -207,14 +208,14 @@ export default function EmployeeOrdersPage() {
         {delivered.length > 0 && (
           <details className="group">
             <summary className="text-sm cursor-pointer py-2 px-1 flex items-center gap-2 select-none" style={{ color: S.sub }}>
-              <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+              <span className="group-open:rotate-90 transition-transform inline-flex"><Icon name="play" size={11} /></span>
               Entregados ({delivered.length})
             </summary>
             <div className="space-y-2 mt-2">
               {delivered.slice(0, 10).map(order => (
                 <div key={order.id} className="rounded-xl p-3 flex items-center gap-3 opacity-50"
                   style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-                  <span className="text-2xl">📦</span>
+                  <span style={{ color: S.sub }}><Icon name="box" size={22} /></span>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm" style={{ color: S.text }}>{order.customerName}</p>
                     <p className="text-xs truncate" style={{ color: S.sub }}>
