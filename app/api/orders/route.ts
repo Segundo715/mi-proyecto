@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (notes) lines.push(notes)
   lines.push('', ...order.items.map((i: { quantity: number; name: string; price: number }) => `• ${i.quantity}× ${i.name}`))
   lines.push('', `💰 Total: $${order.total.toFixed(2)}`)
-  notifyWhatsApp(lines.join('\n')).catch(() => {})
+  await notifyWhatsApp(lines.join('\n'))
 
   return Response.json(order, { status: 201 })
 }
