@@ -46,7 +46,7 @@ export default function AdminConfiguracionPage() {
   useEffect(() => {
     const keys = [
       ...TEXT_SETTINGS.map(s => s.key),
-      'restaurant_name', 'profile_logo', 'sidebar_accent',
+      'restaurant_name', 'restaurant_address', 'restaurant_phone', 'profile_logo', 'sidebar_accent',
       'resta3_name', 'resta3_logo', 'resta3_accent',
       'employee_accent', 'employee_logo',
       'menu_logo', 'menu_bg_color', 'menu_btn_color', 'menu_hover_color', 'business_wa',
@@ -185,6 +185,34 @@ export default function AdminConfiguracionPage() {
                 {renderSaveBtn('restaurant_name')}
               </div>
               <p className="text-xs mt-1" style={{ color: S.sub }}>Se muestra en el menú lateral del panel</p>
+            </div>
+
+            {/* Dirección */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Dirección</label>
+              <div className="flex gap-2">
+                <input type="text" value={values.restaurant_address ?? ''}
+                  onChange={e => setValues(p => ({ ...p, restaurant_address: e.target.value }))}
+                  placeholder="Calle Ejemplo 123, Col. Centro"
+                  className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+                {renderSaveBtn('restaurant_address')}
+              </div>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>Se imprime en los tickets de pedido</p>
+            </div>
+
+            {/* Teléfono */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Teléfono</label>
+              <div className="flex gap-2">
+                <input type="text" value={values.restaurant_phone ?? ''}
+                  onChange={e => setValues(p => ({ ...p, restaurant_phone: e.target.value }))}
+                  placeholder="(444) 123-4567"
+                  className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+                {renderSaveBtn('restaurant_phone')}
+              </div>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>Se imprime en los tickets de pedido</p>
             </div>
 
             {/* Logo admin */}

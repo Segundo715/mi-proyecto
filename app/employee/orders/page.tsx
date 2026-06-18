@@ -56,39 +56,74 @@ function isNew(iso: string) {
   return Date.now() - new Date(iso).getTime() < 2 * 60 * 1000
 }
 
-function printTicket(order: Order, restaurantName: string) {
+interface TicketInfo { name: string; address: string; phone: string }
+
+function printTicket(order: Order, info: TicketInfo) {
   const date = new Date(order.createdAt).toLocaleString('es-MX', {
     day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
   })
-  const name = restaurantName || 'Restaurante'
-  const rows = order.items.map(i =>
-    `<div class="row"><span>${i.quantity}× ${i.name}</span><span>$${(i.price * i.quantity).toFixed(2)}</span></div>`
-  ).join('')
+  const name = info.name || 'Restaurante'
+
+  // IVA incluido en precios (estándar México)
+  const subtotalBase = order.total / 1.16
+  const iva = order.total - subtotalBase
+
+  const rows = order.items.map(i => {
+    const sub = i.price * i.quantity
+    return `<div class="item">
+      <div class="item-name">${i.name}</div>
+      <div class="row"><span>$${i.price.toFixed(2)} × ${i.quantity}</span><span>$${sub.toFixed(2)}</span></div>
+    </div>`
+  }).join('')
+
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ticket</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Courier New',monospace;font-size:13px;width:80mm;margin:0 auto;padding:6mm}
-.c{text-align:center}.b{font-weight:bold}.lg{font-size:16px}
+.c{text-align:center}.b{font-weight:bold}.lg{font-size:17px}.sm{font-size:11px}.xs{font-size:10px}
 .hr{border-top:1px dashed #000;margin:6px 0}
-.row{display:flex;justify-content:space-between;margin:3px 0}
+.row{display:flex;justify-content:space-between;margin:2px 0}
+.item{margin:5px 0}.item-name{font-weight:bold;margin-bottom:1px}
+.total-row{display:flex;justify-content:space-between;font-weight:bold;font-size:15px;margin:4px 0}
+.pago{border-top:1px solid #000;border-bottom:1px solid #000;padding:5px 0;margin:6px 0}
 </style></head><body>
+
 <div class="c b lg">${name.toUpperCase()}</div>
-<div class="c" style="font-size:11px;margin-top:2px">${date}</div>
+${info.address ? `<div class="c sm" style="margin-top:2px">${info.address}</div>` : ''}
+${info.phone ? `<div class="c sm">Tel: ${info.phone}</div>` : ''}
+<div class="c xs" style="color:#444;margin-top:3px">${date}</div>
+<div class="c xs" style="color:#666">Folio: #${order.id.slice(-8).toUpperCase()}</div>
+
 <div class="hr"></div>
 <div><b>Cliente:</b> ${order.customerName}</div>
 ${order.tableNumber ? `<div><b>Mesa:</b> ${order.tableNumber}</div>` : ''}
-${order.notes ? `<div style="font-size:11px;margin-top:3px">${order.notes.replace(/\n/g, '<br>')}</div>` : ''}
+${order.notes ? `<div class="sm" style="margin-top:3px;color:#333">${order.notes.replace(/\n/g, '<br>')}</div>` : ''}
+
 <div class="hr"></div>
+<div class="row xs b"><span>DESCRIPCIÓN</span><span>IMPORTE</span></div>
+<div style="margin:4px 0">
 ${rows}
+</div>
+
 <div class="hr"></div>
-<div class="row b" style="font-size:15px"><span>TOTAL</span><span>$${order.total.toFixed(2)}</span></div>
+<div class="row sm"><span>Subtotal (sin IVA)</span><span>$${subtotalBase.toFixed(2)}</span></div>
+<div class="row sm"><span>IVA 16%</span><span>$${iva.toFixed(2)}</span></div>
 <div class="hr"></div>
-<div class="c" style="font-size:11px;margin-top:4px">¡Gracias por su preferencia!</div>
-<div class="c" style="font-size:10px;color:#666;margin-top:2px">#${order.id.slice(-8).toUpperCase()}</div>
+<div class="total-row"><span>TOTAL</span><span>$${order.total.toFixed(2)}</span></div>
+
+<div class="pago">
+  <div class="sm b">Método de pago:</div>
+  <div class="sm" style="margin-top:3px">
+    ☐ Efectivo &nbsp;&nbsp; ☐ Tarjeta &nbsp;&nbsp; ☐ Transferencia
+  </div>
+</div>
+
+<div class="c sm" style="margin-top:6px">¡Gracias por su preferencia!</div>
 </body></html>`
+
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
   const url = URL.createObjectURL(blob)
-  const win = window.open(url, '_blank', 'width=380,height=520,noopener')
+  const win = window.open(url, '_blank', 'width=380,height=600,noopener')
   if (!win) { URL.revokeObjectURL(url); return }
   win.addEventListener('load', () => { win.print(); URL.revokeObjectURL(url) })
 }
@@ -97,12 +132,18 @@ export default function EmployeeOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [advancing, setAdvancing] = useState<string | null>(null)
-  const [restaurantName, setRestaurantName] = useState('')
+  const [ticketInfo, setTicketInfo] = useState<TicketInfo>({ name: '', address: '', phone: '' })
 
   useEffect(() => {
     load()
     const interval = setInterval(load, 10000)
-    fetch('/api/settings?key=restaurant_name').then(r => r.json()).then(d => { if (d?.value) setRestaurantName(d.value) }).catch(() => {})
+    Promise.all([
+      fetch('/api/settings?key=restaurant_name').then(r => r.json()),
+      fetch('/api/settings?key=restaurant_address').then(r => r.json()),
+      fetch('/api/settings?key=restaurant_phone').then(r => r.json()),
+    ]).then(([n, a, p]) => {
+      setTicketInfo({ name: n?.value ?? '', address: a?.value ?? '', phone: p?.value ?? '' })
+    }).catch(() => {})
     return () => clearInterval(interval)
   }, [])
 
@@ -240,7 +281,7 @@ export default function EmployeeOrdersPage() {
                       {isAdvancing ? 'Actualizando...' : `${nextAction.label} →`}
                     </button>
                   )}
-                  <button type="button" onClick={() => printTicket(order, restaurantName)}
+                  <button type="button" onClick={() => printTicket(order, ticketInfo)}
                     className="px-4 py-3.5 rounded-xl font-black text-sm transition-all"
                     style={{ backgroundColor: 'var(--ad-overlay)', color: S.text, border: `1px solid ${S.border}` }}
                     title="Imprimir ticket">
