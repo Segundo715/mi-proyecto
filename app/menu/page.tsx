@@ -290,6 +290,7 @@ export default function MenuPage() {
       })
       if (res.ok) {
         const order: Order = await res.json()
+
         const ids = getStoredOrderIds()
         setStoredOrderIds([...ids, order.id])
         setMyOrders(prev => [...prev, order])

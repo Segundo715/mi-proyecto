@@ -49,7 +49,7 @@ export default function AdminConfiguracionPage() {
       'restaurant_name', 'profile_logo', 'sidebar_accent',
       'resta3_name', 'resta3_logo', 'resta3_accent',
       'employee_accent', 'employee_logo',
-      'menu_logo', 'menu_bg_color', 'menu_btn_color', 'menu_hover_color',
+      'menu_logo', 'menu_bg_color', 'menu_btn_color', 'menu_hover_color', 'business_wa',
       'recetario_color', 'recetario_logo',
     ]
     keys.forEach(async key => {
@@ -361,6 +361,21 @@ export default function AdminConfiguracionPage() {
                   style={{ backgroundColor: values.menu_hover_color || '#DC5E86', color: '#fff' }}>Acento</span>
               </div>
             </div>
+
+            {/* WhatsApp del negocio */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>WhatsApp del negocio</label>
+              <div className="flex gap-2">
+                <input type="text" value={values.business_wa ?? ''}
+                  onChange={e => setValues(p => ({ ...p, business_wa: e.target.value.replace(/\D/g, '') }))}
+                  placeholder="526641234567"
+                  className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none font-mono"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+                {renderSaveBtn('business_wa')}
+              </div>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>Número sin + ni espacios (ej. 526641234567). Los pedidos del menú se envían aquí por WhatsApp.</p>
+            </div>
+
           </div>
         </div>
 

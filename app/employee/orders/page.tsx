@@ -56,14 +56,53 @@ function isNew(iso: string) {
   return Date.now() - new Date(iso).getTime() < 2 * 60 * 1000
 }
 
+function printTicket(order: Order, restaurantName: string) {
+  const date = new Date(order.createdAt).toLocaleString('es-MX', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+  const name = restaurantName || 'Restaurante'
+  const rows = order.items.map(i =>
+    `<div class="row"><span>${i.quantity}× ${i.name}</span><span>$${(i.price * i.quantity).toFixed(2)}</span></div>`
+  ).join('')
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ticket</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Courier New',monospace;font-size:13px;width:80mm;margin:0 auto;padding:6mm}
+.c{text-align:center}.b{font-weight:bold}.lg{font-size:16px}
+.hr{border-top:1px dashed #000;margin:6px 0}
+.row{display:flex;justify-content:space-between;margin:3px 0}
+</style></head><body>
+<div class="c b lg">${name.toUpperCase()}</div>
+<div class="c" style="font-size:11px;margin-top:2px">${date}</div>
+<div class="hr"></div>
+<div><b>Cliente:</b> ${order.customerName}</div>
+${order.tableNumber ? `<div><b>Mesa:</b> ${order.tableNumber}</div>` : ''}
+${order.notes ? `<div style="font-size:11px;margin-top:3px">${order.notes.replace(/\n/g, '<br>')}</div>` : ''}
+<div class="hr"></div>
+${rows}
+<div class="hr"></div>
+<div class="row b" style="font-size:15px"><span>TOTAL</span><span>$${order.total.toFixed(2)}</span></div>
+<div class="hr"></div>
+<div class="c" style="font-size:11px;margin-top:4px">¡Gracias por su preferencia!</div>
+<div class="c" style="font-size:10px;color:#666;margin-top:2px">#${order.id.slice(-8).toUpperCase()}</div>
+</body></html>`
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const win = window.open(url, '_blank', 'width=380,height=520,noopener')
+  if (!win) { URL.revokeObjectURL(url); return }
+  win.addEventListener('load', () => { win.print(); URL.revokeObjectURL(url) })
+}
+
 export default function EmployeeOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [advancing, setAdvancing] = useState<string | null>(null)
+  const [restaurantName, setRestaurantName] = useState('')
 
   useEffect(() => {
     load()
     const interval = setInterval(load, 10000)
+    fetch('/api/settings?key=restaurant_name').then(r => r.json()).then(d => { if (d?.value) setRestaurantName(d.value) }).catch(() => {})
     return () => clearInterval(interval)
   }, [])
 
@@ -193,13 +232,21 @@ export default function EmployeeOrdersPage() {
                   </div>
                 )}
 
-                {nextStatus && nextAction && (
-                  <button type="button" onClick={() => advance(order.id, nextStatus)} disabled={isAdvancing}
-                    className="w-full py-3.5 rounded-xl font-black text-sm transition-all disabled:opacity-60"
-                    style={{ backgroundColor: nextAction.btnBg, color: nextAction.btnColor }}>
-                    {isAdvancing ? 'Actualizando...' : `${nextAction.label} →`}
+                <div className="flex gap-2">
+                  {nextStatus && nextAction && (
+                    <button type="button" onClick={() => advance(order.id, nextStatus)} disabled={isAdvancing}
+                      className="flex-1 py-3.5 rounded-xl font-black text-sm transition-all disabled:opacity-60"
+                      style={{ backgroundColor: nextAction.btnBg, color: nextAction.btnColor }}>
+                      {isAdvancing ? 'Actualizando...' : `${nextAction.label} →`}
+                    </button>
+                  )}
+                  <button type="button" onClick={() => printTicket(order, restaurantName)}
+                    className="px-4 py-3.5 rounded-xl font-black text-sm transition-all"
+                    style={{ backgroundColor: 'var(--ad-overlay)', color: S.text, border: `1px solid ${S.border}` }}
+                    title="Imprimir ticket">
+                    🖨️
                   </button>
-                )}
+                </div>
               </div>
             </div>
           )
