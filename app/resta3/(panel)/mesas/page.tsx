@@ -99,6 +99,7 @@ export default function MesasPage() {
     setLoadingTables(false)
   }
   useEffect(() => { loadTables() }, [])
+  useEffect(() => { if (tab === 'mesas') loadTables() }, [tab])
 
   // ── Handlers mesas ────────────────────────────────────────────────────────
   function openModal(table: Table) {
