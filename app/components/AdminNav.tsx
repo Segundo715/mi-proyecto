@@ -98,6 +98,7 @@ export default function AdminNav() {
   const [open, setOpen] = useState(false)
   const [order, setOrder] = useState<string[]>([])
   const [draggingHref, setDraggingHref] = useState<string | null>(null)
+  const [subtitle, setSubtitle] = useState('Dirección General')
   const dragRef = useRef<{ href: string; startX: number; startY: number; dragging: boolean } | null>(null)
   const suppressClickRef = useRef(false)
   const brand = useBrand()
@@ -110,6 +111,10 @@ export default function AdminNav() {
         if (Array.isArray(saved)) setOrder(saved.map(String))
       } catch {}
     })
+    fetch('/api/settings?key=admin_subtitle')
+      .then(r => r.json())
+      .then(d => { if (d?.value) setSubtitle(d.value) })
+      .catch(() => {})
   }, [])
 
   const brandName = brand.name || 'NICHO'
@@ -252,7 +257,7 @@ export default function AdminNav() {
           </div>
           <div>
             <div className="font-extrabold text-base tracking-wide" style={S.text}>{brandName}</div>
-            <div className="text-[11px] uppercase tracking-widest font-semibold" style={S.sub}>Restaurantes</div>
+            <div className="text-[11px] uppercase tracking-widest font-semibold" style={S.sub}>{subtitle}</div>
           </div>
         </div>
 
@@ -295,7 +300,7 @@ export default function AdminNav() {
               style={{ background: 'linear-gradient(135deg,#7c3aed,#4f6ef7)', color: '#fff' }}>A</div>
             <div>
               <div className="text-sm font-semibold" style={S.text}>Administrador</div>
-              <div className="text-xs" style={S.sub}>Panel de control</div>
+              <div className="text-xs" style={S.sub}>{subtitle}</div>
             </div>
           </div>
           <button type="button" onClick={logout}
@@ -323,7 +328,7 @@ export default function AdminNav() {
               </div>
               <div>
                 <div className="font-extrabold text-sm" style={S.text}>{brandName}</div>
-                <div className="text-[10px] uppercase tracking-widest" style={S.sub}>Restaurantes</div>
+                <div className="text-[10px] uppercase tracking-widest" style={S.sub}>{subtitle}</div>
               </div>
             </div>
             <button type="button" onClick={() => setOpen(false)}

@@ -46,7 +46,7 @@ export default function AdminConfiguracionPage() {
   useEffect(() => {
     const keys = [
       ...TEXT_SETTINGS.map(s => s.key),
-      'restaurant_name', 'restaurant_address', 'restaurant_phone', 'profile_logo', 'sidebar_accent',
+      'restaurant_name', 'restaurant_address', 'restaurant_phone', 'admin_subtitle', 'profile_logo', 'sidebar_accent',
       'resta3_name', 'resta3_logo', 'resta3_accent',
       'employee_accent', 'employee_logo',
       'menu_logo', 'menu_bg_color', 'menu_btn_color', 'menu_hover_color', 'business_wa',
@@ -213,6 +213,20 @@ export default function AdminConfiguracionPage() {
                 {renderSaveBtn('restaurant_phone')}
               </div>
               <p className="text-xs mt-1" style={{ color: S.sub }}>Se imprime en los tickets de pedido</p>
+            </div>
+
+            {/* Subtítulo del sidebar */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Subtítulo del panel admin</label>
+              <div className="flex gap-2">
+                <input type="text" value={values.admin_subtitle ?? ''}
+                  onChange={e => setValues(p => ({ ...p, admin_subtitle: e.target.value }))}
+                  placeholder="Dirección General"
+                  className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+                {renderSaveBtn('admin_subtitle')}
+              </div>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>Aparece debajo del nombre en el sidebar (ej. "Dirección General")</p>
             </div>
 
             {/* Logo admin */}
