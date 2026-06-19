@@ -1,7 +1,7 @@
 'use client'
 
 // Gestión de pedidos para el empleado: polling cada 10 s, avanza estado igual que admin/orders.
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import EmployeeNav from '@/app/components/EmployeeNav'
 import { Icon } from '@/app/components/Icon'
 
@@ -128,13 +128,40 @@ ${rows}
   win.addEventListener('load', () => { win.print(); URL.revokeObjectURL(url) })
 }
 
+function playAlert() {
+  try {
+    const ctx = new AudioContext()
+    const beep = (freq: number, start: number, dur: number) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.frequency.value = freq
+      osc.type = 'sine'
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + start)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur)
+      osc.start(ctx.currentTime + start)
+      osc.stop(ctx.currentTime + start + dur)
+    }
+    beep(880, 0, 0.15)
+    beep(1100, 0.18, 0.15)
+    beep(1320, 0.36, 0.25)
+  } catch { /* navegador bloqueó audio */ }
+}
+
 export default function EmployeeOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [advancing, setAdvancing] = useState<string | null>(null)
   const [ticketInfo, setTicketInfo] = useState<TicketInfo>({ name: '', address: '', phone: '' })
+  const knownIds = useRef<Set<string>>(new Set())
+  const firstLoad = useRef(true)
 
   useEffect(() => {
+    // Pedir permiso de notificaciones del navegador
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+
     load()
     const interval = setInterval(load, 10000)
     Promise.all([
@@ -149,7 +176,30 @@ export default function EmployeeOrdersPage() {
 
   async function load() {
     const res = await fetch('/api/orders')
-    if (res.ok) setOrders(await res.json())
+    if (!res.ok) { setLoading(false); return }
+    const data: Order[] = await res.json()
+
+    if (firstLoad.current) {
+      // Primera carga: registrar IDs existentes sin notificar
+      data.filter(o => o.status === 'pending').forEach(o => knownIds.current.add(o.id))
+      firstLoad.current = false
+    } else {
+      // Cargas siguientes: detectar pedidos nuevos (pending no vistos antes)
+      const newOrders = data.filter(o => o.status === 'pending' && !knownIds.current.has(o.id))
+      newOrders.forEach(o => {
+        knownIds.current.add(o.id)
+        playAlert()
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Nuevo pedido', {
+            body: `${o.customerName}${o.tableNumber ? ` · Mesa ${o.tableNumber}` : ''} — $${o.total.toFixed(2)}`,
+            icon: '/logo.png',
+            tag: o.id,
+          })
+        }
+      })
+    }
+
+    setOrders(data)
     setLoading(false)
   }
 
