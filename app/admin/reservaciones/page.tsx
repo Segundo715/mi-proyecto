@@ -2,7 +2,7 @@
 
 // Módulo de reservaciones con plano de mesas, timeline, perfiles y turnos.
 // Las reservaciones solo existen en estado local; no persisten en Supabase.
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AdminNav from '@/app/components/AdminNav'
 import { Icon } from '@/app/components/Icon'
 import FloorPlanEditor from '@/components/floor-plan/FloorPlanEditor'
@@ -26,18 +26,13 @@ const inputStyle = { backgroundColor: S.input, color: S.text, border: `1px solid
 const INPUT_CLS = 'w-full rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors'
 
 interface Reservation {
-  id: number; name: string; time: string; guests: number; phone: string; notes: string; status: 'confirmed' | 'pending' | 'cancelled'
+  id: number; name: string; time: string; guests: number; phone: string; notes: string
+  table: string; tableId: string; status: 'confirmed' | 'pending' | 'cancelled'
 }
 
-const DEMO: Reservation[] = [
-  { id: 1, name: 'Carlos Mendoza',   time: '13:00', guests: 4, phone: '555-1234', notes: 'Aniversario', status: 'confirmed' },
-  { id: 2, name: 'Ana García',       time: '13:30', guests: 2, phone: '555-5678', notes: '',             status: 'confirmed' },
-  { id: 3, name: 'Roberto Silva',    time: '14:00', guests: 6, phone: '555-9012', notes: 'Cumpleaños',   status: 'pending'   },
-  { id: 4, name: 'María López',      time: '15:00', guests: 3, phone: '555-3456', notes: '',             status: 'confirmed' },
-  { id: 5, name: 'Jorge Ramírez',    time: '15:30', guests: 2, phone: '555-7890', notes: 'Ventana',      status: 'confirmed' },
-  { id: 6, name: 'Patricia Torres',  time: '16:00', guests: 8, phone: '555-2345', notes: 'Evento corp.', status: 'pending'   },
-  { id: 7, name: 'Luisa Hernández',  time: '18:00', guests: 2, phone: '555-6789', notes: '',             status: 'cancelled' },
-]
+interface DBTable { id: string; label: string; seats: number; zone: string; status: string }
+
+const DEMO: Reservation[] = []
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
   confirmed: { bg: 'rgba(34,197,94,0.15)',  color: '#4ade80', label: 'Confirmada' },
@@ -59,26 +54,57 @@ export default function AdminReservacionesPage() {
   const [reservations, setReservations] = useState<Reservation[]>(DEMO)
   const [showForm, setShowForm] = useState(false)
   const [tab, setTab] = useState<'reservas' | 'plano' | 'servicio' | 'perfiles' | 'timeline' | 'consumo' | 'turnos'>('reservas')
-  const [form, setForm] = useState({ name: '', time: '', guests: '2', phone: '', notes: '' })
+  const [form, setForm] = useState({ name: '', time: '', guests: '2', phone: '', notes: '', table: '' })
+  const [dbTables, setDbTables] = useState<DBTable[]>([])
+
+  useEffect(() => {
+    fetch('/api/resta3/tables')
+      .then(r => r.json())
+      .then((data: DBTable[]) => setDbTables(data))
+      .catch(() => {})
+  }, [])
 
   const confirmed = reservations.filter(r => r.status === 'confirmed').length
   const pending = reservations.filter(r => r.status === 'pending').length
   const cancelled = reservations.filter(r => r.status === 'cancelled').length
   const totalGuests = reservations.filter(r => r.status !== 'cancelled').reduce((s, r) => s + r.guests, 0)
 
+  async function patchTableStatus(tableId: string, status: string) {
+    if (!tableId) return
+    await fetch(`/api/resta3/tables/${tableId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    }).catch(() => {})
+    // Refresca el listado de mesas para que el dropdown refleje el nuevo estado
+    fetch('/api/resta3/tables')
+      .then(r => r.json())
+      .then((data: DBTable[]) => setDbTables(data))
+      .catch(() => {})
+  }
+
   function addReservation() {
     if (!form.name.trim() || !form.time || !form.phone.trim()) return
-    setReservations(prev => [
-      ...prev,
-      { id: Date.now(), name: form.name.trim(), time: form.time, guests: parseInt(form.guests) || 2,
-        phone: form.phone.trim(), notes: form.notes.trim(), status: 'pending' },
-    ])
-    setForm({ name: '', time: '', guests: '2', phone: '', notes: '' })
+    const selected = dbTables.find(t => t.id === form.table)
+    const newRes: Reservation = {
+      id: Date.now(), name: form.name.trim(), time: form.time,
+      guests: parseInt(form.guests) || 2, phone: form.phone.trim(),
+      notes: form.notes.trim(), table: selected?.label ?? '', tableId: selected?.id ?? '',
+      status: 'pending',
+    }
+    if (selected) patchTableStatus(selected.id, 'reservada')
+    setReservations(prev => [...prev, newRes])
+    setForm({ name: '', time: '', guests: '2', phone: '', notes: '', table: '' })
     setShowForm(false)
   }
 
   function changeStatus(id: number, status: Reservation['status']) {
-    setReservations(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+    setReservations(prev => prev.map(r => {
+      if (r.id !== id) return r
+      if (status === 'cancelled' && r.tableId) patchTableStatus(r.tableId, 'libre')
+      if (status === 'confirmed' && r.tableId) patchTableStatus(r.tableId, 'reservada')
+      return { ...r, status }
+    }))
   }
 
   const sorted = [...reservations].sort((a, b) => a.time.localeCompare(b.time))
@@ -176,6 +202,22 @@ export default function AdminReservacionesPage() {
                 <input type="number" value={form.guests} onChange={e => setForm(p => ({ ...p, guests: e.target.value }))}
                   min="1" max="20" className={INPUT_CLS} style={inputStyle} />
               </div>
+              <div>
+                <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Mesa</label>
+                <select value={form.table} onChange={e => setForm(p => ({ ...p, table: e.target.value }))}
+                  className={INPUT_CLS} style={inputStyle}>
+                  <option value="">Sin asignar</option>
+                  {dbTables.filter(t => t.status === 'libre').map(t => (
+                    <option key={t.id} value={t.id}>{t.label} ({t.seats} pers.) — {t.zone}</option>
+                  ))}
+                </select>
+                {dbTables.length === 0 && (
+                  <p className="text-xs mt-1" style={{ color: S.sub }}>No hay mesas registradas. Agrégalas en Plano de mesas.</p>
+                )}
+                {dbTables.length > 0 && dbTables.filter(t => t.status === 'libre').length === 0 && (
+                  <p className="text-xs mt-1" style={{ color: '#fbbf24' }}>Todas las mesas están ocupadas o reservadas.</p>
+                )}
+              </div>
               <div className="col-span-2">
                 <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Notas</label>
                 <input type="text" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
@@ -215,7 +257,7 @@ export default function AdminReservacionesPage() {
                       <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                         style={{ backgroundColor: st.bg, color: st.color }}>{st.label}</span>
                     </div>
-                    <p className="text-xs" style={{ color: S.sub }}>{r.phone}</p>
+                    <p className="text-xs" style={{ color: S.sub }}>{r.phone}{r.table ? ` · Mesa: ${r.table}` : ''}</p>
                     {r.notes && <p className="text-xs mt-0.5 font-medium flex items-center gap-1" style={{ color: '#fbbf24' }}><Icon name="note" size={12} /> {r.notes}</p>}
                   </div>
                 </div>

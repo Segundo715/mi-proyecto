@@ -6,6 +6,7 @@ import {
   FloorPlan,
   RestaurantTable,
   TableType,
+  TableStatus,
   TYPE_META,
   STATUS_META,
   STATUS_ORDER,
@@ -31,6 +32,16 @@ const FloorCanvas = dynamic(() => import("./FloorCanvas"), {
 const PLAN_WIDTH = 1000
 const PLAN_HEIGHT = 600
 const GRID_SIZE = 25
+
+// Mapeo de estado entre canvas y DB
+const TO_DB: Record<string, string> = {
+  free: 'libre', occupied: 'ocupada', reserved: 'reservada', cleaning: 'limpieza',
+}
+const FROM_DB: Record<string, TableStatus> = {
+  libre: 'free', ocupada: 'occupied', reservada: 'reserved', limpieza: 'cleaning',
+}
+
+interface DBTable { id: string; label: string; seats: number; zone: string; status: string }
 
 const S = {
   card: "var(--ad-card)",
@@ -77,27 +88,66 @@ export default function FloorPlanEditor() {
     setTimeout(() => setToast(null), 1800)
   }
 
-  // --- Cargar el acomodo guardado al montar (o sembrar uno de ejemplo) ---
+  // --- Cargar el acomodo y sincronizar estados con la DB ---
   useEffect(() => {
-    // Hidratación desde localStorage: solo posible tras montar en el cliente.
-    // La regla set-state-in-effect es un falso positivo para esta carga única.
-    /* eslint-disable react-hooks/set-state-in-effect */
-    try {
-      const raw = localStorage.getItem(FLOOR_PLAN_STORAGE_KEY)
-      if (raw) {
-        const parsed = JSON.parse(raw) as FloorPlan
-        if (parsed && Array.isArray(parsed.tables)) {
-          setPlan({ ...emptyPlan(), ...parsed })
-          loadedRef.current = true
-          return
+    const raw = localStorage.getItem(FLOOR_PLAN_STORAGE_KEY)
+
+    fetch('/api/resta3/tables')
+      .then(r => r.json())
+      .then((dbTables: DBTable[]) => {
+        let parsed: FloorPlan | null = null
+        try {
+          if (raw) {
+            const p = JSON.parse(raw) as FloorPlan
+            if (p && Array.isArray(p.tables)) parsed = { ...emptyPlan(), ...p }
+          }
+        } catch { /* ignore */ }
+
+        if (parsed) {
+          // Overlay DB status onto existing canvas tables
+          const synced = parsed.tables.map(t => {
+            const db = dbTables.find(d => (t.dbId && d.id === t.dbId) || d.label === t.name)
+            if (!db) return t
+            return { ...t, dbId: db.id, status: FROM_DB[db.status] ?? t.status }
+          })
+          setPlan({ ...parsed, tables: synced })
+        } else if (dbTables.length > 0) {
+          // Sin plano guardado: auto-importar las mesas de la DB en una cuadrícula
+          const autoTables: RestaurantTable[] = dbTables.map((db, i) => {
+            const col = i % 4
+            const row = Math.floor(i / 4)
+            const type: TableType =
+              db.label.toLowerCase().includes('barra') ? 'bar'
+              : db.seats >= 6 ? 'rectangle'
+              : db.seats <= 2 ? 'square'
+              : 'round'
+            const m = TYPE_META[type]
+            return {
+              id: newTableId(), dbId: db.id, name: db.label,
+              type, capacity: db.seats,
+              x: 80 + col * 220, y: 80 + row * 180,
+              width: m.defaultWidth, height: m.defaultHeight,
+              rotation: 0, zone: db.zone,
+              status: FROM_DB[db.status] ?? 'free',
+            }
+          })
+          setPlan({ ...emptyPlan(), tables: autoTables })
+        } else {
+          setPlan(seedPlan())
         }
-      }
-    } catch {
-      // ignore
-    }
-    setPlan(seedPlan())
-    loadedRef.current = true
-    /* eslint-enable react-hooks/set-state-in-effect */
+        loadedRef.current = true
+      })
+      .catch(() => {
+        // Sin red: usar localStorage o demo
+        try {
+          if (raw) {
+            const p = JSON.parse(raw) as FloorPlan
+            if (p && Array.isArray(p.tables)) { setPlan({ ...emptyPlan(), ...p }); loadedRef.current = true; return }
+          }
+        } catch { /* ignore */ }
+        setPlan(seedPlan())
+        loadedRef.current = true
+      })
   }, [])
 
   const selected = plan.tables.find(t => t.id === selectedId) ?? null
@@ -110,7 +160,17 @@ export default function FloorPlanEditor() {
 
   const patchSelected = useCallback((patch: Partial<RestaurantTable>) => {
     if (!selectedId) return
-    setPlan(p => ({ ...p, tables: p.tables.map(t => (t.id === selectedId ? { ...t, ...patch } : t)) }))
+    setPlan(p => {
+      const table = p.tables.find(t => t.id === selectedId)
+      if (table && patch.status !== undefined && table.dbId && TO_DB[patch.status]) {
+        fetch(`/api/resta3/tables/${table.dbId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: TO_DB[patch.status] }),
+        }).catch(() => {})
+      }
+      return { ...p, tables: p.tables.map(t => t.id === selectedId ? { ...t, ...patch } : t) }
+    })
     setDirty(true)
   }, [selectedId])
 
@@ -160,6 +220,46 @@ export default function FloorPlanEditor() {
     setPlan(p => ({ ...p, tables: [] }))
     setSelectedId(null)
     setDirty(true)
+  }
+
+  // Reimporta las mesas desde la DB manteniendo posiciones existentes y añadiendo las nuevas
+  const reimport = () => {
+    fetch('/api/resta3/tables')
+      .then(r => r.json())
+      .then((dbTables: DBTable[]) => {
+        setPlan(p => {
+          const next = [...p.tables]
+          dbTables.forEach(db => {
+            const idx = next.findIndex(t => (t.dbId && t.dbId === db.id) || t.name === db.label)
+            if (idx >= 0) {
+              // Mesa ya en el plano: solo actualiza estado y dbId
+              next[idx] = { ...next[idx], dbId: db.id, status: FROM_DB[db.status] ?? next[idx].status }
+            } else {
+              // Nueva mesa: añadir en posición libre
+              const col = next.length % 4
+              const row = Math.floor(next.length / 4)
+              const type: TableType =
+                db.label.toLowerCase().includes('barra') ? 'bar'
+                : db.seats >= 6 ? 'rectangle'
+                : db.seats <= 2 ? 'square'
+                : 'round'
+              const m = TYPE_META[type]
+              next.push({
+                id: newTableId(), dbId: db.id, name: db.label,
+                type, capacity: db.seats,
+                x: 80 + col * 220, y: 80 + row * 180,
+                width: m.defaultWidth, height: m.defaultHeight,
+                rotation: 0, zone: db.zone,
+                status: FROM_DB[db.status] ?? 'free',
+              })
+            }
+          })
+          return { ...p, tables: next }
+        })
+        setDirty(true)
+        flash("Mesas actualizadas desde DB ✓")
+      })
+      .catch(() => flash("No se pudo conectar con la DB"))
   }
 
   // --- Persistencia ---
@@ -235,6 +335,7 @@ export default function FloorPlanEditor() {
           onSave={save}
           onLoad={load}
           onClear={clearPlan}
+          onReimport={reimport}
         />
 
         <div className="flex-1 min-w-0 rounded-2xl p-2" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>

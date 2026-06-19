@@ -14,6 +14,7 @@ export type TableStatus =
 
 export type RestaurantTable = {
   id: string
+  dbId?: string   // UUID de la tabla en Supabase; cuando existe, el estado se sincroniza con la DB
   name: string
   type: TableType
   capacity: number

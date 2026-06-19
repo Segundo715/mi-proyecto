@@ -22,6 +22,7 @@ type Props = {
   onSave: () => void
   onLoad: () => void
   onClear: () => void
+  onReimport: () => void
 }
 
 export default function FloorToolbar({
@@ -35,6 +36,7 @@ export default function FloorToolbar({
   onSave,
   onLoad,
   onClear,
+  onReimport,
 }: Props) {
   return (
     <aside
@@ -89,6 +91,13 @@ export default function FloorToolbar({
           style={{ backgroundColor: "var(--ad-elevated)", color: S.text, border: `1px solid ${S.border}` }}
         >
           ↻ Cargar guardado
+        </button>
+        <button
+          onClick={onReimport}
+          className="w-full rounded-xl py-2.5 text-sm font-semibold transition hover:brightness-125"
+          style={{ backgroundColor: "var(--ad-elevated)", color: "var(--ad-accent)", border: "1px solid var(--ad-border)" }}
+        >
+          ⟳ Reimportar desde DB
         </button>
         <button
           onClick={onClear}

@@ -39,7 +39,7 @@ const STATUS_CFG: Record<TableStatus, { label: string; color: string; bg: string
 // ── Reservaciones ─────────────────────────────────────────────────────────────
 interface Reservation {
   id: number; name: string; time: string; guests: number; phone: string; notes: string
-  status: 'confirmed' | 'pending' | 'cancelled'
+  table: string; tableId: string; status: 'confirmed' | 'pending' | 'cancelled'
 }
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
@@ -47,15 +47,6 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }>
   pending:   { bg: 'rgba(251,191,36,0.15)', color: '#fbbf24', label: 'Pendiente'  },
   cancelled: { bg: 'rgba(239,68,68,0.15)',  color: '#f87171', label: 'Cancelada'  },
 }
-
-const DEMO: Reservation[] = [
-  { id: 1, name: 'Carlos Mendoza',  time: '13:00', guests: 4, phone: '555-1234', notes: 'Aniversario', status: 'confirmed' },
-  { id: 2, name: 'Ana García',      time: '13:30', guests: 2, phone: '555-5678', notes: '',             status: 'confirmed' },
-  { id: 3, name: 'Roberto Silva',   time: '14:00', guests: 6, phone: '555-9012', notes: 'Cumpleaños',   status: 'pending'   },
-  { id: 4, name: 'María López',     time: '15:00', guests: 3, phone: '555-3456', notes: '',             status: 'confirmed' },
-  { id: 5, name: 'Jorge Ramírez',   time: '15:30', guests: 2, phone: '555-7890', notes: 'Ventana',      status: 'confirmed' },
-  { id: 6, name: 'Patricia Torres', time: '16:00', guests: 8, phone: '555-2345', notes: 'Evento corp.', status: 'pending'   },
-]
 
 function KPI({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
@@ -97,9 +88,9 @@ export default function MesasPage() {
   const [selectedStatus,  setSelectedStatus]  = useState<TableStatus>('libre')
 
   // ── Estado reservaciones ──────────────────────────────────────────────────
-  const [reservations, setReservations] = useState<Reservation[]>(DEMO)
+  const [reservations, setReservations] = useState<Reservation[]>([])
   const [showForm,     setShowForm]     = useState(false)
-  const [form,         setForm]         = useState({ name: '', time: '', guests: '2', phone: '', notes: '' })
+  const [form,         setForm]         = useState({ name: '', time: '', guests: '2', phone: '', notes: '', table: '' })
 
   // ── Carga de mesas ────────────────────────────────────────────────────────
   async function loadTables() {
@@ -134,18 +125,37 @@ export default function MesasPage() {
   }
 
   // ── Handlers reservaciones ────────────────────────────────────────────────
+  async function patchTableStatusR(tableId: string, status: TableStatus) {
+    if (!tableId) return
+    await fetch(`/api/resta3/tables/${tableId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    }).catch(() => {})
+    loadTables()
+  }
+
   function addReservation() {
     if (!form.name.trim() || !form.time || !form.phone.trim()) return
-    setReservations(prev => [
-      ...prev,
-      { id: Date.now(), name: form.name.trim(), time: form.time,
-        guests: parseInt(form.guests) || 2, phone: form.phone.trim(), notes: form.notes.trim(), status: 'pending' },
-    ])
-    setForm({ name: '', time: '', guests: '2', phone: '', notes: '' })
+    const selected = tables.find(t => t.id === form.table)
+    const newRes: Reservation = {
+      id: Date.now(), name: form.name.trim(), time: form.time,
+      guests: parseInt(form.guests) || 2, phone: form.phone.trim(),
+      notes: form.notes.trim(), table: selected?.label ?? '', tableId: selected?.id ?? '',
+      status: 'pending',
+    }
+    if (selected) patchTableStatusR(selected.id, 'reservada')
+    setReservations(prev => [...prev, newRes])
+    setForm({ name: '', time: '', guests: '2', phone: '', notes: '', table: '' })
     setShowForm(false)
   }
+
   function changeStatus(id: number, status: Reservation['status']) {
-    setReservations(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+    setReservations(prev => prev.map(r => {
+      if (r.id !== id) return r
+      if (status === 'cancelled' && r.tableId) patchTableStatusR(r.tableId, 'libre')
+      if (status === 'confirmed' && r.tableId) patchTableStatusR(r.tableId, 'reservada')
+      return { ...r, status }
+    }))
   }
 
   // ── Derivados ─────────────────────────────────────────────────────────────
@@ -318,6 +328,16 @@ export default function MesasPage() {
                       onChange={e => setForm(p => ({ ...p, guests: e.target.value }))}
                       min="1" max="20" className={INPUT_CLS} style={inputStyle} />
                   </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Mesa</label>
+                    <select value={form.table} onChange={e => setForm(p => ({ ...p, table: e.target.value }))}
+                      className={INPUT_CLS} style={inputStyle}>
+                      <option value="">Sin asignar</option>
+                      {tables.filter(t => t.status === 'libre').map(t => (
+                        <option key={t.id} value={t.id}>{t.label} ({t.seats}p) — {t.zone}</option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="col-span-2">
                     <label className="block text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: S.sub }}>Notas</label>
                     <input id="res-notes" name="res_notes" type="text" value={form.notes}
@@ -357,7 +377,7 @@ export default function MesasPage() {
                           <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                             style={{ backgroundColor: st.bg, color: st.color }}>{st.label}</span>
                         </div>
-                        <p className="text-xs" style={{ color: S.sub }}>{r.phone}</p>
+                        <p className="text-xs" style={{ color: S.sub }}>{r.phone}{r.table ? ` · Mesa: ${r.table}` : ''}</p>
                         {r.notes && <p className="text-xs mt-0.5 font-medium flex items-center gap-1" style={{ color: '#fbbf24' }}><Icon name="note" size={12} /> {r.notes}</p>}
                       </div>
                     </div>
