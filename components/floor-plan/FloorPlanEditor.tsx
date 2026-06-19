@@ -280,24 +280,60 @@ export default function FloorPlanEditor() {
   }
 
   // --- Persistencia ---
-  const save = () => {
+  // save() sincroniza el plano con la DB: borra mesas que ya no están,
+  // actualiza las existentes y crea las nuevas. La DB queda idéntica al plano.
+  const save = async () => {
     try {
       localStorage.setItem(FLOOR_PLAN_STORAGE_KEY, JSON.stringify(plan))
       setDirty(false)
-      flash("Acomodo guardado ✓")
     } catch {
       flash("No se pudo guardar")
       return
     }
-    // Sincronizar nombre, asientos y zona de cada mesa con la DB
-    plan.tables.forEach(t => {
-      if (!t.dbId) return
-      fetch(`/api/resta3/tables/${t.dbId}`, {
-        method: 'PATCH',
+
+    flash("Sincronizando con DB…")
+
+    const res = await fetch('/api/resta3/tables').catch(() => null)
+    const dbTables: DBTable[] = res?.ok ? await res.json() : []
+    const canvasDbIds = new Set(plan.tables.map(t => t.dbId).filter(Boolean))
+
+    // 1. Borrar de la DB las mesas que ya no están en el plano
+    await Promise.all(
+      dbTables
+        .filter(db => !canvasDbIds.has(db.id))
+        .map(db => fetch(`/api/resta3/tables/${db.id}`, { method: 'DELETE' }).catch(() => {}))
+    )
+
+    // 2. Actualizar/crear mesas del plano en DB
+    const updated = await Promise.all(plan.tables.map(async t => {
+      if (t.dbId && dbTables.find(db => db.id === t.dbId)) {
+        await fetch(`/api/resta3/tables/${t.dbId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ label: t.name, seats: t.capacity, zone: t.zone }),
+        }).catch(() => {})
+        return t
+      }
+      const r = await fetch('/api/resta3/tables', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label: t.name, seats: t.capacity, zone: t.zone }),
-      }).catch(() => {})
+        body: JSON.stringify({ label: t.name, seats: t.capacity, status: TO_DB[t.status] ?? 'libre', zone: t.zone }),
+      }).catch(() => null)
+      if (r?.ok) {
+        const db: DBTable = await r.json()
+        return { ...t, dbId: db.id }
+      }
+      return t
+    }))
+
+    // 3. Actualizar el plano con los dbIds nuevos y persistir
+    setPlan(p => {
+      const next = { ...p, tables: updated }
+      try { localStorage.setItem(FLOOR_PLAN_STORAGE_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      return next
     })
+
+    flash("Guardado y sincronizado ✓")
   }
 
   const load = () => {
