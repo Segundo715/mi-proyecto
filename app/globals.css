@@ -57,8 +57,22 @@
 }
 
 html {
-  /* text-size-adjust: prefixed ya lo añade Tailwind preflight; solo incluimos el estándar */
   text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%; /* iOS Safari < 16 */
+}
+
+/* Scrollbar personalizado — solo en navegadores que lo soporten (no Safari) */
+@supports (scrollbar-color: auto) {
+  html {
+    scrollbar-color: var(--ad-accent, #00e676) transparent;
+    scrollbar-width: thin;
+  }
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--ad-accent, #00e676);
+  border-radius: 999px;
 }
 
 body {

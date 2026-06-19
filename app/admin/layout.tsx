@@ -22,20 +22,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     getFeatureFlags(),
   ])
 
-  // Color del scrollbar = color seleccionado en configuración (fallback al acento del tema).
-  // Solo se aplica en /admin porque este layout únicamente se renderiza aquí.
   const scroll = /^#[0-9a-fA-F]{6}$/.test(accent) ? accent : '#00e676'
-  const SCROLL_CSS = `
-    html { scrollbar-color: ${scroll} transparent; scrollbar-width: thin; }
-    ::-webkit-scrollbar { width: 10px; height: 10px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: ${scroll}; border-radius: 999px; }
-  `
 
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
-      <style dangerouslySetInnerHTML={{ __html: SCROLL_CSS }} />
+      {/* Sobreescribe --ad-accent con el color guardado en settings para que el scrollbar de globals.css lo tome */}
+      <style dangerouslySetInnerHTML={{ __html: `:root { --ad-accent: ${scroll}; }` }} />
       <BrandProvider value={{ name, logo, accent, features }}>
         <FeatureGuard />
         {children}

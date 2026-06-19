@@ -24,6 +24,13 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // Assets estáticos de Next.js — también necesitan el header de seguridad
+        source: '/_next/static/(.*)',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+        ],
+      },
+      {
         // Páginas HTML dinámicas — sin caché para que siempre sean frescas
         source: '/((?!_next/static|_next/image|favicon.ico).*)',
         headers: [

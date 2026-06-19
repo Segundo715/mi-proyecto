@@ -23,19 +23,12 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
   const finalAccent = empAccent || accent
   const finalLogo   = empLogo   || logo
 
-  // Color del scrollbar = color de acento configurado en el panel de admin.
   const scroll = /^#[0-9a-fA-F]{6}$/.test(finalAccent) ? finalAccent : '#00e676'
-  const SCROLL_CSS = `
-    html { scrollbar-color: ${scroll} transparent; scrollbar-width: thin; }
-    ::-webkit-scrollbar { width: 10px; height: 10px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: ${scroll}; border-radius: 999px; }
-  `
 
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
-      <style dangerouslySetInnerHTML={{ __html: SCROLL_CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: `:root { --ad-accent: ${scroll}; }` }} />
       <BrandProvider value={{ name, logo: finalLogo, accent: finalAccent, features }}>
         {/* FeatureGuard redirige al inicio si el empleado intenta acceder a un módulo desactivado */}
         <FeatureGuard />
