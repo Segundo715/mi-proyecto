@@ -60,6 +60,7 @@ export default function Resta3Nav() {
   const [pathname, setPathname] = useState('')
   const [open, setOpen] = useState(false)
   const [flags, setFlags] = useState<Record<string, boolean>>({})
+  const [subtitle, setSubtitle] = useState('Dirección General')
   const brand = useBrand()
 
   const brandName = brand.name || 'RESTA3'
@@ -72,6 +73,10 @@ export default function Resta3Nav() {
     fetch('/api/resta3/features')
       .then(r => r.json())
       .then(d => setFlags(d))
+      .catch(() => {})
+    fetch('/api/settings?key=admin_subtitle')
+      .then(r => r.json())
+      .then(d => { if (d?.value) setSubtitle(d.value) })
       .catch(() => {})
   }, [])
 
@@ -106,7 +111,7 @@ export default function Resta3Nav() {
         </div>
         <div>
           <div className="font-extrabold text-base tracking-wide" style={S.text}>{brandName}</div>
-          <div className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: 'var(--ad-sub)' }}>RESTA3</div>
+          <div className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: 'var(--ad-sub)' }}>{subtitle}</div>
         </div>
       </div>
 

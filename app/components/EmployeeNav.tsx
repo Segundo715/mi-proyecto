@@ -54,6 +54,7 @@ export default function EmployeeNav() {
   const [open, setOpen] = useState(false)
   const [empName, setEmpName] = useState('')
   const [empPerms, setEmpPerms] = useState<Record<string, boolean>>({})
+  const [subtitle, setSubtitle] = useState('Dirección General')
   const brand = useBrand()
 
   useEffect(() => {
@@ -66,6 +67,10 @@ export default function EmployeeNav() {
     fetch('/api/permissions')
       .then(r => r.json())
       .then(d => setEmpPerms(d.employee ?? {}))
+      .catch(() => {})
+    fetch('/api/settings?key=admin_subtitle')
+      .then(r => r.json())
+      .then(d => { if (d?.value) setSubtitle(d.value) })
       .catch(() => {})
   }, [])
 
@@ -137,7 +142,7 @@ export default function EmployeeNav() {
           </div>
           <div>
             <div className="font-extrabold text-base tracking-wide" style={S.text}>{brandName}</div>
-            <div className="text-[11px] uppercase tracking-widest font-semibold" style={S.sub}>Empleado</div>
+            <div className="text-[11px] uppercase tracking-widest font-semibold" style={S.sub}>{subtitle}</div>
           </div>
         </div>
 
@@ -167,7 +172,7 @@ export default function EmployeeNav() {
               {empName ? empName.charAt(0).toUpperCase() : 'E'}
             </div>
             <div>
-              <div className="text-sm font-semibold" style={S.text}>{empName || 'Empleado'}</div>
+              <div className="text-sm font-semibold" style={S.text}>{empName || '{subtitle}'}</div>
               <div className="text-xs" style={S.sub}>Sesión activa</div>
             </div>
           </div>
@@ -196,7 +201,7 @@ export default function EmployeeNav() {
               </div>
               <div>
                 <div className="font-extrabold text-sm" style={S.text}>{brandName}</div>
-                <div className="text-[10px] uppercase tracking-widest" style={S.sub}>Empleado</div>
+                <div className="text-[10px] uppercase tracking-widest" style={S.sub}>{subtitle}</div>
               </div>
             </div>
             <button type="button" onClick={() => setOpen(false)}
