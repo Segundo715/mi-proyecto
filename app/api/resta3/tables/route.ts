@@ -9,7 +9,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  if (!verifySession(req.cookies.get('resta3_session')?.value))
+  if (!verifySession(req.cookies.get('resta3_session')?.value) &&
+      !verifySession(req.cookies.get('admin_session')?.value))
     return Response.json({ error: 'No autorizado' }, { status: 401 })
   const data = await req.json()
   if (!data.label?.trim()) return Response.json({ error: 'Nombre requerido' }, { status: 400 })

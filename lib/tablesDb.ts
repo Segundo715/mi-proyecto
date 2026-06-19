@@ -31,8 +31,7 @@ export async function getAllTables(): Promise<RestaurantTable[]> {
   return (data ?? []).map(toTable)
 }
 
-export async function updateTable(id: string, patch: Partial<Pick<RestaurantTable, 'status' | 'customer' | 'since'>>): Promise<RestaurantTable | null> {
-  // Siempre actualizamos updated_at para saber cuándo cambió el estado de la mesa por última vez.
+export async function updateTable(id: string, patch: Partial<Pick<RestaurantTable, 'status' | 'customer' | 'since' | 'label' | 'seats' | 'zone'>>): Promise<RestaurantTable | null> {
   const { data } = await supabase.from('tables')
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq('id', id).select().single()

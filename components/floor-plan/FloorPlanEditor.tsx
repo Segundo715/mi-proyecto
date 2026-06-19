@@ -176,13 +176,15 @@ export default function FloorPlanEditor() {
 
   const addTable = (type: TableType) => {
     const m = TYPE_META[type]
+    const canvasId = newTableId()
+    const tableCount = plan.tables.length
     const table: RestaurantTable = {
-      id: newTableId(),
-      name: `M${plan.tables.length + 1}`,
+      id: canvasId,
+      name: `Mesa ${tableCount + 1}`,
       type,
       capacity: m.defaultCapacity,
-      x: PLAN_WIDTH / 2 + (plan.tables.length % 5) * 12,
-      y: PLAN_HEIGHT / 2 + (plan.tables.length % 5) * 12,
+      x: PLAN_WIDTH / 2 + (tableCount % 5) * 12,
+      y: PLAN_HEIGHT / 2 + (tableCount % 5) * 12,
       width: m.defaultWidth,
       height: m.defaultHeight,
       rotation: 0,
@@ -190,8 +192,19 @@ export default function FloorPlanEditor() {
       status: "free",
     }
     setPlan(p => ({ ...p, tables: [...p.tables, table] }))
-    setSelectedId(table.id)
+    setSelectedId(canvasId)
     setDirty(true)
+    // Crear en DB y guardar el dbId
+    fetch('/api/resta3/tables', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: table.name, seats: table.capacity, status: 'libre', zone: table.zone }),
+    }).then(r => r.ok ? r.json() : null)
+      .then(dbTable => {
+        if (dbTable?.id) {
+          setPlan(p => ({ ...p, tables: p.tables.map(t => t.id === canvasId ? { ...t, dbId: dbTable.id } : t) }))
+        }
+      }).catch(() => {})
   }
 
   const duplicateSelected = () => {
@@ -210,9 +223,13 @@ export default function FloorPlanEditor() {
 
   const deleteSelected = () => {
     if (!selectedId) return
+    const table = plan.tables.find(t => t.id === selectedId)
     setPlan(p => ({ ...p, tables: p.tables.filter(t => t.id !== selectedId) }))
     setSelectedId(null)
     setDirty(true)
+    if (table?.dbId) {
+      fetch(`/api/resta3/tables/${table.dbId}`, { method: 'DELETE' }).catch(() => {})
+    }
   }
 
   const clearPlan = () => {
@@ -270,7 +287,17 @@ export default function FloorPlanEditor() {
       flash("Acomodo guardado ✓")
     } catch {
       flash("No se pudo guardar")
+      return
     }
+    // Sincronizar nombre, asientos y zona de cada mesa con la DB
+    plan.tables.forEach(t => {
+      if (!t.dbId) return
+      fetch(`/api/resta3/tables/${t.dbId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label: t.name, seats: t.capacity, zone: t.zone }),
+      }).catch(() => {})
+    })
   }
 
   const load = () => {
