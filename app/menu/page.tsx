@@ -5,7 +5,6 @@
 // Los pedidos entregados se eliminan del localStorage automáticamente tras 30 s.
 import { useState, useEffect, useRef } from 'react'
 import CustomerNav from '../components/CustomerNav'
-import AIChat from '../components/AIChat'
 
 const FAVORITES_KEY = 'favorites'
 
@@ -750,7 +749,6 @@ export default function MenuPage() {
       )}
 
       <CustomerNav active="menu" />
-      <AIChat role="customer" />
     </div>
   )
 }

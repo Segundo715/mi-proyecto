@@ -4,7 +4,6 @@ import { getSetting } from '@/lib/settingsDb'
 import { getFeatureFlags } from '@/lib/features'
 import BrandProvider from '@/app/components/BrandProvider'
 import FeatureGuard from '@/app/components/FeatureGuard'
-import AIChat from '@/app/components/AIChat'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,7 +40,6 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
         {/* FeatureGuard redirige al inicio si el empleado intenta acceder a un módulo desactivado */}
         <FeatureGuard />
         {children}
-        <AIChat />
       </BrandProvider>
     </>
   )
