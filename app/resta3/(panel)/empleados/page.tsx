@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 // Gestión de turnos de empleados. Estado en localStorage (no persiste en Supabase aún).
 import { useEffect, useState } from 'react'
@@ -130,14 +130,14 @@ export default function EmpleadosPage() {
                     {/* Rol */}
                     <select value={entry.role} onChange={e => updateShift(emp.id, { role: e.target.value })}
                       className="text-xs font-bold px-2 py-1.5 rounded-xl outline-none cursor-pointer"
-                      style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }}>
+                      style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }}>
                       {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                     </select>
 
                     {/* Turno */}
                     <select value={entry.shift} onChange={e => updateShift(emp.id, { shift: e.target.value })}
                       className="text-xs font-bold px-2 py-1.5 rounded-xl outline-none cursor-pointer"
-                      style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }}>
+                      style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }}>
                       {SHIFTS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
 

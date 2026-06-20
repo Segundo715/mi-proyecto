@@ -19,7 +19,7 @@ const S = {
   text:   'var(--ad-text)',
   sub:    'var(--ad-sub)',
   border: 'var(--ad-border)',
-  input:  '#0a0e1c',
+  input:  'var(--ad-elevated)',
 }
 
 const INPUT_CLS = 'w-full rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors'
@@ -269,13 +269,13 @@ export default function MesasPage() {
                       <div className="flex items-center gap-1 mb-2 flex-wrap">
                         {Array.from({ length: table.seats }).map((_, i) => (
                           <div key={i} className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: table.status === 'ocupada' ? cfg.color : table.status === 'reservada' ? `${cfg.color}66` : 'rgba(255,255,255,0.1)' }} />
+                            style={{ backgroundColor: table.status === 'ocupada' ? cfg.color : table.status === 'reservada' ? `${cfg.color}66` : 'var(--ad-overlay)' }} />
                         ))}
                         <span className="text-[10px] ml-1" style={{ color: S.sub }}>{table.seats}p</span>
                       </div>
                       {table.customer && <p className="text-xs font-bold truncate" style={{ color: S.text }}>{table.customer}</p>}
                       {table.since    && <p className="text-xs" style={{ color: S.sub }}>desde {table.since}</p>}
-                      <p className="text-[9px] mt-2" style={{ color: 'rgba(255,255,255,0.2)' }}>Toca para gestionar</p>
+                      <p className="text-[9px] mt-2" style={{ color: 'var(--ad-sub)', opacity: 0.6 }}>Toca para gestionar</p>
                     </button>
                   )
                 })}

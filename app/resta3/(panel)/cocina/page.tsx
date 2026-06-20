@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 // KDS de cocina: los pedidos en mesa ocupan el área principal a ancho completo.
 // Todo lo de DOMICILIOS (delivery por Gogo/Uber Eats/Rappi + alta de pedido) vive en
@@ -109,7 +109,7 @@ function OrderCard({ order, cfg, advancing, onAdvance, surface = S.card }: {
         <div className="space-y-1">
           {noteSegments(note).map((seg, i) => (
             <p key={i} className="text-xs px-2 py-1.5 rounded-lg flex items-start gap-1.5"
-              style={{ backgroundColor: '#0f1117', color: '#fbbf24' }}>
+              style={{ backgroundColor: 'var(--ad-elevated)', color: '#fbbf24' }}>
               <span className="shrink-0 mt-0.5"><Icon name={seg.icon} size={12} /></span>
               <span className="flex-1">{seg.text}</span>
             </p>

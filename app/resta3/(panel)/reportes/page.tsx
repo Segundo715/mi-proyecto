@@ -100,10 +100,10 @@ export default function ReportesPage() {
                 return (
                   <div key={item.id} className="flex items-center gap-3">
                     <span className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-xs font-black"
-                      style={{ backgroundColor: i === 0 ? 'rgba(245,158,11,0.18)' : 'rgba(255,255,255,0.06)', color: i === 0 ? '#f59e0b' : S.sub }}>{i + 1}</span>
+                      style={{ backgroundColor: i === 0 ? 'rgba(245,158,11,0.18)' : 'var(--ad-overlay)', color: i === 0 ? '#f59e0b' : S.sub }}>{i + 1}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold truncate" style={{ color: S.text }}>{item.name}</p>
-                      <div className="h-1.5 rounded-full mt-1" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                      <div className="h-1.5 rounded-full mt-1" style={{ backgroundColor: 'var(--ad-overlay)' }}>
                         <div className="h-full rounded-full" style={{ width: `${(item.likes / maxLikes) * 100}%`, backgroundColor: S.accent }} />
                       </div>
                     </div>
@@ -124,7 +124,7 @@ export default function ReportesPage() {
                 <div key={cat} className="flex items-center justify-between">
                   <span className="text-sm" style={{ color: S.text }}>{cat}</span>
                   <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-24 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                    <div className="h-1.5 w-24 rounded-full" style={{ backgroundColor: 'var(--ad-overlay)' }}>
                       <div className="h-full rounded-full" style={{ width: `${(count / menu.length) * 100}%`, backgroundColor: '#3b82f6' }} />
                     </div>
                     <span className="text-sm font-black" style={{ color: '#3b82f6' }}>{count}</span>

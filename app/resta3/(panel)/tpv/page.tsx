@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 // TPV / Caja: carga platillos de /api/menu, envía órdenes a /api/orders con método de pago y mesa.
 // El campo quantity (no qty) es requerido por el schema de ordersDb.
@@ -231,7 +231,7 @@ export default function TPVPage() {
                     style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
                     {item.imageUrl
                       ? <img src={item.imageUrl} alt={item.name} className="w-full object-cover" style={{ height: '80px' }} />
-                      : <div className="w-full flex items-center justify-center" style={{ height: '60px', backgroundColor: '#0f1117', color: S.sub }}><Icon name="utensils" size={24} /></div>
+                      : <div className="w-full flex items-center justify-center" style={{ height: '60px', backgroundColor: 'var(--ad-elevated)', color: S.sub }}><Icon name="utensils" size={24} /></div>
                     }
                     <div className="p-3">
                       <p className="text-xs font-bold truncate" style={{ color: S.text }}>{item.name}</p>
@@ -259,13 +259,13 @@ export default function TPVPage() {
                       <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Cliente *</label>
                       <input value={customer} onChange={e => setCustomer(e.target.value)} placeholder="Nombre"
                         className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                        style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }} />
+                        style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Mesa</label>
                       <input value={tableNum} onChange={e => setTableNum(e.target.value)} placeholder="Ej: Mesa 3"
                         className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                        style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }} />
+                        style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
                     </div>
                   </div>
 
@@ -279,7 +279,7 @@ export default function TPVPage() {
                     <div className="space-y-1.5">
                       {cart.map(line => (
                         <div key={line.item.id} className="rounded-xl p-2.5 flex items-center gap-2"
-                          style={{ backgroundColor: '#0f1117' }}>
+                          style={{ backgroundColor: 'var(--ad-elevated)' }}>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-bold truncate" style={{ color: S.text }}>{line.item.name}</p>
                             <p className="text-xs" style={{ color: S.accent }}>${(line.item.price * line.qty).toFixed(2)}</p>
@@ -305,7 +305,7 @@ export default function TPVPage() {
                       {PAYMENT_METHODS.map(p => (
                         <button key={p.id} onClick={() => setPayment(p.id)}
                           className="py-2 rounded-xl text-xs font-bold flex flex-col items-center gap-0.5 transition-all"
-                          style={payment === p.id ? { backgroundColor: `${S.accent}22`, color: S.accent, border: `1px solid ${S.accent}44` } : { backgroundColor: '#0f1117', color: S.sub, border: `1px solid ${S.border}` }}>
+                          style={payment === p.id ? { backgroundColor: `${S.accent}22`, color: S.accent, border: `1px solid ${S.accent}44` } : { backgroundColor: 'var(--ad-elevated)', color: S.sub, border: `1px solid ${S.border}` }}>
                           <Icon name={p.icon} size={16} />
                           <span>{p.label}</span>
                         </button>
@@ -318,7 +318,7 @@ export default function TPVPage() {
                     <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Notas</label>
                     <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Alergias, preferencias..."
                       className="w-full px-3 py-2 rounded-xl text-xs outline-none"
-                      style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }} />
+                      style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
                   </div>
                 </div>
 
@@ -338,7 +338,7 @@ export default function TPVPage() {
                           <div className="grid grid-cols-2 gap-2">
                             <button onClick={() => { setPostSend('none'); setLastOrder(null) }}
                               className="py-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-0.5 transition-all"
-                              style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }}>
+                              style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }}>
                               <Icon name="utensils" size={16} /> Dentro
                             </button>
                             <button onClick={() => { setDName(lastOrder.customerName); setPostSend('domicilio') }}
@@ -356,19 +356,19 @@ export default function TPVPage() {
                             <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}><Icon name="user" size={13} /> Quien recibe</label>
                             <input value={dName} onChange={e => setDName(e.target.value)} placeholder="Nombre de quien recibe"
                               className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                              style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }} />
+                              style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
                           </div>
                           <div>
                             <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}><Icon name="pin" size={13} /> Domicilio</label>
                             <input value={dAddress} onChange={e => setDAddress(e.target.value)} placeholder="Calle, número, colonia"
                               className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                              style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }} />
+                              style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
                           </div>
                           <div>
                             <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}><Icon name="bookmark" size={13} /> Referencias</label>
                             <input value={dReference} onChange={e => setDReference(e.target.value)} placeholder="Entre calles, color de fachada..."
                               className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                              style={{ backgroundColor: '#0f1117', color: S.text, border: `1px solid ${S.border}` }} />
+                              style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
                           </div>
                           <div>
                             <p className="text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: S.sub }}>Enviar por</p>

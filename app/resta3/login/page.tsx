@@ -82,12 +82,12 @@ export default function Resta3LoginPage() {
   const accentHex  = /^#[0-9a-fA-F]{6}$/.test(accent) ? accent : '#00e676'
   const borderIdle = `${accentHex}4d`
 
-  const INPUT = 'w-full rounded-2xl px-4 py-3.5 text-white text-sm transition-colors focus:outline-none'
-  const inputStyle = { backgroundColor: '#0a0e1c', border: `1px solid ${borderIdle}` }
+  const INPUT = 'w-full rounded-2xl px-4 py-3.5 text-sm transition-colors focus:outline-none'
+  const inputStyle = { backgroundColor: 'var(--ad-elevated)', color: 'var(--ad-text)', border: `1px solid ${borderIdle}` }
 
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center p-5"
-      style={{ backgroundColor: '#0a0d14' }}>
+      style={{ backgroundColor: 'var(--ad-bg)' }}>
 
       {/* Brand */}
       <div className="text-center mb-8">
@@ -96,21 +96,21 @@ export default function Resta3LoginPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={logo} alt="Logo" className="w-full h-full object-contain p-2" />
         </div>
-        <div className="font-extrabold text-xl tracking-wide text-white">{brandName}</div>
+        <div className="font-extrabold text-xl tracking-wide" style={{ color: 'var(--ad-text)' }}>{brandName}</div>
         <p className="text-sm mt-1 font-medium" style={{ color: accentHex }}>{brandSub}</p>
       </div>
 
       <div className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden"
-        style={{ backgroundColor: '#1a1d27', border: '1px solid rgba(255,255,255,0.08)' }}>
+        style={{ backgroundColor: 'var(--ad-card)', border: '1px solid var(--ad-border)' }}>
 
         {/* Tabs */}
-        <div className="flex p-1.5 gap-1.5 m-4 rounded-2xl" style={{ backgroundColor: '#0f1117' }}>
+        <div className="flex p-1.5 gap-1.5 m-4 rounded-2xl" style={{ backgroundColor: 'var(--ad-elevated)' }}>
           {(['login', 'register'] as const).map(t => (
             <button key={t} type="button" onClick={() => switchTab(t)}
               className="flex-1 py-2.5 text-sm font-bold rounded-xl transition-all"
               style={tab === t
                 ? { backgroundColor: accentHex, color: '#000' }
-                : { color: '#64748b' }}>
+                : { color: 'var(--ad-sub)' }}>
               {t === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
             </button>
           ))}
@@ -118,7 +118,7 @@ export default function Resta3LoginPage() {
 
         <form onSubmit={handleSubmit} className="px-5 pb-5 space-y-3">
           <div>
-            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#475569' }}>Nombre completo</label>
+            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ad-sub)' }}>Nombre completo</label>
             <input id="r3-username" name="username" type="text" value={name} onChange={e => { setName(e.target.value); setError('') }}
               placeholder="Ej. Carlos López" autoComplete="name" autoFocus
               className={INPUT} style={inputStyle}
@@ -126,7 +126,7 @@ export default function Resta3LoginPage() {
               onBlur={e => e.currentTarget.style.borderColor = borderIdle} />
           </div>
           <div>
-            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#475569' }}>Contraseña</label>
+            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ad-sub)' }}>Contraseña</label>
             <input id="r3-password" name="password" type="password" value={password} onChange={e => { setPassword(e.target.value); setError('') }}
               placeholder="Mín. 12 caracteres con letras y números" autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
               className={INPUT} style={inputStyle}
@@ -136,7 +136,7 @@ export default function Resta3LoginPage() {
 
           {tab === 'register' && (
             <div>
-              <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#475569' }}>Confirmar contraseña</label>
+              <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ad-sub)' }}>Confirmar contraseña</label>
               <input id="r3-confirm-password" name="confirm_password" type="password" value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); setError('') }}
                 placeholder="Repite la contraseña" autoComplete="new-password"
                 className={INPUT} style={inputStyle}
@@ -149,7 +149,7 @@ export default function Resta3LoginPage() {
           <label className="flex items-center gap-2.5 cursor-pointer select-none pt-0.5">
             <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
               className="w-4 h-4 rounded" style={{ accentColor: accentHex }} />
-            <span className="text-xs font-medium" style={{ color: '#475569' }}>Recordarme</span>
+            <span className="text-xs font-medium" style={{ color: 'var(--ad-sub)' }}>Recordarme</span>
           </label>
 
           {error && (
@@ -167,7 +167,7 @@ export default function Resta3LoginPage() {
         </form>
       </div>
 
-      <p className="text-xs mt-6" style={{ color: '#334155' }}>Solo para uso del personal autorizado</p>
+      <p className="text-xs mt-6" style={{ color: 'var(--ad-sub)' }}>Solo para uso del personal autorizado</p>
     </div>
   )
 }

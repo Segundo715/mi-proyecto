@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 // Dashboard de RESTA3: KPIs del día (ventas, mesas, pedidos) con datos en tiempo real de Supabase.
 import { useEffect, useState } from 'react'
@@ -212,7 +212,7 @@ export default function Resta3Dashboard() {
                 ] as const).map(a => (
                   <a key={a.href} href={a.href}
                     className="flex flex-col items-center gap-1 py-3 rounded-xl text-center transition-all"
-                    style={{ backgroundColor: '#0f1117', border: `1px solid ${S.border}` }}>
+                    style={{ backgroundColor: 'var(--ad-elevated)', border: `1px solid ${S.border}` }}>
                     <span style={{ color: S.text }}><Icon name={a.icon} size={20} /></span>
                     <span className="text-[10px] font-bold" style={{ color: S.sub }}>{a.label}</span>
                   </a>
