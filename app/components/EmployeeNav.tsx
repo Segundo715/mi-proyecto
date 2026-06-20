@@ -18,7 +18,6 @@ const NAV_LINKS: NavLink[] = [
   { href: '/employee/menu',      icon: 'menu',     label: 'Menú',         feature: 'menu',           empModule: 'emp_menu_ver'      },
   { href: '/employee/recipes',   icon: 'recipes',  label: 'Recetario',    feature: 'produccion',     empModule: 'emp_recetario'     },
   { href: '/employee/customers', icon: 'users',    label: 'Clientes',     feature: 'customers',      empModule: 'emp_clientes_ver'  },
-  { href: '/employee/tv',        icon: 'tv',       label: 'Pantalla TV',  feature: 'tv',             empModule: 'emp_pantalla_tv'   },
 ]
 
 const ICONS: Record<string, string> = {
@@ -26,7 +25,6 @@ const ICONS: Record<string, string> = {
   menu:    '<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>',
   loyalty: '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
   users:   '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
-  tv:      '<rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>',
   recipes: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
   logout:  '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
 }
