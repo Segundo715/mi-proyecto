@@ -29,6 +29,14 @@ interface RewardCategory {
 const CATEGORIES_KEY = 'reward_categories'
 const COLOR_PRESETS = ['#B90F45', '#00e676', '#fb923c', '#f87171', '#60a5fa', '#a78bfa', '#f472b6', '#fbbf24', '#34d399']
 
+// URL de vista previa (cliente) por ID de categoría
+const CARD_URLS: Record<string, string> = {
+  cafe:      '/card',
+  dosxuno:   '/card/2x1',
+  descuento: '/card/descuento',
+  premium:   '/card/premium',
+}
+
 // Beneficios disponibles para la tarjeta Premium/Upgrade (se eligen desde el dashboard)
 const PERK_GROUPS: { label: string; items: string[] }[] = [
   { label: 'Upgrade', items: ['Tamaño grande gratis', 'Extra incluido', 'Servicio mejorado'] },
@@ -267,7 +275,7 @@ export default function AdminTarjetasPage() {
           </div>
 
           {/* Pestañas / módulos */}
-          <div className="px-5 pt-4 flex gap-2 flex-wrap">
+          <div className="px-5 pt-4 flex gap-2 flex-wrap items-center">
             {categories.map(c => {
               const active = activeId === c.id
               return (
@@ -288,7 +296,26 @@ export default function AdminTarjetasPage() {
                 : { backgroundColor: S.bg, color: S.accent, border: `1px dashed ${S.accent}` }}>
               + Nueva
             </button>
+            {activeId && CARD_URLS[activeId] && (
+              <a href={CARD_URLS[activeId]} target="_blank" rel="noopener noreferrer"
+                className="ml-auto px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
+                style={{ backgroundColor: S.bg, color: S.accent, border: `1px solid ${S.accent}` }}>
+                Ver tarjeta <span aria-hidden>↗</span>
+              </a>
+            )}
           </div>
+
+          {/* Nota de URL para la categoría activa */}
+          {activeId && (
+            <div className="px-5 pt-3">
+              <p className="text-xs" style={{ color: S.sub }}>
+                {CARD_URLS[activeId]
+                  ? <>Esta tarjeta se muestra en <span className="font-mono font-bold" style={{ color: S.accent }}>{CARD_URLS[activeId]}</span> — los cambios guardados se ven ahí.</>
+                  : <>Categoría personalizada — asígnale una ruta en el código para mostrarla a clientes.</>
+                }
+              </p>
+            </div>
+          )}
 
           {/* Módulo activo: editor de modificadores */}
           <div className="p-5 space-y-4">
