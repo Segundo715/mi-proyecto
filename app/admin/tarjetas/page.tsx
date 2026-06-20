@@ -90,6 +90,7 @@ export default function AdminTarjetasPage() {
   const [saveError, setSaveError] = useState('')
   const [uploading, setUploading] = useState<'logo' | 'image' | 'icon' | 'brandLogo' | null>(null)
   const [adminName, setAdminName] = useState('')
+  const [catsOpen, setCatsOpen] = useState(false)
 
   useEffect(() => {
     const match = document.cookie.split('; ').find(r => r.startsWith('admin_name='))
@@ -312,14 +313,25 @@ export default function AdminTarjetasPage() {
 
         {/* Categorías de Rewards (módulos en pestañas) */}
         <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-          <div className="px-5 py-4 flex items-center justify-between gap-2" style={{ borderBottom: `1px solid ${S.border}` }}>
+          <button
+            onClick={() => setCatsOpen(o => !o)}
+            className="w-full px-5 py-4 flex items-center justify-between gap-2 text-left transition-all"
+            style={{ borderBottom: catsOpen ? `1px solid ${S.border}` : 'none' }}>
             <div>
               <p className="font-bold text-sm" style={{ color: S.text }}>Categorías de Rewards</p>
               <p className="text-xs mt-0.5" style={{ color: S.sub }}>Tipos de tarjeta — elige un módulo para personalizarlo</p>
             </div>
-            {savingCats && <span className="text-xs" style={{ color: S.sub }}>Guardando…</span>}
-          </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {savingCats && <span className="text-xs" style={{ color: S.sub }}>Guardando…</span>}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                style={{ color: S.sub, transform: catsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s' }}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+          </button>
 
+          {catsOpen && <div>
           {/* Pestañas / módulos */}
           <div className="px-5 pt-4 flex gap-2 flex-wrap items-center">
             {categories.map(c => {
@@ -650,6 +662,7 @@ export default function AdminTarjetasPage() {
               </div>
             </div>
           </div>
+          </div>}
         </div>
 
         {/* Desactivar inactivos */}
