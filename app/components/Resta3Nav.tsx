@@ -166,9 +166,12 @@ export default function Resta3Nav() {
 
   return (
     <>
-      {/* Logo agencia + toggle (escritorio) */}
-      <div className="hidden md:flex fixed top-5 right-[250px] z-[100] items-center gap-3">
-        <img src="/L_agencia/logo_singular.svg" alt="Singular" className="ad-logo h-6 w-auto pointer-events-none" />
+      {/* Logo restaurante + agencia + toggle (escritorio) */}
+      <div className="hidden md:flex fixed top-4 right-4 z-[100] items-center gap-2">
+        <div className="w-8 h-8 rounded-xl overflow-hidden flex-shrink-0">
+          <img src={brandLogo} alt={brandName} className="w-full h-full object-contain" />
+        </div>
+        <img src="/L_agencia/logo_singular.svg" alt="Singular" className="ad-logo h-5 w-auto pointer-events-none" />
         <AdminThemeToggle />
       </div>
 
@@ -189,7 +192,7 @@ export default function Resta3Nav() {
           </div>
         </button>
         <div className="flex items-center gap-2">
-          <img src="/L_agencia/logo_singular.svg" alt="Singular" className="ad-logo h-6 w-auto" />
+          <img src="/L_agencia/logo_singular.svg" alt="Singular" className="ad-logo h-5 w-auto" />
           <AdminThemeToggle />
         </div>
       </div>
