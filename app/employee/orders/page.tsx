@@ -1,9 +1,13 @@
 'use client'
 
 // Gestión de pedidos para el empleado: polling cada 10 s, avanza estado igual que admin/orders.
+// Tab "Nueva Orden" permite crear pedidos desde el panel del empleado (TPV simplificado).
 import { useState, useEffect, useRef } from 'react'
 import EmployeeNav from '@/app/components/EmployeeNav'
 import { Icon } from '@/app/components/Icon'
+
+interface MenuItemTPV { id: string; name: string; category: string; price: number; imageUrl?: string; available: boolean }
+interface LineItem { item: MenuItemTPV; qty: number }
 
 interface OrderItem { name: string; quantity: number; price: number }
 interface Order {
@@ -149,12 +153,71 @@ function playAlert() {
 }
 
 export default function EmployeeOrdersPage() {
+  const [tab, setTab] = useState<'activos' | 'nueva'>('activos')
+
+  // --- Estado pedidos activos ---
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [advancing, setAdvancing] = useState<string | null>(null)
   const [ticketInfo, setTicketInfo] = useState<TicketInfo>({ name: '', address: '', phone: '' })
   const knownIds = useRef<Set<string>>(new Set())
   const firstLoad = useRef(true)
+
+  // --- Estado Nueva Orden (TPV simplificado) ---
+  const [menuItems, setMenuItems] = useState<MenuItemTPV[]>([])
+  const [menuLoading, setMenuLoading] = useState(false)
+  const [menuLoaded, setMenuLoaded] = useState(false)
+  const [cart, setCart] = useState<LineItem[]>([])
+  const [tpvCustomer, setTpvCustomer] = useState('')
+  const [tpvTable, setTpvTable] = useState('')
+  const [tpvNotes, setTpvNotes] = useState('')
+  const [tpvPayment, setTpvPayment] = useState('efectivo')
+  const [tpvSearch, setTpvSearch] = useState('')
+  const [tpvCat, setTpvCat] = useState('Todos')
+  const [submitting, setSubmitting] = useState(false)
+  const [tpvSuccess, setTpvSuccess] = useState(false)
+
+  async function loadMenu() {
+    if (menuLoaded) return
+    setMenuLoading(true)
+    const res = await fetch('/api/menu')
+    if (res.ok) setMenuItems((await res.json()).filter((m: MenuItemTPV) => m.available))
+    setMenuLoading(false); setMenuLoaded(true)
+  }
+
+  function addToCart(item: MenuItemTPV) {
+    setCart(c => {
+      const ex = c.find(l => l.item.id === item.id)
+      if (ex) return c.map(l => l.item.id === item.id ? { ...l, qty: l.qty + 1 } : l)
+      return [...c, { item, qty: 1 }]
+    })
+  }
+
+  function changeQty(id: string, delta: number) {
+    setCart(c => c.map(l => l.item.id === id ? { ...l, qty: Math.max(1, l.qty + delta) } : l).filter(l => l.qty > 0))
+  }
+
+  async function placeOrder() {
+    if (!tpvCustomer.trim() || cart.length === 0) return
+    setSubmitting(true)
+    const total = cart.reduce((s, l) => s + l.item.price * l.qty, 0)
+    const res = await fetch('/api/orders', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerName: tpvCustomer.trim(),
+        tableNumber: tpvTable.trim() || undefined,
+        items: cart.map(l => ({ menuItemId: l.item.id, name: l.item.name, price: l.item.price, quantity: l.qty })),
+        total,
+        notes: tpvNotes.trim() ? `[${tpvPayment.toUpperCase()}] ${tpvNotes.trim()}` : `[${tpvPayment.toUpperCase()}]`,
+      }),
+    })
+    setSubmitting(false)
+    if (res.ok) {
+      setCart([]); setTpvCustomer(''); setTpvTable(''); setTpvNotes('')
+      setTpvSuccess(true); setTimeout(() => setTpvSuccess(false), 3000)
+      setTab('activos'); load()
+    }
+  }
 
   useEffect(() => {
     // Pedir permiso de notificaciones del navegador
@@ -217,25 +280,188 @@ export default function EmployeeOrdersPage() {
   const active = orders.filter(o => o.status !== 'delivered')
   const delivered = orders.filter(o => o.status === 'delivered')
 
+  const tpvTotal = cart.reduce((s, l) => s + l.item.price * l.qty, 0)
+  const tpvCats = ['Todos', ...Array.from(new Set(menuItems.map(m => m.category)))]
+  const tpvFiltered = menuItems.filter(m => {
+    const matchCat = tpvCat === 'Todos' || m.category === tpvCat
+    const matchSearch = m.name.toLowerCase().includes(tpvSearch.toLowerCase())
+    return matchCat && matchSearch
+  })
+
   return (
     <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
       <EmployeeNav />
 
-      <div className="max-w-2xl mx-auto p-4 space-y-4">
-        <div className="flex items-center justify-between pt-1">
-          <h1 className="text-xl font-black" style={{ color: S.text }}>
-            Pedidos activos
+      <div className="max-w-4xl mx-auto p-4 space-y-4">
+        {/* Tabs */}
+        <div className="flex items-center gap-2 pt-1">
+          <button type="button" onClick={() => setTab('activos')}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+            style={tab === 'activos' ? { backgroundColor: S.accent, color: '#000' } : { backgroundColor: S.card, color: S.sub, border: `1px solid ${S.border}` }}>
+            <Icon name="bell" size={15} /> Pedidos activos
             {active.length > 0 && (
-              <span className="ml-2 text-sm font-bold px-2 py-0.5 rounded-full"
-                style={{ backgroundColor: '#ef4444', color: '#fff' }}>{active.length}</span>
+              <span className="ml-1 text-xs font-black px-1.5 py-0.5 rounded-full"
+                style={{ backgroundColor: tab === 'activos' ? 'rgba(0,0,0,0.25)' : '#ef4444', color: '#fff' }}>
+                {active.length}
+              </span>
             )}
-          </h1>
-          <button type="button" onClick={load}
-            className="text-xs px-3 py-1.5 rounded-full font-semibold"
-            style={{ backgroundColor: 'var(--ad-overlay)', color: S.accent, border: `1px solid ${S.border}` }}>
-            ↻ Actualizar
           </button>
+          <button type="button" onClick={() => { setTab('nueva'); loadMenu() }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+            style={tab === 'nueva' ? { backgroundColor: S.accent, color: '#000' } : { backgroundColor: S.card, color: S.sub, border: `1px solid ${S.border}` }}>
+            <Icon name="receipt" size={15} /> Nueva orden
+          </button>
+          {tab === 'activos' && (
+            <button type="button" onClick={load}
+              className="ml-auto text-xs px-3 py-1.5 rounded-full font-semibold"
+              style={{ backgroundColor: 'var(--ad-overlay)', color: S.accent, border: `1px solid ${S.border}` }}>
+              ↻ Actualizar
+            </button>
+          )}
         </div>
+
+        {/* Toast éxito */}
+        {tpvSuccess && (
+          <div className="rounded-xl px-4 py-3 text-sm font-bold flex items-center gap-2"
+            style={{ backgroundColor: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)', color: '#4ade80' }}>
+            <Icon name="checkCircle" size={16} /> ¡Orden enviada a cocina!
+          </div>
+        )}
+
+        {/* ===== TAB: NUEVA ORDEN ===== */}
+        {tab === 'nueva' && (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
+            {/* Catálogo */}
+            <div className="space-y-3">
+              {menuLoading ? (
+                <div className="py-10 text-center text-sm" style={{ color: S.sub }}>Cargando menú...</div>
+              ) : (
+                <>
+                  <input value={tpvSearch} onChange={e => setTpvSearch(e.target.value)} placeholder="Buscar platillo..."
+                    className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+                    style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }} />
+                  <div className="flex gap-2 flex-wrap">
+                    {tpvCats.map(c => (
+                      <button key={c} type="button" onClick={() => setTpvCat(c)}
+                        className="px-3 py-1 rounded-xl text-xs font-bold transition-all"
+                        style={tpvCat === c ? { backgroundColor: S.accent, color: '#000' } : { backgroundColor: S.card, color: S.sub, border: `1px solid ${S.border}` }}>
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {tpvFiltered.map(item => (
+                      <button key={item.id} type="button" onClick={() => addToCart(item)}
+                        className="text-left rounded-2xl overflow-hidden transition-all hover:scale-[1.02] active:scale-95"
+                        style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+                        {item.imageUrl
+                          ? <img src={item.imageUrl} alt={item.name} className="w-full object-cover" style={{ height: '72px' }} />
+                          : <div className="w-full flex items-center justify-center" style={{ height: '56px', backgroundColor: 'var(--ad-overlay)', color: S.sub }}><Icon name="utensils" size={22} /></div>
+                        }
+                        <div className="p-2.5">
+                          <p className="text-xs font-bold truncate" style={{ color: S.text }}>{item.name}</p>
+                          <p className="text-sm font-black mt-0.5" style={{ color: S.accent }}>${item.price.toFixed(2)}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Comanda */}
+            <div className="rounded-2xl p-4 space-y-3 h-fit sticky top-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+              <h2 className="font-black text-sm" style={{ color: S.text }}>Comanda</h2>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Cliente *</label>
+                  <input value={tpvCustomer} onChange={e => setTpvCustomer(e.target.value)} placeholder="Nombre"
+                    className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                    style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Mesa</label>
+                  <input value={tpvTable} onChange={e => setTpvTable(e.target.value)} placeholder="Ej: 3"
+                    className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                    style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
+                </div>
+              </div>
+
+              {cart.length === 0 ? (
+                <div className="py-6 flex flex-col items-center" style={{ color: S.sub }}>
+                  <Icon name="cart" size={22} />
+                  <p className="text-xs mt-1">Toca un platillo</p>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {cart.map(line => (
+                    <div key={line.item.id} className="rounded-xl p-2 flex items-center gap-2"
+                      style={{ backgroundColor: 'var(--ad-elevated)' }}>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold truncate" style={{ color: S.text }}>{line.item.name}</p>
+                        <p className="text-xs" style={{ color: S.accent }}>${(line.item.price * line.qty).toFixed(2)}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button type="button" onClick={() => changeQty(line.item.id, -1)}
+                          className="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center"
+                          style={{ backgroundColor: S.bg, color: S.sub }}>−</button>
+                        <span className="text-xs font-black w-4 text-center" style={{ color: S.text }}>{line.qty}</span>
+                        <button type="button" onClick={() => changeQty(line.item.id, 1)}
+                          className="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center"
+                          style={{ backgroundColor: S.bg, color: S.accent }}>+</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Pago</label>
+                <div className="grid grid-cols-3 gap-1">
+                  {[{ id: 'efectivo', label: 'Efectivo' }, { id: 'tarjeta', label: 'Tarjeta' }, { id: 'transferencia', label: 'Transfer.' }].map(p => (
+                    <button key={p.id} type="button" onClick={() => setTpvPayment(p.id)}
+                      className="py-1.5 rounded-xl text-xs font-bold transition-all"
+                      style={tpvPayment === p.id ? { backgroundColor: `${S.accent}22`, color: S.accent, border: `1px solid ${S.accent}44` } : { backgroundColor: 'var(--ad-elevated)', color: S.sub, border: `1px solid ${S.border}` }}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Notas</label>
+                <input value={tpvNotes} onChange={e => setTpvNotes(e.target.value)} placeholder="Alergias, preferencias..."
+                  className="w-full px-3 py-2 rounded-xl text-xs outline-none"
+                  style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
+              </div>
+
+              <div className="pt-1" style={{ borderTop: `1px solid ${S.border}` }}>
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-xs" style={{ color: S.sub }}>Total ({cart.reduce((s, l) => s + l.qty, 0)} items)</span>
+                  <span className="text-xl font-black" style={{ color: S.accent }}>${tpvTotal.toFixed(2)}</span>
+                </div>
+                <button type="button" onClick={placeOrder}
+                  disabled={submitting || !tpvCustomer.trim() || cart.length === 0}
+                  className="w-full py-3 rounded-xl font-black text-sm disabled:opacity-40 transition-all flex items-center justify-center gap-1.5"
+                  style={{ backgroundColor: S.accent, color: '#000' }}>
+                  {submitting ? 'Enviando...' : <><Icon name="receipt" size={15} /> Enviar a cocina</>}
+                </button>
+                {cart.length > 0 && (
+                  <button type="button" onClick={() => setCart([])}
+                    className="w-full mt-2 py-1.5 rounded-xl text-xs font-bold"
+                    style={{ color: '#f87171' }}>
+                    Limpiar comanda
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== TAB: PEDIDOS ACTIVOS ===== */}
+        {tab === 'activos' && (
+        <div>
 
         {loading && (
           <div className="space-y-4">
@@ -369,6 +595,9 @@ export default function EmployeeOrdersPage() {
             </div>
           </details>
         )}
+        </div>
+        )}
+
       </div>
     </div>
   )
