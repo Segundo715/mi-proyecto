@@ -24,7 +24,7 @@ interface Order {
 const S = {
   bg:     '#080b16',
   card:   '#0e1225',
-  accent: '#00e676',
+  accent: 'var(--ad-accent)',
   text:   '#eef2f7',
   sub:    '#6b7a94',
   border: 'rgba(255,255,255,0.07)',

@@ -15,7 +15,7 @@ const STAMPS = 5
 const S = {
   bg:     '#080b16',
   card:   '#0e1225',
-  accent: '#00e676',
+  accent: 'var(--ad-accent)',
   text:   '#eef2f7',
   sub:    '#6b7a94',
   border: 'rgba(255,255,255,0.07)',
@@ -70,7 +70,7 @@ export default function EmployeeCustomersPage() {
         <div className="flex items-center justify-between pt-1">
           <h1 className="text-xl font-black" style={{ color: S.text }}>Clientes</h1>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
-            style={{ backgroundColor: 'rgba(0,230,118,0.1)', color: S.accent }}>
+            style={{ backgroundColor: 'color-mix(in srgb, var(--ad-accent) 10%, transparent)', color: S.accent }}>
             Solo lectura
           </span>
         </div>

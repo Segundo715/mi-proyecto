@@ -62,11 +62,11 @@ export default function EmployeeLoginPage() {
       {/* Brand */}
       <div className="text-center mb-8">
         <div className="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl overflow-hidden"
-          style={{ background: 'linear-gradient(135deg,#00e676,#06b6d4)' }}>
+          style={{ background: 'linear-gradient(135deg, var(--ad-accent), #06b6d4)' }}>
           <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-2" />
         </div>
         <div className="font-extrabold text-xl tracking-wide" style={{ color: '#eef2f7' }}>NICHO</div>
-        <p className="text-sm mt-1 font-medium" style={{ color: '#00e676' }}>Panel de empleados</p>
+        <p className="text-sm mt-1 font-medium" style={{ color: 'var(--ad-accent)' }}>Panel de empleados</p>
       </div>
 
       <div className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden"
@@ -78,7 +78,7 @@ export default function EmployeeLoginPage() {
             <button key={m} type="button" onClick={() => { setMode(m); setError('') }}
               className="flex-1 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-colors"
               style={mode === m
-                ? { backgroundColor: '#00e676', color: '#000' }
+                ? { backgroundColor: 'var(--ad-accent)', color: '#000' }
                 : { color: '#6b7a94', backgroundColor: 'transparent' }}>
               {m === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
             </button>
@@ -91,24 +91,24 @@ export default function EmployeeLoginPage() {
             <input id="emp-username" name="username" type="text" value={name} onChange={e => { setName(e.target.value); setError('') }}
               placeholder="Ej. Carlos López" autoComplete="name" autoFocus
               className={INPUT}
-              style={{ backgroundColor: '#0a0e1c', border: '1px solid rgba(0,230,118,0.3)' }}
-              onFocus={e => e.currentTarget.style.borderColor = '#00e676'}
-              onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,230,118,0.3)'} />
+              style={{ backgroundColor: '#0a0e1c', border: '1px solid color-mix(in srgb, var(--ad-accent) 30%, transparent)' }}
+              onFocus={e => e.currentTarget.style.borderColor = 'var(--ad-accent)'}
+              onBlur={e => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--ad-accent) 30%, transparent)'} />
           </div>
           <div>
             <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#6b7a94' }}>Contraseña</label>
             <input id="emp-password" name="password" type="password" value={password} onChange={e => { setPassword(e.target.value); setError('') }}
               placeholder="Mín. 12 caracteres con letras y números" autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
               className={INPUT}
-              style={{ backgroundColor: '#0a0e1c', border: '1px solid rgba(0,230,118,0.3)' }}
-              onFocus={e => e.currentTarget.style.borderColor = '#00e676'}
-              onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,230,118,0.3)'} />
+              style={{ backgroundColor: '#0a0e1c', border: '1px solid color-mix(in srgb, var(--ad-accent) 30%, transparent)' }}
+              onFocus={e => e.currentTarget.style.borderColor = 'var(--ad-accent)'}
+              onBlur={e => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--ad-accent) 30%, transparent)'} />
           </div>
 
           {/* Recordarme */}
           <label className="flex items-center gap-2.5 cursor-pointer select-none pt-0.5">
             <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
-              className="w-4 h-4 rounded" style={{ accentColor: '#00e676' }} />
+              className="w-4 h-4 rounded" style={{ accentColor: 'var(--ad-accent)' }} />
             <span className="text-xs font-medium" style={{ color: '#6b7a94' }}>Recordarme</span>
           </label>
 
@@ -121,7 +121,7 @@ export default function EmployeeLoginPage() {
 
           <button type="submit" disabled={loading}
             className="w-full font-black py-4 rounded-2xl text-base disabled:opacity-60 transition-colors mt-1"
-            style={{ backgroundColor: '#00e676', color: '#000' }}>
+            style={{ backgroundColor: 'var(--ad-accent)', color: '#000' }}>
             {loading ? 'Cargando...' : mode === 'login' ? '→ Entrar' : '→ Crear cuenta'}
           </button>
         </form>

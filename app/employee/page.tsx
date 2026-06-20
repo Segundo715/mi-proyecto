@@ -25,7 +25,7 @@ const STAMPS = 5
 const S = {
   bg:     '#080b16',
   card:   '#0e1225',
-  accent: '#00e676',
+  accent: 'var(--ad-accent)',
   text:   '#eef2f7',
   sub:    '#6b7a94',
   border: 'rgba(255,255,255,0.07)',
@@ -122,7 +122,7 @@ export default function EmployeePage() {
 
         {/* Stamp visit */}
         <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-          <div className="px-5 py-3" style={{ backgroundColor: 'rgba(0,230,118,0.08)', borderBottom: `1px solid ${S.border}` }}>
+          <div className="px-5 py-3" style={{ backgroundColor: 'color-mix(in srgb, var(--ad-accent) 8%, transparent)', borderBottom: `1px solid ${S.border}` }}>
             <h2 className="font-black text-base" style={{ color: S.accent }}>Sellar visita</h2>
           </div>
 
@@ -145,7 +145,7 @@ export default function EmployeePage() {
                 <button type="button"
                   onClick={() => { setScanError(''); setScanMode('phone') }}
                   className="w-full font-bold py-4 rounded-2xl text-base transition-colors"
-                  style={{ backgroundColor: 'rgba(0,230,118,0.1)', color: S.accent, border: '1px solid rgba(0,230,118,0.3)' }}>
+                  style={{ backgroundColor: 'color-mix(in srgb, var(--ad-accent) 10%, transparent)', color: S.accent, border: '1px solid color-mix(in srgb, var(--ad-accent) 30%, transparent)' }}>
                   <span className="inline-flex items-center justify-center gap-2"><Icon name="search" size={17} /> Buscar por teléfono</span>
                 </button>
               </div>
@@ -168,7 +168,7 @@ export default function EmployeePage() {
                   onKeyDown={e => e.key === 'Enter' && searchByPhone()}
                   placeholder="Número de teléfono"
                   className="w-full rounded-2xl px-4 py-3 text-lg focus:outline-none"
-                  style={{ backgroundColor: '#0a0e1c', color: S.text, border: '1px solid rgba(0,230,118,0.3)' }}
+                  style={{ backgroundColor: '#0a0e1c', color: S.text, border: '1px solid color-mix(in srgb, var(--ad-accent) 30%, transparent)' }}
                   autoFocus />
                 <button type="button" onClick={searchByPhone} disabled={searching}
                   className="w-full font-black py-4 rounded-2xl text-base disabled:opacity-60"
@@ -183,7 +183,7 @@ export default function EmployeePage() {
 
             {scanState !== 'idle' && scanState !== 'scanning' && scanned && (
               <div className="space-y-4">
-                <div className="rounded-2xl p-5" style={{ background: 'linear-gradient(135deg,#071a10,#0a1f14)', border: '1px solid rgba(0,230,118,0.2)' }}>
+                <div className="rounded-2xl p-5" style={{ background: 'color-mix(in srgb, var(--ad-accent) 8%, #0e1225)', border: '1px solid color-mix(in srgb, var(--ad-accent) 20%, transparent)' }}>
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <p className="font-black text-2xl leading-tight" style={{ color: S.text }}>{scanned.name}</p>
@@ -197,7 +197,7 @@ export default function EmployeePage() {
                     {Array.from({ length: STAMPS }).map((_, i) => (
                       <div key={i} className="aspect-square rounded-full flex items-center justify-center text-xl border-2 transition-all"
                         style={{
-                          backgroundColor: i < scanned.visits ? 'rgba(0,230,118,0.2)' : 'rgba(255,255,255,0.05)',
+                          backgroundColor: i < scanned.visits ? 'color-mix(in srgb, var(--ad-accent) 20%, transparent)' : 'rgba(255,255,255,0.05)',
                           borderColor: i < scanned.visits ? S.accent : 'rgba(255,255,255,0.1)',
                         }}>
                         {i < scanned.visits ? <span style={{ color: S.accent }}><Icon name="coffee" size={16} /></span> : <span style={{ color: 'rgba(255,255,255,0.2)' }}>○</span>}
@@ -208,7 +208,7 @@ export default function EmployeePage() {
 
                 {scanState === 'done' ? (
                   <div className="rounded-2xl p-4 text-center font-black text-base"
-                    style={{ backgroundColor: 'rgba(0,230,118,0.1)', border: '2px solid rgba(0,230,118,0.4)', color: S.accent }}>
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--ad-accent) 10%, transparent)', border: '2px solid color-mix(in srgb, var(--ad-accent) 40%, transparent)', color: S.accent }}>
                     <span className="inline-flex items-center justify-center gap-2"><Icon name="checkCircle" size={16} /> ¡Visita sellada! — {scanned.visits}/{STAMPS} sellos</span>
                   </div>
                 ) : scanned.visits >= STAMPS ? (

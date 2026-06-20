@@ -37,7 +37,7 @@ const EMPTY_FORM = {
 const S = {
   bg:     '#080b16',
   card:   '#0e1225',
-  accent: '#00e676',
+  accent: 'var(--ad-accent)',
   text:   '#eef2f7',
   sub:    '#6b7a94',
   border: 'rgba(255,255,255,0.07)',
@@ -180,7 +180,7 @@ export default function EmployeeMenuPage() {
     grouped[item.category].push(item)
   }
 
-  const inputStyle = { backgroundColor: S.input, color: S.text, border: `1px solid rgba(0,230,118,0.25)` }
+  const inputStyle = { backgroundColor: S.input, color: S.text, border: `1px solid color-mix(in srgb, var(--ad-accent) 25%, transparent)` }
 
   return (
     <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
@@ -288,7 +288,7 @@ export default function EmployeeMenuPage() {
         ) : (
           Object.entries(grouped).map(([category, categoryItems]) => (
             <div key={category} className="space-y-3">
-              <h2 className="font-bold text-lg pb-1" style={{ color: S.accent, borderBottom: `1px solid rgba(0,230,118,0.2)` }}>
+              <h2 className="font-bold text-lg pb-1" style={{ color: S.accent, borderBottom: `1px solid color-mix(in srgb, var(--ad-accent) 20%, transparent)` }}>
                 {category}
               </h2>
               {categoryItems.map(item => (
@@ -380,7 +380,7 @@ export default function EmployeeMenuPage() {
                         </button>
                         <button onClick={() => startEdit(item)}
                           className="flex-1 py-1.5 rounded-xl text-sm font-medium"
-                          style={{ border: `1px solid rgba(0,230,118,0.3)`, color: S.accent, backgroundColor: 'transparent' }}>
+                          style={{ border: `1px solid color-mix(in srgb, var(--ad-accent) 30%, transparent)`, color: S.accent, backgroundColor: 'transparent' }}>
                           Editar
                         </button>
                         <button onClick={() => deleteItem(item.id)}
