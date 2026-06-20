@@ -2,7 +2,7 @@
 
 // Recetario público con branding configurable (recetario_color, recetario_logo desde settings).
 // El color de marca se propaga a todos los componentes internos en tiempo de render, no vía CSS vars.
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import AIChat from '@/app/components/AIChat'
 import { Icon } from '@/app/components/Icon'
 
@@ -418,6 +418,159 @@ function OrdersBoard({ t, guinda }: { t: Theme; guinda: string }) {
 }
 
 /* ============================================================================
+ * Modal de edición de receta
+ * ========================================================================== */
+function EditRecipeModal({ recipe, guinda, t, onClose, onSaved }: {
+  recipe: Recipe; guinda: string; t: Theme; onClose: () => void; onSaved: (r: Recipe) => void
+}) {
+  const [form, setForm] = useState({
+    name: recipe.name,
+    description: recipe.description,
+    category: recipe.category,
+    ingredients: recipe.ingredients.length ? recipe.ingredients : [''],
+    steps: recipe.steps.length ? recipe.steps : [''],
+    imageUrl: recipe.imageUrl ?? '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  function setIng(i: number, v: string) {
+    setForm(f => ({ ...f, ingredients: f.ingredients.map((x, j) => j === i ? v : x) }))
+  }
+  function addIng() { setForm(f => ({ ...f, ingredients: [...f.ingredients, ''] })) }
+  function removeIng(i: number) { setForm(f => ({ ...f, ingredients: f.ingredients.filter((_, j) => j !== i) })) }
+
+  function setStep(i: number, v: string) {
+    setForm(f => ({ ...f, steps: f.steps.map((x, j) => j === i ? v : x) }))
+  }
+  function addStep() { setForm(f => ({ ...f, steps: [...f.steps, ''] })) }
+  function removeStep(i: number) { setForm(f => ({ ...f, steps: f.steps.filter((_, j) => j !== i) })) }
+
+  async function uploadImg(file: File) {
+    setUploading(true)
+    const { uploadWebp: up } = await import('@/lib/uploadWebp')
+    const url = await up(file, '/api/recipes/upload')
+    if (url) setForm(f => ({ ...f, imageUrl: url }))
+    setUploading(false)
+  }
+
+  async function save() {
+    if (!form.name.trim()) return
+    setSaving(true)
+    const body = {
+      name: form.name.trim(),
+      description: form.description.trim(),
+      category: form.category.trim(),
+      ingredients: form.ingredients.filter(s => s.trim()),
+      steps: form.steps.filter(s => s.trim()),
+      imageUrl: form.imageUrl || null,
+    }
+    const r = await fetch(`/api/recipes/${recipe.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    })
+    if (r.ok) { onSaved(await r.json()); onClose() }
+    setSaving(false)
+  }
+
+  const inp = 'w-full px-3 py-2.5 rounded-xl text-sm outline-none'
+  const s = { backgroundColor: t.field, color: t.ink, border: `1px solid ${t.line}` }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
+      <div className="w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-5 space-y-4"
+        style={{ backgroundColor: t.card, border: `1px solid ${t.line}` }}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-black" style={{ color: guinda }}>Editar receta</h2>
+          <button onClick={onClose} className="text-xl font-black" style={{ color: t.sub }}>×</button>
+        </div>
+
+        {/* Imagen */}
+        <div className="flex items-center gap-3">
+          <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center" style={{ background: hexA(guinda, 0.08), border: `1px solid ${t.line}` }}>
+            {form.imageUrl
+              ? <img src={form.imageUrl} alt="" className="w-full h-full object-cover" />
+              : <IconFood size={36} color={guinda} />}
+          </div>
+          <div className="flex-1">
+            <button onClick={() => fileRef.current?.click()} disabled={uploading}
+              className="w-full py-2.5 rounded-xl text-sm font-bold border-2 border-dashed"
+              style={{ borderColor: t.line, color: t.sub }}>
+              {uploading ? 'Subiendo...' : form.imageUrl ? 'Cambiar imagen' : 'Subir imagen'}
+            </button>
+            {form.imageUrl && (
+              <button onClick={() => setForm(f => ({ ...f, imageUrl: '' }))}
+                className="mt-1 text-xs font-semibold underline block text-center" style={{ color: t.sub }}>
+                Quitar imagen
+              </button>
+            )}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) uploadImg(f) }} />
+        </div>
+
+        {/* Nombre */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: t.sub }}>Nombre *</label>
+          <input className={inp} style={s} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nombre de la receta" />
+        </div>
+
+        {/* Descripción */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: t.sub }}>Descripción</label>
+          <textarea className={`${inp} resize-none`} style={s} rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Descripción breve..." />
+        </div>
+
+        {/* Categoría */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: t.sub }}>Categoría</label>
+          <input className={inp} style={s} value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="General" />
+        </div>
+
+        {/* Ingredientes */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-bold uppercase tracking-wide" style={{ color: t.sub }}>Ingredientes</label>
+            <button onClick={addIng} className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ backgroundColor: hexA(guinda, 0.12), color: guinda }}>+ Agregar</button>
+          </div>
+          <div className="space-y-2">
+            {form.ingredients.map((ing, i) => (
+              <div key={i} className="flex gap-2">
+                <input className={`${inp} flex-1`} style={s} value={ing} onChange={e => setIng(i, e.target.value)} placeholder={`Ingrediente ${i + 1}`} />
+                <button onClick={() => removeIng(i)} className="px-2 rounded-xl text-sm font-black" style={{ backgroundColor: 'rgba(239,68,68,.12)', color: '#f87171' }}>×</button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pasos */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-bold uppercase tracking-wide" style={{ color: t.sub }}>Pasos de preparación</label>
+            <button onClick={addStep} className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ backgroundColor: hexA(guinda, 0.12), color: guinda }}>+ Agregar</button>
+          </div>
+          <div className="space-y-2">
+            {form.steps.map((step, i) => (
+              <div key={i} className="flex gap-2 items-start">
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black mt-2 shrink-0" style={{ background: guinda, color: '#fff' }}>{i + 1}</span>
+                <textarea className={`${inp} flex-1 resize-none`} style={s} rows={2} value={step} onChange={e => setStep(i, e.target.value)} placeholder={`Paso ${i + 1}...`} />
+                <button onClick={() => removeStep(i)} className="px-2 rounded-xl text-sm font-black mt-1" style={{ backgroundColor: 'rgba(239,68,68,.12)', color: '#f87171' }}>×</button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button onClick={save} disabled={saving || !form.name.trim()}
+          className="w-full py-3.5 rounded-2xl font-black text-base disabled:opacity-50"
+          style={{ backgroundColor: guinda, color: '#fff' }}>
+          {saving ? 'Guardando...' : 'Guardar cambios'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/* ============================================================================
  * Página
  * ========================================================================== */
 export default function RecetasPage() {
@@ -430,6 +583,12 @@ export default function RecetasPage() {
   const [loading, setLoading] = useState(true)
   const [brandColor, setBrandColor] = useState('')
   const [brandLogo, setBrandLogo] = useState('')
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null)
+
+  function handleSaved(updated: Recipe) {
+    setRecipes(rs => rs.map(r => r.id === updated.id ? updated : r))
+    if (selectedId === updated.id) setSelectedId(updated.id)
+  }
 
   // Cargar recetas reales desde la BD (las que se administran en /admin/recipes)
   useEffect(() => {
@@ -525,6 +684,15 @@ export default function RecetasPage() {
       >
         ← Volver a platillos
       </button>
+      {selected && (
+        <button
+          onClick={() => setEditingRecipe(selected)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors shrink-0"
+          style={{ background: t.chip, color: t.ink, border: `1px solid ${t.line}` }}
+        >
+          ✎ Editar receta
+        </button>
+      )}
     </div>
   )
 
@@ -594,22 +762,29 @@ export default function RecetasPage() {
                       {filtered.map((r) => {
                         const drink = isDrinkCategory(r.category)
                         return (
-                          <button
-                            key={r.id}
-                            onClick={() => setSelectedId(r.id)}
-                            className="text-left rounded-2xl overflow-hidden shadow-sm transition-transform hover:-translate-y-1"
-                            style={{ background: t.card, border: `1px solid ${t.line}` }}
-                          >
-                            <div className="aspect-[4/3] w-full overflow-hidden flex items-center justify-center" style={{ background: hexA(guinda, 0.06) }}>
-                              {r.imageUrl
-                                ? <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover" />
-                                : (drink ? <IconCoffee size={56} color={guinda} /> : <IconFood size={56} color={guinda} />)}
-                            </div>
-                            <div className="p-3">
-                              <p className="font-bold text-sm leading-snug line-clamp-2" style={{ color: t.ink }}>{r.name}</p>
-                              <p className="text-xs mt-0.5" style={{ color: t.sub }}>{r.category}</p>
-                            </div>
-                          </button>
+                          <div key={r.id} className="relative group">
+                            <button
+                              onClick={() => setSelectedId(r.id)}
+                              className="text-left w-full rounded-2xl overflow-hidden shadow-sm transition-transform hover:-translate-y-1"
+                              style={{ background: t.card, border: `1px solid ${t.line}` }}
+                            >
+                              <div className="aspect-[4/3] w-full overflow-hidden flex items-center justify-center" style={{ background: hexA(guinda, 0.06) }}>
+                                {r.imageUrl
+                                  ? <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover" />
+                                  : (drink ? <IconCoffee size={56} color={guinda} /> : <IconFood size={56} color={guinda} />)}
+                              </div>
+                              <div className="p-3">
+                                <p className="font-bold text-sm leading-snug line-clamp-2" style={{ color: t.ink }}>{r.name}</p>
+                                <p className="text-xs mt-0.5" style={{ color: t.sub }}>{r.category}</p>
+                              </div>
+                            </button>
+                            <button
+                              onClick={e => { e.stopPropagation(); setEditingRecipe(r) }}
+                              className="absolute top-2 right-2 w-8 h-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-sm font-black"
+                              style={{ background: 'rgba(0,0,0,0.55)', color: '#fff' }}
+                              title="Editar"
+                            >✎</button>
+                          </div>
                         )
                       })}
                     </div>
@@ -632,6 +807,15 @@ export default function RecetasPage() {
         )}
       </div>
       <AIChat role="recipe" />
+      {editingRecipe && (
+        <EditRecipeModal
+          recipe={editingRecipe}
+          guinda={guinda}
+          t={t}
+          onClose={() => setEditingRecipe(null)}
+          onSaved={handleSaved}
+        />
+      )}
     </div>
   )
 }

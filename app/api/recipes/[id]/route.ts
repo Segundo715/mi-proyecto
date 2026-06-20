@@ -3,7 +3,11 @@ import { updateRecipe, deleteRecipe } from '@/lib/recipeDb'
 import { verifySession } from '@/lib/auth'
 
 function auth(req: NextRequest) {
-  return verifySession(req.cookies.get('admin_session')?.value)
+  return (
+    verifySession(req.cookies.get('admin_session')?.value) ||
+    verifySession(req.cookies.get('employee_session')?.value) ||
+    verifySession(req.cookies.get('resta3_session')?.value)
+  )
 }
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
