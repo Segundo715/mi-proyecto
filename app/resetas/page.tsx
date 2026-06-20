@@ -124,6 +124,30 @@ interface Recipe {
   createdAt: string
 }
 
+// Convierte ingrediente almacenado como objeto JSON a texto legible
+function normalizeIngredient(s: string): string {
+  try {
+    const p = JSON.parse(s)
+    if (p && typeof p === 'object' && p.name) {
+      const parts = []
+      if (p.quantity) parts.push(p.quantity)
+      if (p.unit) parts.push(p.unit)
+      parts.push(p.name)
+      return parts.join(' ')
+    }
+  } catch {}
+  return s
+}
+
+// Convierte paso almacenado como objeto JSON a texto legible
+function normalizeStep(s: string): string {
+  try {
+    const p = JSON.parse(s)
+    if (p && typeof p === 'object' && p.description) return String(p.description)
+  } catch {}
+  return s
+}
+
 // Adivina si una categoría es bebida (para elegir ícono café vs comida)
 const DRINK_HINTS = ['bebida', 'café', 'cafe', 'espresso', 'espresso', 'frap', 'latte', 'moka', 'mocha', 'té', 'te', 'capuch', 'capp', 'smoothie', 'jugo', 'refresc', 'drink']
 function isDrinkCategory(cat: string) {
@@ -161,8 +185,8 @@ function RecipeVisual({ recipe, guinda }: { recipe: Recipe; guinda: string }) {
 function RecipeBody({ recipe, t, controls, guinda, logo }: { recipe: Recipe; t: Theme; controls?: React.ReactNode; guinda: string; logo: string }) {
   const cellBorder = `1px solid ${t.line}`
   // Datos directos de la receta administrada en /admin/recipes (vía /api/recipes).
-  const ingredients = recipe.ingredients
-  const steps = recipe.steps
+  const ingredients = recipe.ingredients.map(normalizeIngredient)
+  const steps = recipe.steps.map(normalizeStep)
   return (
     <div className="flex flex-col md:h-full md:min-h-0">
       {/* Encabezado */}
@@ -427,8 +451,8 @@ function EditRecipeModal({ recipe, guinda, t, onClose, onSaved }: {
     name: recipe.name,
     description: recipe.description,
     category: recipe.category,
-    ingredients: recipe.ingredients.length ? recipe.ingredients : [''],
-    steps: recipe.steps.length ? recipe.steps : [''],
+    ingredients: recipe.ingredients.length ? recipe.ingredients.map(normalizeIngredient) : [''],
+    steps: recipe.steps.length ? recipe.steps.map(normalizeStep) : [''],
     imageUrl: recipe.imageUrl ?? '',
   })
   const [saving, setSaving] = useState(false)
