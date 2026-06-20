@@ -57,7 +57,7 @@ export default function EmployeeLoginPage() {
   const INPUT = 'w-full rounded-2xl px-4 py-3.5 text-white text-sm transition-colors focus:outline-none'
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center p-5" style={{ backgroundColor: '#060911' }}>
+    <div className="fixed inset-0 flex flex-col items-center justify-center p-5" style={{ backgroundColor: 'var(--ad-bg)' }}>
 
       {/* Brand */}
       <div className="text-center mb-8">
@@ -65,21 +65,21 @@ export default function EmployeeLoginPage() {
           style={{ background: 'linear-gradient(135deg, var(--ad-accent), #06b6d4)' }}>
           <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-2" />
         </div>
-        <div className="font-extrabold text-xl tracking-wide" style={{ color: '#eef2f7' }}>NICHO</div>
+        <div className="font-extrabold text-xl tracking-wide" style={{ color: 'var(--ad-text)' }}>NICHO</div>
         <p className="text-sm mt-1 font-medium" style={{ color: 'var(--ad-accent)' }}>Panel de empleados</p>
       </div>
 
       <div className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden"
-        style={{ backgroundColor: '#0e1225', border: '1px solid rgba(255,255,255,0.07)' }}>
+        style={{ backgroundColor: 'var(--ad-card)', border: '1px solid var(--ad-border)' }}>
 
         {/* Mode toggle */}
-        <div className="flex p-2 gap-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex p-2 gap-1.5" style={{ borderBottom: '1px solid var(--ad-border)' }}>
           {(['login', 'register'] as const).map(m => (
             <button key={m} type="button" onClick={() => { setMode(m); setError('') }}
               className="flex-1 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-colors"
               style={mode === m
                 ? { backgroundColor: 'var(--ad-accent)', color: '#000' }
-                : { color: '#6b7a94', backgroundColor: 'transparent' }}>
+                : { color: 'var(--ad-sub)', backgroundColor: 'transparent' }}>
               {m === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
             </button>
           ))}
@@ -87,20 +87,20 @@ export default function EmployeeLoginPage() {
 
         <form onSubmit={handleSubmit} className="px-5 pb-5 pt-4 space-y-3">
           <div>
-            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#6b7a94' }}>Nombre completo</label>
+            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ad-sub)' }}>Nombre completo</label>
             <input id="emp-username" name="username" type="text" value={name} onChange={e => { setName(e.target.value); setError('') }}
               placeholder="Ej. Carlos López" autoComplete="name" autoFocus
               className={INPUT}
-              style={{ backgroundColor: '#0a0e1c', border: '1px solid color-mix(in srgb, var(--ad-accent) 30%, transparent)' }}
+              style={{ backgroundColor: 'var(--ad-elevated)', border: '1px solid color-mix(in srgb, var(--ad-accent) 30%, transparent)' }}
               onFocus={e => e.currentTarget.style.borderColor = 'var(--ad-accent)'}
               onBlur={e => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--ad-accent) 30%, transparent)'} />
           </div>
           <div>
-            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: '#6b7a94' }}>Contraseña</label>
+            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ad-sub)' }}>Contraseña</label>
             <input id="emp-password" name="password" type="password" value={password} onChange={e => { setPassword(e.target.value); setError('') }}
               placeholder="Mín. 12 caracteres con letras y números" autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
               className={INPUT}
-              style={{ backgroundColor: '#0a0e1c', border: '1px solid color-mix(in srgb, var(--ad-accent) 30%, transparent)' }}
+              style={{ backgroundColor: 'var(--ad-elevated)', border: '1px solid color-mix(in srgb, var(--ad-accent) 30%, transparent)' }}
               onFocus={e => e.currentTarget.style.borderColor = 'var(--ad-accent)'}
               onBlur={e => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--ad-accent) 30%, transparent)'} />
           </div>
@@ -109,7 +109,7 @@ export default function EmployeeLoginPage() {
           <label className="flex items-center gap-2.5 cursor-pointer select-none pt-0.5">
             <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
               className="w-4 h-4 rounded" style={{ accentColor: 'var(--ad-accent)' }} />
-            <span className="text-xs font-medium" style={{ color: '#6b7a94' }}>Recordarme</span>
+            <span className="text-xs font-medium" style={{ color: 'var(--ad-sub)' }}>Recordarme</span>
           </label>
 
           {error && (
@@ -127,7 +127,7 @@ export default function EmployeeLoginPage() {
         </form>
       </div>
 
-      <p className="text-xs mt-6" style={{ color: '#6b7a94' }}>Solo para uso del personal</p>
+      <p className="text-xs mt-6" style={{ color: 'var(--ad-sub)' }}>Solo para uso del personal</p>
     </div>
   )
 }

@@ -23,12 +23,12 @@ type ScanState = 'idle' | 'scanning' | 'found' | 'stamping' | 'done'
 const STAMPS = 5
 
 const S = {
-  bg:     '#080b16',
-  card:   '#0e1225',
+  bg:     'var(--ad-bg)',
+  card:   'var(--ad-card)',
   accent: 'var(--ad-accent)',
-  text:   '#eef2f7',
-  sub:    '#6b7a94',
-  border: 'rgba(255,255,255,0.07)',
+  text:   'var(--ad-text)',
+  sub:    'var(--ad-sub)',
+  border: 'var(--ad-border)',
 }
 
 export default function EmployeePage() {
@@ -168,7 +168,7 @@ export default function EmployeePage() {
                   onKeyDown={e => e.key === 'Enter' && searchByPhone()}
                   placeholder="Número de teléfono"
                   className="w-full rounded-2xl px-4 py-3 text-lg focus:outline-none"
-                  style={{ backgroundColor: '#0a0e1c', color: S.text, border: '1px solid color-mix(in srgb, var(--ad-accent) 30%, transparent)' }}
+                  style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: '1px solid color-mix(in srgb, var(--ad-accent) 30%, transparent)' }}
                   autoFocus />
                 <button type="button" onClick={searchByPhone} disabled={searching}
                   className="w-full font-black py-4 rounded-2xl text-base disabled:opacity-60"
@@ -183,7 +183,7 @@ export default function EmployeePage() {
 
             {scanState !== 'idle' && scanState !== 'scanning' && scanned && (
               <div className="space-y-4">
-                <div className="rounded-2xl p-5" style={{ background: 'color-mix(in srgb, var(--ad-accent) 8%, #0e1225)', border: '1px solid color-mix(in srgb, var(--ad-accent) 20%, transparent)' }}>
+                <div className="rounded-2xl p-5" style={{ background: 'color-mix(in srgb, var(--ad-accent) 8%, var(--ad-card))', border: '1px solid color-mix(in srgb, var(--ad-accent) 20%, transparent)' }}>
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <p className="font-black text-2xl leading-tight" style={{ color: S.text }}>{scanned.name}</p>
@@ -197,7 +197,7 @@ export default function EmployeePage() {
                     {Array.from({ length: STAMPS }).map((_, i) => (
                       <div key={i} className="aspect-square rounded-full flex items-center justify-center text-xl border-2 transition-all"
                         style={{
-                          backgroundColor: i < scanned.visits ? 'color-mix(in srgb, var(--ad-accent) 20%, transparent)' : 'rgba(255,255,255,0.05)',
+                          backgroundColor: i < scanned.visits ? 'color-mix(in srgb, var(--ad-accent) 20%, transparent)' : 'var(--ad-overlay)',
                           borderColor: i < scanned.visits ? S.accent : 'rgba(255,255,255,0.1)',
                         }}>
                         {i < scanned.visits ? <span style={{ color: S.accent }}><Icon name="coffee" size={16} /></span> : <span style={{ color: 'rgba(255,255,255,0.2)' }}>○</span>}
@@ -243,7 +243,7 @@ export default function EmployeePage() {
             <input type="text" value={cardSearch} onChange={e => setCardSearch(e.target.value)}
               placeholder="Buscar cliente..."
               className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none"
-              style={{ backgroundColor: '#0a0e1c', color: S.text, border: `1px solid ${S.border}` }} />
+              style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
             {loyaltyCards
               .filter(c => !cardSearch.trim() || c.name.toLowerCase().includes(cardSearch.toLowerCase()) || c.phone.includes(cardSearch))
               .slice(0, 15)
@@ -252,7 +252,7 @@ export default function EmployeePage() {
                   onClick={() => { loadCard(c.id); setScanMode('camera') }}
                   className="w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-colors active:scale-[0.98]"
                   style={{
-                    backgroundColor: c.visits >= STAMPS ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.03)',
+                    backgroundColor: c.visits >= STAMPS ? 'rgba(251,191,36,0.08)' : 'var(--ad-overlay)',
                     border: c.visits >= STAMPS ? '2px solid rgba(251,191,36,0.35)' : `1px solid ${S.border}`,
                   }}>
                   <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-base shrink-0"

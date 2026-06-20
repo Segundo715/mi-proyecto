@@ -13,12 +13,12 @@ interface LoyaltyCard {
 const STAMPS = 5
 
 const S = {
-  bg:     '#080b16',
-  card:   '#0e1225',
+  bg:     'var(--ad-bg)',
+  card:   'var(--ad-card)',
   accent: 'var(--ad-accent)',
-  text:   '#eef2f7',
-  sub:    '#6b7a94',
-  border: 'rgba(255,255,255,0.07)',
+  text:   'var(--ad-text)',
+  sub:    'var(--ad-sub)',
+  border: 'var(--ad-border)',
 }
 
 function initial(name: string) { return name.trim().charAt(0).toUpperCase() }
@@ -103,7 +103,7 @@ export default function EmployeeCustomersPage() {
                 <div className="w-12 h-12 rounded-full shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
                 <div className="flex-1 space-y-2 py-1">
                   <div className="h-4 rounded-full w-1/2" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
-                  <div className="h-2 rounded-full w-full" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
+                  <div className="h-2 rounded-full w-full" style={{ backgroundColor: 'var(--ad-overlay)' }} />
                 </div>
               </div>
             ))}

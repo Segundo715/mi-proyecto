@@ -35,13 +35,13 @@ const EMPTY_FORM = {
 }
 
 const S = {
-  bg:     '#080b16',
-  card:   '#0e1225',
+  bg:     'var(--ad-bg)',
+  card:   'var(--ad-card)',
   accent: 'var(--ad-accent)',
-  text:   '#eef2f7',
-  sub:    '#6b7a94',
-  border: 'rgba(255,255,255,0.07)',
-  input:  '#0a0e1c',
+  text:   'var(--ad-text)',
+  sub:    'var(--ad-sub)',
+  border: 'var(--ad-border)',
+  input:  'var(--ad-elevated)',
 }
 
 const INPUT_CLS = 'w-full rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors'
@@ -259,13 +259,13 @@ export default function EmployeeMenuPage() {
                   const pct = maxLikes > 0 ? ((item.likes ?? 0) / maxLikes) * 100 : 0
                   return (
                     <div key={item.id} className="flex items-center gap-3">
-                      <span className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-xs font-black" style={{ backgroundColor: idx === 0 ? 'rgba(245,158,11,0.18)' : 'rgba(255,255,255,0.07)', color: idx === 0 ? '#f59e0b' : S.sub }}>{idx + 1}</span>
+                      <span className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-xs font-black" style={{ backgroundColor: idx === 0 ? 'rgba(245,158,11,0.18)' : 'var(--ad-border)', color: idx === 0 ? '#f59e0b' : S.sub }}>{idx + 1}</span>
                       {item.imageUrl && (
                         <img src={item.imageUrl} alt={item.name} className="w-10 h-10 rounded-xl object-cover shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold truncate" style={{ color: S.text }}>{item.name}</p>
-                        <div className="h-1.5 rounded-full mt-1 overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}>
+                        <div className="h-1.5 rounded-full mt-1 overflow-hidden" style={{ backgroundColor: 'var(--ad-border)' }}>
                           <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: '#f472b6' }} />
                         </div>
                       </div>

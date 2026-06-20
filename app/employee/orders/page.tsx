@@ -22,14 +22,14 @@ interface Order {
 }
 
 const S = {
-  bg:     '#080b16',
-  card:   '#0e1225',
-  accent: 'var(--ad-accent)',
-  text:   '#eef2f7',
-  sub:    '#6b7a94',
-  border: 'rgba(255,255,255,0.07)',
-  elevated: '#0a0e1c',
-  overlay:  'rgba(255,255,255,0.04)',
+  bg:       'var(--ad-bg)',
+  card:     'var(--ad-card)',
+  accent:   'var(--ad-accent)',
+  text:     'var(--ad-text)',
+  sub:      'var(--ad-sub)',
+  border:   'var(--ad-border)',
+  elevated: 'var(--ad-elevated)',
+  overlay:  'var(--ad-overlay)',
 }
 
 const STATUS_CONFIG: Record<Order['status'], { label: string; headerBg: string; cardBorderColor: string; step: number }> = {
