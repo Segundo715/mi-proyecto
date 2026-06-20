@@ -6,6 +6,7 @@ export interface LoyaltyCard {
   phone: string
   visits: number
   active: boolean
+  cardType: string
   expiresAt?: string
   registeredAt: string
   stamps: { timestamp: string; visitsAfter: number }[]
@@ -18,6 +19,7 @@ function toCard(row: Record<string, unknown>): LoyaltyCard {
     phone: (row.phone as string) ?? '',
     visits: (row.visits as number) ?? 0,
     active: row.active as boolean,
+    cardType: (row.card_type as string) ?? 'cafe',
     expiresAt: row.expires_at as string | undefined,
     registeredAt: row.registered_at as string,
     stamps: (row.stamps as LoyaltyCard['stamps']) ?? [],
@@ -40,7 +42,6 @@ export async function getCard(id: string): Promise<LoyaltyCard | undefined> {
 }
 
 export async function findByPhone(phone: string): Promise<LoyaltyCard | null> {
-  // Normaliza el teléfono eliminando caracteres no numéricos antes de comparar.
   const clean = phone.replace(/\D/g, '')
   const { data: all } = await supabase.from('loyalty_cards').select('*')
   const found = (all ?? []).find((r: Record<string, unknown>) =>
@@ -49,15 +50,21 @@ export async function findByPhone(phone: string): Promise<LoyaltyCard | null> {
   return found ? toCard(found) : null
 }
 
-export async function findOrCreate(name: string, phone: string): Promise<{ card: LoyaltyCard; isNew: boolean }> {
-  const existing = await findByPhone(phone)
-  if (existing) return { card: existing, isNew: false }
+export async function findOrCreate(name: string, phone: string, cardType = 'cafe'): Promise<{ card: LoyaltyCard; isNew: boolean }> {
+  const clean = phone.replace(/\D/g, '')
+  const { data: all } = await supabase.from('loyalty_cards').select('*')
+  const found = (all ?? []).find((r: Record<string, unknown>) =>
+    (r.phone as string).replace(/\D/g, '') === clean &&
+    ((r.card_type as string) ?? 'cafe') === cardType
+  )
+  if (found) return { card: toCard(found), isNew: false }
 
   const { data, error } = await supabase.from('loyalty_cards').insert({
     name: name.trim(),
     phone: phone.trim(),
     visits: 0,
     active: false,
+    card_type: cardType,
     expires_at: expiryDate(),
     stamps: [],
   }).select().single()

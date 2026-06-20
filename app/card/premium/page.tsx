@@ -80,7 +80,7 @@ export default function CardPremiumPage() {
       const res = await fetch('/api/loyalty', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim() }),
+        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), cardType: 'premium' }),
       })
       if (res.ok) {
         const data: Customer = await res.json()

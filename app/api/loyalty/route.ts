@@ -14,9 +14,9 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const name = (body.name ?? '').trim()
   const phone = (body.phone ?? '').trim()
+  const cardType = (body.cardType ?? 'cafe').trim()
   if (!name || !phone)
     return Response.json({ error: 'Nombre y teléfono requeridos' }, { status: 400 })
-  // findOrCreate: busca por teléfono normalizado; si no existe, crea la tarjeta.
-  const { card, isNew } = await findOrCreate(name, phone)
+  const { card, isNew } = await findOrCreate(name, phone, cardType)
   return Response.json(card, { status: isNew ? 201 : 200 })
 }

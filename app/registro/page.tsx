@@ -61,7 +61,7 @@ export default function RegistroPage() {
       const res = await fetch('/api/loyalty', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), age }),
+        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), age, cardType: 'cafe' }),
       })
       const card = await res.json()
       if (res.ok) {
