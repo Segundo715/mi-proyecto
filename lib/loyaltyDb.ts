@@ -26,9 +26,11 @@ function toCard(row: Record<string, unknown>): LoyaltyCard {
   }
 }
 
-// Las tarjetas expiran a los 90 días. Se renueva automáticamente en cada sello o canje.
-function expiryDate(): string {
-  return new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
+// Las tarjetas expiran según los meses configurados por categoría (default 3 meses).
+function expiryDate(months = 3): string {
+  const d = new Date()
+  d.setMonth(d.getMonth() + months)
+  return d.toISOString()
 }
 
 export async function getAllCards(): Promise<LoyaltyCard[]> {
@@ -50,7 +52,7 @@ export async function findByPhone(phone: string): Promise<LoyaltyCard | null> {
   return found ? toCard(found) : null
 }
 
-export async function findOrCreate(name: string, phone: string, cardType = 'cafe'): Promise<{ card: LoyaltyCard; isNew: boolean }> {
+export async function findOrCreate(name: string, phone: string, cardType = 'cafe', validityMonths = 3): Promise<{ card: LoyaltyCard; isNew: boolean }> {
   const clean = phone.replace(/\D/g, '')
   const { data: all } = await supabase.from('loyalty_cards').select('*')
   const found = (all ?? []).find((r: Record<string, unknown>) =>
@@ -65,7 +67,7 @@ export async function findOrCreate(name: string, phone: string, cardType = 'cafe
     visits: 0,
     active: false,
     card_type: cardType,
-    expires_at: expiryDate(),
+    expires_at: expiryDate(validityMonths),
     stamps: [],
   }).select().single()
   if (error) throw error

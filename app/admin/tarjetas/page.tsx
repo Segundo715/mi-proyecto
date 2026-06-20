@@ -23,6 +23,7 @@ interface RewardCategory {
   id: string; name: string; reward: string; goal: number; icon: string; color: string
   iconColor?: string; logo?: string; image?: string; brandText?: string; brandLogo?: string
   perks?: string[]
+  validityMonths?: number
   lastChangedBy?: string; lastChangedAt?: string
 }
 
@@ -44,14 +45,16 @@ const PERK_GROUPS: { label: string; items: string[] }[] = [
 ]
 
 const DEFAULT_CATEGORIES: RewardCategory[] = [
-  { id: 'cafe',      name: 'Tarjeta de Café',   reward: 'Café gratis',             goal: 5, icon: 'coffee',  color: '#B90F45', iconColor: '#ffffff', brandText: 'NICHO' },
-  { id: 'dosxuno',   name: 'Tarjeta 2x1',       reward: 'Segundo producto gratis', goal: 4, icon: 'gift',    color: '#60a5fa', iconColor: '#ffffff', brandText: 'NICHO' },
-  { id: 'descuento', name: 'Descuento Directo', reward: '20% de descuento',        goal: 3, icon: 'percent', color: '#fb923c', iconColor: '#ffffff', brandText: 'NICHO' },
-  { id: 'premium',   name: 'Upgrade Premium',   reward: 'Beneficios premium',      goal: 1, icon: 'crown',   color: '#fbbf24', iconColor: '#000000', brandText: 'NICHO', perks: ['Tamaño grande gratis', 'Bebida gratis'] },
+  { id: 'cafe',      name: 'Tarjeta de Café',   reward: 'Café gratis',             goal: 5, icon: 'coffee',  color: '#B90F45', iconColor: '#ffffff', brandText: 'NICHO', validityMonths: 3  },
+  { id: 'dosxuno',   name: 'Tarjeta 2x1',       reward: 'Segundo producto gratis', goal: 4, icon: 'gift',    color: '#60a5fa', iconColor: '#ffffff', brandText: 'NICHO', validityMonths: 5  },
+  { id: 'descuento', name: 'Descuento Directo', reward: '20% de descuento',        goal: 3, icon: 'percent', color: '#fb923c', iconColor: '#ffffff', brandText: 'NICHO', validityMonths: 3  },
+  { id: 'premium',   name: 'Upgrade Premium',   reward: 'Beneficios premium',      goal: 1, icon: 'crown',   color: '#fbbf24', iconColor: '#000000', brandText: 'NICHO', validityMonths: 12, perks: ['Tamaño grande gratis', 'Bebida gratis'] },
 ]
 
+const VALIDITY_PRESETS = [1, 2, 3, 5, 6, 12]
+
 function emptyDraft(): RewardCategory {
-  return { id: '', name: '', reward: '', goal: 5, icon: REWARD_ICON_KEYS[0], color: COLOR_PRESETS[0], iconColor: '#ffffff', logo: '', image: '', brandText: 'NICHO', brandLogo: '', perks: [] }
+  return { id: '', name: '', reward: '', goal: 5, icon: REWARD_ICON_KEYS[0], color: COLOR_PRESETS[0], iconColor: '#ffffff', logo: '', image: '', brandText: 'NICHO', brandLogo: '', perks: [], validityMonths: 3 }
 }
 
 function daysLeft(iso?: string) {
@@ -175,14 +178,15 @@ export default function AdminTarjetasPage() {
     const reward = draft.reward.trim()
     if (!name || !reward) return
     const goal = Math.max(1, Math.round(draft.goal) || 1)
+    const validityMonths = Math.max(1, draft.validityMonths ?? 3)
     const audit = { lastChangedBy: adminName || 'Administrador', lastChangedAt: new Date().toISOString() }
     if (activeId) {
       await persistCategories(categories.map(c =>
-        c.id === activeId ? { ...draft, id: activeId, name, reward, goal, ...audit } : c
+        c.id === activeId ? { ...draft, id: activeId, name, reward, goal, validityMonths, ...audit } : c
       ))
     } else {
       const id = crypto.randomUUID()
-      await persistCategories([...categories, { ...draft, id, name, reward, goal, ...audit }])
+      await persistCategories([...categories, { ...draft, id, name, reward, goal, validityMonths, ...audit }])
       setActiveId(id)
     }
   }
@@ -306,51 +310,6 @@ export default function AdminTarjetasPage() {
           ))}
         </div>
 
-        {/* Registros por tipo de tarjeta */}
-        {!loading && categories.map(cat => {
-          const catCards = cards.filter(c => (c.cardType ?? 'cafe') === cat.id)
-          if (catCards.length === 0) return null
-          return (
-            <div key={cat.id} className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-              <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: `1px solid ${S.border}`, backgroundColor: `${cat.color}18` }}>
-                <div className="flex items-center gap-2">
-                  <RewardIcon name={cat.icon} size={18} style={{ color: cat.color }} />
-                  <p className="font-bold text-sm" style={{ color: S.text }}>{cat.name}</p>
-                  <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: `${cat.color}22`, color: cat.color }}>
-                    {catCards.length} registro{catCards.length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                {CARD_URLS[cat.id] && (
-                  <a href={CARD_URLS[cat.id]} target="_blank" rel="noopener noreferrer"
-                    className="text-xs font-bold" style={{ color: S.sub }}>
-                    {CARD_URLS[cat.id]} ↗
-                  </a>
-                )}
-              </div>
-              <div className="divide-y" style={{ borderColor: S.border }}>
-                {catCards.slice().sort((a, b) => b.registeredAt.localeCompare(a.registeredAt)).map(c => (
-                  <div key={c.id} className="px-5 py-3 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-xs shrink-0"
-                      style={{ backgroundColor: c.active ? `${cat.color}22` : 'rgba(239,68,68,.12)', color: c.active ? cat.color : '#f87171' }}>
-                      {c.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate" style={{ color: S.text }}>{c.name}</p>
-                      <p className="text-xs" style={{ color: S.sub }}>{c.phone} · {c.visits} sello{c.visits !== 1 ? 's' : ''}</p>
-                    </div>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold shrink-0"
-                      style={c.active
-                        ? { backgroundColor: 'rgba(74,222,128,.12)', color: '#4ade80' }
-                        : { backgroundColor: 'rgba(239,68,68,.12)', color: '#f87171' }}>
-                      {c.active ? 'Activa' : 'Inactiva'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        })}
-
         {/* Categorías de Rewards (módulos en pestañas) */}
         <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
           <div className="px-5 py-4 flex items-center justify-between gap-2" style={{ borderBottom: `1px solid ${S.border}` }}>
@@ -425,12 +384,31 @@ export default function AdminTarjetasPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold mb-1" style={{ color: S.sub }}>Sellos para el premio</label>
-              <input type="number" min={1} value={draft.goal}
-                onChange={e => setDraft(d => ({ ...d, goal: Number(e.target.value) }))}
-                className="w-32 px-4 py-3 rounded-2xl text-sm outline-none"
-                style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold mb-1" style={{ color: S.sub }}>Sellos para el premio</label>
+                <input type="number" min={1} value={draft.goal}
+                  onChange={e => setDraft(d => ({ ...d, goal: Number(e.target.value) }))}
+                  className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold mb-1" style={{ color: S.sub }}>Vigencia de la tarjeta</label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {VALIDITY_PRESETS.map(m => (
+                    <button key={m} onClick={() => setDraft(d => ({ ...d, validityMonths: m }))}
+                      className="px-3 py-2 rounded-xl text-xs font-bold transition-all"
+                      style={(draft.validityMonths ?? 3) === m
+                        ? { backgroundColor: draft.color, color: '#000' }
+                        : { backgroundColor: S.bg, color: S.sub, border: `1px solid ${S.border}` }}>
+                      {m === 1 ? '1 mes' : `${m} meses`}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs mt-1.5" style={{ color: S.sub }}>
+                  El cliente tiene <span className="font-bold" style={{ color: S.text }}>{draft.validityMonths ?? 3} {(draft.validityMonths ?? 3) === 1 ? 'mes' : 'meses'}</span> para completar {draft.goal} sello{draft.goal !== 1 ? 's' : ''}
+                </p>
+              </div>
             </div>
 
             {/* Beneficios incluidos (solo tarjeta Premium/Upgrade) */}
@@ -623,6 +601,10 @@ export default function AdminTarjetasPage() {
                   <p className="font-bold text-sm" style={{ color: S.text }}>{draft.name || 'Nombre del tipo'}</p>
                   <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
                     style={{ backgroundColor: `${draft.color}1f`, color: draft.color }}>{Math.max(1, draft.goal || 1)} sellos</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                    style={{ backgroundColor: 'rgba(148,163,184,.12)', color: S.sub }}>
+                    {draft.validityMonths ?? 3} {(draft.validityMonths ?? 3) === 1 ? 'mes' : 'meses'}
+                  </span>
                 </div>
                 <p className="text-xs mt-0.5" style={{ color: S.sub }}>Premio: {draft.reward || '—'}</p>
               </div>
