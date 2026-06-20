@@ -136,15 +136,18 @@ export default function AdminSellarPage() {
     return `sms:${c.phone.replace(/\D/g, '')}?body=${msg}`
   }
 
-  const [loyaltyPending, setLoyaltyPending] = useState<{ id: string; name: string; phone: string; registeredAt: string }[]>([])
+  interface LoyaltyCardItem { id: string; name: string; phone: string; visits: number; active: boolean; registeredAt: string }
+  const [loyaltyPending, setLoyaltyPending] = useState<LoyaltyCardItem[]>([])
+  const [loyaltyActive, setLoyaltyActive] = useState<LoyaltyCardItem[]>([])
   const [activatingCard, setActivatingCard] = useState<string | null>(null)
 
   async function loadLoyaltyPending() {
     try {
       const res = await fetch('/api/loyalty')
       if (res.ok) {
-        const all = await res.json()
-        setLoyaltyPending(all.filter((c: { active: boolean }) => !c.active))
+        const all: LoyaltyCardItem[] = await res.json()
+        setLoyaltyPending(all.filter(c => !c.active))
+        setLoyaltyActive(all.filter(c => c.active))
       }
     } catch {}
   }
@@ -163,7 +166,6 @@ export default function AdminSellarPage() {
     if (!confirm('¿Eliminar esta tarjeta? El cliente perderá sus sellos.')) return
     await fetch(`/api/loyalty/${id}`, { method: 'DELETE' })
     loadLoyaltyPending()
-    loadCustomers()
   }
 
   const pending = customers.filter(c => !c.confirmed)
@@ -400,6 +402,39 @@ export default function AdminSellarPage() {
                       <Icon name="trash" size={15} />
                     </button>
                   </div>
+                </div>
+              ))}
+              <div className="h-px" style={{ backgroundColor: S.border }} />
+            </div>
+          )}
+
+          {/* Tarjetas de fidelización activas */}
+          {loyaltyActive.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                  style={{ backgroundColor: S.accent }}>{loyaltyActive.length}</span>
+                <h2 className="font-bold" style={{ color: S.text }}>Tarjetas activas</h2>
+              </div>
+              {loyaltyActive.map(c => (
+                <div key={c.id} className="rounded-2xl p-4"
+                  style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-bold" style={{ color: S.text }}>{c.name}</p>
+                      <p className="text-sm" style={{ color: S.sub }}>{c.phone}</p>
+                      <p className="text-xs mt-0.5" style={{ color: S.sub }}>Registrado: {fmt(c.registeredAt)}</p>
+                    </div>
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full"
+                      style={{ backgroundColor: `${S.accent}20`, color: S.accent }}>
+                      {c.visits}/5 sellos
+                    </span>
+                  </div>
+                  <button onClick={() => deleteLoyaltyCard(c.id)}
+                    className="w-full rounded-xl py-1.5 text-sm font-medium inline-flex items-center justify-center gap-1.5"
+                    style={{ color: '#f87171', border: '1px solid rgba(239,68,68,.3)' }}>
+                    <Icon name="trash" size={14} /> Eliminar tarjeta
+                  </button>
                 </div>
               ))}
               <div className="h-px" style={{ backgroundColor: S.border }} />
