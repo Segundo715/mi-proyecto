@@ -17,7 +17,17 @@ const TEXT_SETTINGS = [
   { key: 'registro_subtitulo', label: 'Subtítulo de bienvenida', placeholder: 'Completa tus datos para registrarte...', hint: 'Texto debajo del título en /registro' },
 ]
 
-interface AdminItem { id: string; name: string; createdAt: string }
+interface AdminItem { id: string; name: string; role: string; createdAt: string }
+
+const ROLES = ['Administrador', 'Gerente', 'Supervisor', 'Encargado', 'Cajero', 'Auditor']
+
+function generatePassword(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$'
+  const arr = new Uint8Array(16)
+  crypto.getRandomValues(arr)
+  const raw = Array.from(arr).map(b => chars[b % chars.length]).join('')
+  return `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}-${raw.slice(12, 16)}`
+}
 
 function currentAdminName(): string {
   if (typeof document === 'undefined') return ''
@@ -38,11 +48,13 @@ export default function AdminConfiguracionPage() {
   const [uploadingRecLogo,  setUploadingRecLogo]  = useState(false)
 
   // Perfiles
-  const [admins, setAdmins]       = useState<AdminItem[]>([])
-  const [newName, setNewName]     = useState('')
-  const [newPass, setNewPass]     = useState('')
+  const [admins, setAdmins]         = useState<AdminItem[]>([])
+  const [newName, setNewName]       = useState('')
+  const [newRole, setNewRole]       = useState('Administrador')
+  const [newPass, setNewPass]       = useState(() => generatePassword())
+  const [passCopied, setPassCopied] = useState(false)
   const [profileError, setProfileError] = useState('')
-  const [creating, setCreating]   = useState(false)
+  const [creating, setCreating]     = useState(false)
   const me = currentAdminName()
 
   useEffect(() => {
@@ -97,21 +109,30 @@ export default function AdminConfiguracionPage() {
 
   async function createProfile() {
     setProfileError('')
-    if (!newName.trim() || !newPass) { setProfileError('Nombre y contraseña requeridos'); return }
+    if (!newName.trim()) { setProfileError('El nombre es requerido'); return }
     setCreating(true)
     try {
       const r = await fetch('/api/admins', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName.trim(), password: newPass }),
+        body: JSON.stringify({ name: newName.trim(), password: newPass, role: newRole }),
       })
       const d = await r.json()
       if (!r.ok) { setProfileError(d.error ?? 'Error al crear el perfil'); return }
-      setNewName(''); setNewPass('')
+      setNewName('')
+      setNewRole('Administrador')
+      setNewPass(generatePassword())
+      setPassCopied(false)
       await loadAdmins()
     } finally {
       setCreating(false)
     }
+  }
+
+  async function copyPassword() {
+    await navigator.clipboard.writeText(newPass)
+    setPassCopied(true)
+    setTimeout(() => setPassCopied(false), 2500)
   }
 
   async function deleteProfile(id: string, name: string) {
@@ -636,7 +657,13 @@ export default function AdminConfiguracionPage() {
                       <p className="text-sm font-bold truncate" style={{ color: S.text }}>
                         {a.name}{isMe && <span className="ml-2 text-xs font-medium" style={{ color: S.accent }}>(tú)</span>}
                       </p>
-                      <p className="text-xs" style={{ color: S.sub }}>Alta: {new Date(a.createdAt).toLocaleDateString()}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                          {a.role || 'Administrador'}
+                        </span>
+                        <span className="text-xs" style={{ color: S.sub }}>Alta: {new Date(a.createdAt).toLocaleDateString()}</span>
+                      </div>
                     </div>
                     <button onClick={() => deleteProfile(a.id, a.name)} disabled={isMe}
                       className="px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
@@ -651,27 +678,55 @@ export default function AdminConfiguracionPage() {
               )}
             </div>
 
-            <div className="pt-2" style={{ borderTop: `1px solid ${S.border}` }}>
-              <p className="text-xs font-bold uppercase tracking-wide mt-3 mb-2" style={{ color: S.sub }}>Crear nuevo perfil</p>
+            <div className="pt-4 space-y-3" style={{ borderTop: `1px solid ${S.border}` }}>
+              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: S.sub }}>Crear nuevo perfil</p>
+
+              {/* Nombre + Rol */}
               <div className="flex flex-col sm:flex-row gap-2">
                 <input type="text" value={newName}
                   onChange={e => { setNewName(e.target.value); setProfileError('') }}
                   placeholder="Nombre de usuario"
                   className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
                   style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
-                <input type="password" value={newPass}
-                  onChange={e => { setNewPass(e.target.value); setProfileError('') }}
-                  placeholder="Contraseña"
-                  className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
-                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
-                <button onClick={createProfile} disabled={creating}
-                  className="px-4 py-2 rounded-2xl text-sm font-bold shrink-0 transition-all"
-                  style={{ backgroundColor: S.accent, color: '#000' }}>
-                  {creating ? '...' : '+ Crear'}
-                </button>
+                <select value={newRole} onChange={e => setNewRole(e.target.value)}
+                  className="px-4 py-3 rounded-2xl text-sm outline-none font-medium"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}>
+                  {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
               </div>
+
+              {/* Contraseña aleatoria */}
+              <div className="rounded-2xl p-3 space-y-2" style={{ backgroundColor: S.bg, border: `1px solid ${S.border}` }}>
+                <p className="text-xs font-bold uppercase tracking-wide" style={{ color: S.sub }}>Contraseña generada automáticamente</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 px-3 py-2.5 rounded-xl text-sm font-mono tracking-wider select-all"
+                    style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }}>
+                    {newPass}
+                  </code>
+                  <button onClick={copyPassword}
+                    className="px-3 py-2.5 rounded-xl text-xs font-bold shrink-0 transition-all"
+                    style={{ backgroundColor: passCopied ? 'rgba(74,222,128,.2)' : `${S.accent}22`, color: passCopied ? '#4ade80' : S.accent }}>
+                    {passCopied ? '✓ Copiada' : 'Copiar'}
+                  </button>
+                  <button onClick={() => { setNewPass(generatePassword()); setPassCopied(false) }}
+                    className="px-3 py-2.5 rounded-xl text-xs font-bold shrink-0 transition-all"
+                    style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
+                    Nueva
+                  </button>
+                </div>
+                <p className="text-xs" style={{ color: S.sub }}>
+                  Copia la contraseña antes de crear el perfil — no se puede recuperar después.
+                </p>
+              </div>
+
+              <button onClick={createProfile} disabled={creating || !newName.trim()}
+                className="w-full py-3 rounded-2xl text-sm font-bold transition-all disabled:opacity-50"
+                style={{ backgroundColor: S.accent, color: '#000' }}>
+                {creating ? 'Creando...' : '+ Crear perfil'}
+              </button>
+
               {profileError && (
-                <p className="text-xs mt-2 font-medium" style={{ color: '#f87171' }}>{profileError}</p>
+                <p className="text-xs font-medium" style={{ color: '#f87171' }}>{profileError}</p>
               )}
             </div>
 

@@ -13,15 +13,15 @@ export async function POST(req: NextRequest) {
   if (!verifySession(req.cookies.get('admin_session')?.value))
     return Response.json({ error: 'No autorizado' }, { status: 401 })
 
-  const { name, password } = await req.json()
+  const { name, password, role } = await req.json()
   if (!name?.trim() || !password)
     return Response.json({ error: 'Nombre y contraseña requeridos' }, { status: 400 })
 
-  const admin = await createAdmin(name.trim(), password)
+  const admin = await createAdmin(name.trim(), password, role ?? 'Administrador')
   if (!admin)
     return Response.json({ error: 'Ese nombre ya está en uso' }, { status: 409 })
 
-  return Response.json({ id: admin.id, name: admin.name, createdAt: admin.createdAt })
+  return Response.json({ id: admin.id, name: admin.name, role: admin.role, createdAt: admin.createdAt })
 }
 
 export async function DELETE(req: NextRequest) {

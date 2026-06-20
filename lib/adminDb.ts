@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto'
 export interface AdminUser {
   id: string
   name: string
+  role: string
   passwordHash: string
   createdAt: string
 }
@@ -20,18 +21,20 @@ function toAdmin(row: Record<string, unknown>): AdminUser {
   return {
     id: row.id as string,
     name: row.name as string,
+    role: (row.role as string) || 'Administrador',
     passwordHash: row.password_hash as string,
     createdAt: row.created_at as string,
   }
 }
 
-export async function createAdmin(name: string, password: string): Promise<AdminUser | null> {
+export async function createAdmin(name: string, password: string, role = 'Administrador'): Promise<AdminUser | null> {
   // ilike → búsqueda case-insensitive: "Jesus" y "jesus" son el mismo admin.
   const { data: existing } = await supabase.from('admins').select('id').ilike('name', name).maybeSingle()
   if (existing) return null // nombre duplicado
   const { data, error } = await supabase.from('admins').insert({
     name: name.trim(),
     password_hash: hashPassword(name, password),
+    role: role.trim(),
   }).select().single()
   if (error) throw error
   return toAdmin(data)
@@ -52,15 +55,17 @@ export async function getAdminById(id: string): Promise<AdminUser | undefined> {
 export interface AdminListItem {
   id: string
   name: string
+  role: string
   createdAt: string
 }
 
 export async function listAdmins(): Promise<AdminListItem[]> {
   const { data } = await supabase.from('admins')
-    .select('id,name,created_at').order('created_at', { ascending: true })
+    .select('id,name,role,created_at').order('created_at', { ascending: true })
   return (data ?? []).map(r => ({
     id: r.id as string,
     name: r.name as string,
+    role: (r.role as string) || 'Administrador',
     createdAt: r.created_at as string,
   }))
 }
