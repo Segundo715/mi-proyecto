@@ -159,6 +159,13 @@ export default function AdminSellarPage() {
     loadLoyaltyPending()
   }
 
+  async function deleteLoyaltyCard(id: string) {
+    if (!confirm('¿Eliminar esta tarjeta? El cliente perderá sus sellos.')) return
+    await fetch(`/api/loyalty/${id}`, { method: 'DELETE' })
+    loadLoyaltyPending()
+    loadCustomers()
+  }
+
   const pending = customers.filter(c => !c.confirmed)
   const confirmed = customers.filter(c => c.confirmed)
   const checkIns = customers.filter(c => c.requestedAt && Date.now() - new Date(c.requestedAt).getTime() < 3 * 60 * 1000)
@@ -379,13 +386,20 @@ export default function AdminSellarPage() {
                     </div>
                     <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(239,68,68,.15)', color: '#f87171' }}>Pendiente</span>
                   </div>
-                  <button onClick={() => activateLoyaltyCard(c.id)} disabled={activatingCard === c.id}
-                    className="w-full font-bold py-2.5 rounded-xl text-sm disabled:opacity-60"
-                    style={{ backgroundColor: S.accent, color: '#000' }}>
-                    <span className="inline-flex items-center justify-center gap-2">
-                      <Icon name="check" size={15} /> {activatingCard === c.id ? 'Activando...' : 'Activar tarjeta'}
-                    </span>
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={() => activateLoyaltyCard(c.id)} disabled={activatingCard === c.id}
+                      className="flex-1 font-bold py-2.5 rounded-xl text-sm disabled:opacity-60"
+                      style={{ backgroundColor: S.accent, color: '#000' }}>
+                      <span className="inline-flex items-center justify-center gap-2">
+                        <Icon name="check" size={15} /> {activatingCard === c.id ? 'Activando...' : 'Activar'}
+                      </span>
+                    </button>
+                    <button onClick={() => deleteLoyaltyCard(c.id)}
+                      className="px-4 py-2.5 rounded-xl text-sm font-bold"
+                      style={{ backgroundColor: 'rgba(239,68,68,.15)', color: '#f87171', border: '1px solid rgba(239,68,68,.3)' }}>
+                      <Icon name="trash" size={15} />
+                    </button>
+                  </div>
                 </div>
               ))}
               <div className="h-px" style={{ backgroundColor: S.border }} />
