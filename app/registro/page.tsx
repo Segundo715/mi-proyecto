@@ -5,7 +5,7 @@
 // duplicados si el cliente recarga o vuelve a abrir el link.
 import { useState, useEffect } from 'react'
 
-type Step = 'checking' | 'form' | 'already' | 'success'
+type Step = 'checking' | 'form' | 'already' | 'waiting' | 'active'
 
 const LS_KEY = 'registro_card_id'
 const DEFAULT_TITLE = '¡Bienvenido!'
@@ -67,11 +67,10 @@ export default function RegistroPage() {
       if (res.ok) {
         localStorage.setItem(LS_KEY, card.id)
         setExistingCard(card)
-        // Si ya existía (200) o es nuevo (201)
         if (res.status === 200) {
           setStep('already')
         } else {
-          setStep('success')
+          setStep('waiting')
         }
       } else {
         setError(card.error ?? 'Error al registrar')
@@ -134,17 +133,57 @@ export default function RegistroPage() {
     )
   }
 
-  // Registro exitoso
-  if (step === 'success') {
+  // Esperando activación del admin — pollea cada 5s
+  useEffect(() => {
+    if (step !== 'waiting' || !existingCard) return
+    const id = setInterval(() => {
+      fetch(`/api/loyalty/${existingCard.id}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data?.active) setStep('active') })
+        .catch(() => {})
+    }, 5000)
+    return () => clearInterval(id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, existingCard?.id])
+
+  if (step === 'waiting') {
     return (
-      <div key="success" translate="no" className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor: '#0d0d0d' }}>
+      <div key="waiting" translate="no" className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor: '#0d0d0d' }}>
+        <div className="w-full max-w-sm text-center space-y-6">
+          <img src="/logo.png" alt="NICHO" className="h-24 w-auto mx-auto" />
+          <div className="rounded-3xl p-8 space-y-4" style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>
+            <div className="text-5xl animate-pulse">⏳</div>
+            <h2 className="text-2xl font-black text-white">¡Registro recibido!</h2>
+            <p className="text-sm" style={{ color: '#aaa' }}>
+              Hola <span className="font-bold text-white">{existingCard?.name?.split(' ')[0]}</span>, tu solicitud fue enviada al administrador.
+            </p>
+            <p className="text-xs font-bold" style={{ color: '#B90F45' }}>
+              Tu tarjeta se activará en breve. Esta página se actualizará automáticamente.
+            </p>
+            <div className="flex justify-center gap-1.5 pt-1">
+              {[0,1,2].map(i => (
+                <span key={i} className="w-2.5 h-2.5 rounded-full animate-bounce" style={{ backgroundColor: '#B90F45', animationDelay: `${i * 0.15}s` }} />
+              ))}
+            </div>
+          </div>
+          <button onClick={registerAnother} className="text-sm font-semibold" style={{ color: '#555' }}>
+            Registrar otra persona
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 'active') {
+    return (
+      <div key="active" translate="no" className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor: '#0d0d0d' }}>
         <div className="w-full max-w-sm text-center space-y-6">
           <img src="/logo.png" alt="NICHO" className="h-24 w-auto mx-auto" />
           <div className="rounded-3xl p-8 space-y-3" style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>
-            <div className="text-5xl">☕</div>
-            <h2 className="text-2xl font-black text-white">¡Bienvenido!</h2>
+            <div className="text-5xl">🎉</div>
+            <h2 className="text-2xl font-black text-white">¡Tarjeta activada!</h2>
             <p className="text-sm" style={{ color: '#aaa' }}>
-              Tu registro fue exitoso. Ya eres parte de la comunidad NICHO.
+              Hola <span className="font-bold text-white">{existingCard?.name?.split(' ')[0]}</span>, tu tarjeta de fidelización ya está activa.
             </p>
             <p className="text-xs font-bold" style={{ color: '#B90F45' }}>
               Acumula 5 visitas y gana un café gratis ☕

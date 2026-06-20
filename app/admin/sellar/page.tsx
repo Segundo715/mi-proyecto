@@ -42,7 +42,8 @@ export default function AdminSellarPage() {
   useEffect(() => {
     setOrigin(window.location.origin)
     loadCustomers()
-    const poll = setInterval(loadCustomers, 8000)
+    loadLoyaltyPending()
+    const poll = setInterval(() => { loadCustomers(); loadLoyaltyPending() }, 8000)
     return () => clearInterval(poll)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -135,6 +136,29 @@ export default function AdminSellarPage() {
     return `sms:${c.phone.replace(/\D/g, '')}?body=${msg}`
   }
 
+  const [loyaltyPending, setLoyaltyPending] = useState<{ id: string; name: string; phone: string; registeredAt: string }[]>([])
+  const [activatingCard, setActivatingCard] = useState<string | null>(null)
+
+  async function loadLoyaltyPending() {
+    try {
+      const res = await fetch('/api/loyalty')
+      if (res.ok) {
+        const all = await res.json()
+        setLoyaltyPending(all.filter((c: { active: boolean }) => !c.active))
+      }
+    } catch {}
+  }
+
+  async function activateLoyaltyCard(id: string) {
+    setActivatingCard(id)
+    await fetch(`/api/loyalty/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'activate' }),
+    })
+    setActivatingCard(null)
+    loadLoyaltyPending()
+  }
+
   const pending = customers.filter(c => !c.confirmed)
   const confirmed = customers.filter(c => c.confirmed)
   const checkIns = customers.filter(c => c.requestedAt && Date.now() - new Date(c.requestedAt).getTime() < 3 * 60 * 1000)
@@ -225,9 +249,9 @@ export default function AdminSellarPage() {
                 ? { backgroundColor: S.accent, color: '#000' }
                 : { backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }}>
               Clientes
-              {pending.length > 0 && (
+              {(pending.length + loyaltyPending.length) > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                  {pending.length}
+                  {pending.length + loyaltyPending.length}
                 </span>
               )}
             </button>
@@ -238,16 +262,16 @@ export default function AdminSellarPage() {
         {tab === 'scan' && (<>
 
           {/* Alerta de nuevos registros pendientes */}
-          {pending.length > 0 && (
+          {(pending.length > 0 || loyaltyPending.length > 0) && (
             <div className="rounded-2xl p-4 flex items-center gap-3 cursor-pointer"
               style={{ backgroundColor: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.4)' }}
               onClick={() => { setTab('dashboard'); resetScan() }}>
               <span className="text-red-400 shrink-0"><Icon name="bell" size={20} /></span>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm" style={{ color: '#f87171' }}>
-                  {pending.length} cliente{pending.length !== 1 ? 's' : ''} esperando activación
+                  {loyaltyPending.length + pending.length} tarjeta{(loyaltyPending.length + pending.length) !== 1 ? 's' : ''} esperando activación
                 </p>
-                <p className="text-xs" style={{ color: '#f87171', opacity: 0.7 }}>Toca para ver y activar tarjetas</p>
+                <p className="text-xs" style={{ color: '#f87171', opacity: 0.7 }}>Toca para ver y activar</p>
               </div>
               <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ backgroundColor: 'rgba(239,68,68,.2)', color: '#f87171' }}>Ver →</span>
             </div>
@@ -337,7 +361,38 @@ export default function AdminSellarPage() {
         {/* ── TAB: CLIENTES ── */}
         {tab === 'dashboard' && (<>
 
-          {/* Pendientes de activación */}
+          {/* Tarjetas de fidelización por activar */}
+          {loyaltyPending.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white bg-red-500">{loyaltyPending.length}</span>
+                <h2 className="font-bold" style={{ color: '#f87171' }}>Tarjetas por activar</h2>
+              </div>
+              {loyaltyPending.map(c => (
+                <div key={c.id} className="rounded-2xl p-4"
+                  style={{ backgroundColor: S.card, border: `1px solid ${S.border}`, borderLeft: '4px solid #ef4444' }}>
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-bold" style={{ color: S.text }}>{c.name}</p>
+                      <p className="text-sm" style={{ color: S.sub }}>{c.phone}</p>
+                      <p className="text-xs mt-0.5" style={{ color: S.sub }}>Registrado: {fmt(c.registeredAt)}</p>
+                    </div>
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(239,68,68,.15)', color: '#f87171' }}>Pendiente</span>
+                  </div>
+                  <button onClick={() => activateLoyaltyCard(c.id)} disabled={activatingCard === c.id}
+                    className="w-full font-bold py-2.5 rounded-xl text-sm disabled:opacity-60"
+                    style={{ backgroundColor: S.accent, color: '#000' }}>
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Icon name="check" size={15} /> {activatingCard === c.id ? 'Activando...' : 'Activar tarjeta'}
+                    </span>
+                  </button>
+                </div>
+              ))}
+              <div className="h-px" style={{ backgroundColor: S.border }} />
+            </div>
+          )}
+
+          {/* Pendientes de activación (sistema antiguo de customers) */}
           {pending.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">

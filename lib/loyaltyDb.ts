@@ -57,7 +57,7 @@ export async function findOrCreate(name: string, phone: string): Promise<{ card:
     name: name.trim(),
     phone: phone.trim(),
     visits: 0,
-    active: true,
+    active: false,
     expires_at: expiryDate(),
     stamps: [],
   }).select().single()

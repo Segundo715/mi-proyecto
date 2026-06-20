@@ -25,10 +25,10 @@ interface CafeConfig {
 }
 
 interface Customer {
-  id: string; name: string; phone: string; visits: number; confirmed: boolean
+  id: string; name: string; phone: string; visits: number; active: boolean; confirmed: boolean
 }
 
-type Step = 'form' | 'card'
+type Step = 'form' | 'waiting' | 'card'
 
 const INPUT = 'w-full border border-[#B90F45]/40 rounded-2xl px-4 py-3.5 text-white bg-[#1a1a1a] placeholder-gray-500 focus:outline-none focus:border-[#B90F45] text-sm transition-colors'
 
@@ -47,7 +47,12 @@ export default function CardPage() {
     if (saved) {
       fetch(`/api/loyalty/${saved}`)
         .then(r => r.ok ? r.json() : null)
-        .then(data => { if (data) { setCustomer(data); setStep('card') } })
+        .then(data => {
+          if (data) {
+            setCustomer(data)
+            setStep(data.active ? 'card' : 'waiting')
+          }
+        })
         .catch(() => {})
     }
     // Cargar parámetros de la categoría "Tarjeta de Café" desde /admin/tarjetas
@@ -87,7 +92,7 @@ export default function CardPage() {
         const data: Customer = await res.json()
         localStorage.setItem(STORAGE_KEY, data.id)
         setCustomer(data)
-        setStep('card')
+        setStep(data.active ? 'card' : 'waiting')
       } else {
         const d = await res.json()
         setError(d.error ?? 'Error al registrar')
@@ -97,6 +102,42 @@ export default function CardPage() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  // Pantalla de espera — pollea hasta que el admin active la tarjeta
+  useEffect(() => {
+    if (step !== 'waiting' || !customer) return
+    const id = setInterval(() => {
+      fetch(`/api/loyalty/${customer.id}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data?.active) { setCustomer(data); setStep('card') } })
+        .catch(() => {})
+    }, 5000)
+    return () => clearInterval(id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, customer?.id])
+
+  if (step === 'waiting') {
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center p-6" style={{ backgroundColor: '#000' }}>
+        <img src={cfg.logo} alt="Logo" className="h-20 w-auto mx-auto mb-6" />
+        <div className="w-full max-w-sm rounded-3xl p-8 text-center space-y-4" style={{ backgroundColor: '#0d0d0d', border: `1px solid ${cfg.color}` }}>
+          <div className="text-5xl animate-pulse">⏳</div>
+          <h2 className="text-xl font-black text-white">Registro recibido</h2>
+          <p className="text-sm" style={{ color: '#aaa' }}>
+            Hola <span className="font-bold text-white">{customer?.name?.split(' ')[0]}</span>, tu solicitud fue enviada.
+          </p>
+          <p className="text-xs" style={{ color: cfg.color }}>
+            El administrador activará tu tarjeta en breve. Esta página se actualizará automáticamente.
+          </p>
+          <div className="flex justify-center gap-1 pt-2">
+            {[0,1,2].map(i => (
+              <span key={i} className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: cfg.color, animationDelay: `${i * 0.15}s` }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (step === 'form') {
