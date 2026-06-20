@@ -249,6 +249,48 @@ export default function AdminTarjetasPage() {
           </div>
         </div>
 
+        {/* Alerta de upgrade — clientes café con ≥5 sellos totales listos para 2x1 */}
+        {!loading && (() => {
+          const upgradeReady = cards.filter(c =>
+            (c.cardType ?? 'cafe') === 'cafe' && c.active && c.stamps.length >= 5
+          )
+          if (upgradeReady.length === 0) return null
+          const dosxuno = categories.find(c => c.id === 'dosxuno')
+          return (
+            <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(251,191,36,.4)', backgroundColor: 'rgba(251,191,36,.06)' }}>
+              <div className="px-5 py-3 flex items-center gap-3" style={{ borderBottom: '1px solid rgba(251,191,36,.2)' }}>
+                <span className="text-xl">⭐</span>
+                <div className="flex-1">
+                  <p className="font-bold text-sm" style={{ color: '#fbbf24' }}>
+                    {upgradeReady.length} cliente{upgradeReady.length !== 1 ? 's' : ''} listo{upgradeReady.length !== 1 ? 's' : ''} para upgrade a {dosxuno?.name ?? 'Tarjeta 2x1'}
+                  </p>
+                  <p className="text-xs" style={{ color: '#a37a00' }}>Han acumulado 5+ sellos totales — ofrecerles la tarjeta 2x1</p>
+                </div>
+              </div>
+              <div className="divide-y" style={{ borderColor: 'rgba(251,191,36,.15)' }}>
+                {upgradeReady.slice().sort((a, b) => b.stamps.length - a.stamps.length).map(c => (
+                  <div key={c.id} className="px-5 py-3 flex flex-wrap items-center gap-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-xs shrink-0"
+                      style={{ backgroundColor: 'rgba(251,191,36,.2)', color: '#fbbf24' }}>
+                      {c.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate" style={{ color: S.text }}>{c.name}</p>
+                      <p className="text-xs" style={{ color: S.sub }}>{c.phone} · {c.stamps.length} sellos totales</p>
+                    </div>
+                    <a href={`https://wa.me/${c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`¡Hola ${c.name.split(' ')[0]}! 🎉 Como cliente frecuente te invitamos a registrarte en nuestra Tarjeta 2x1: ${typeof window !== 'undefined' ? window.location.origin : ''}/card/2x1`)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0"
+                      style={{ backgroundColor: '#16a34a', color: '#fff' }}>
+                      WhatsApp 2×1 ↗
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
