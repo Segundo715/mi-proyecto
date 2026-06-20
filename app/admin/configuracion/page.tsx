@@ -124,8 +124,8 @@ export default function AdminConfiguracionPage() {
     await loadAdmins()
   }
 
-  const accent   = values.sidebar_accent   || '#00e676'
-  const r3Accent = values.resta3_accent    || accent
+  const accent    = values.sidebar_accent   || '#00e676'
+  const r3Accent  = values.resta3_accent   || accent
   const empAccent = values.employee_accent || accent
 
   const renderSaveBtn = (k: string) => (
@@ -261,30 +261,31 @@ export default function AdminConfiguracionPage() {
           </div>
         </div>
 
-        {/* ===== Branding Resta3 ===== */}
+        {/* ===== Branding RESTA3 ===== */}
         <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
           <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
-            <p className="font-bold text-sm" style={{ color: S.text }}>Branding de Resta3</p>
-            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Personalización del panel /resta3 y su pantalla de login</p>
+            <p className="font-bold text-sm" style={{ color: S.text }}>Panel RESTA3 (/resta3)</p>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Nombre, logo y color del panel secundario de personal. Sin valor = hereda los del Admin.</p>
           </div>
           <div className="p-5 space-y-5">
 
             {/* Nombre Resta3 */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Nombre en Resta3</label>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Nombre en RESTA3</label>
               <div className="flex gap-2">
                 <input type="text" value={values.resta3_name ?? ''}
                   onChange={e => setValues(p => ({ ...p, resta3_name: e.target.value }))}
-                  placeholder="Dejar vacío = usa el nombre del restaurante"
+                  placeholder={values.restaurant_name || 'Igual que el restaurante'}
                   className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
                   style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
                 {renderSaveBtn('resta3_name')}
               </div>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>Aparece en el sidebar y login de /resta3</p>
             </div>
 
             {/* Logo Resta3 */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Logo de Resta3</label>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Logo de RESTA3</label>
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden shrink-0"
                   style={{ background: `linear-gradient(135deg,${r3Accent},${r3Accent}99)` }}>
@@ -293,22 +294,25 @@ export default function AdminConfiguracionPage() {
                 </div>
                 <label className="px-4 py-2 rounded-2xl text-sm font-bold cursor-pointer transition-all"
                   style={{ backgroundColor: `${S.accent}22`, color: S.accent }}>
-                  {uploadingR3Logo ? 'Subiendo...' : 'Cambiar logo Resta3'}
+                  {uploadingR3Logo ? 'Subiendo...' : 'Cambiar logo RESTA3'}
                   <input type="file" accept="image/*" className="hidden"
                     onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f, 'resta3_logo', setUploadingR3Logo) }} />
                 </label>
               </div>
-              <p className="text-xs mt-1" style={{ color: S.sub }}>Dejar vacío usa el logo del restaurante</p>
+              <p className="text-xs mt-1" style={{ color: S.sub }}>Dejar vacío usa el logo general del restaurante</p>
             </div>
 
-            {/* Color Resta3 */}
+            {/* Color / botones Resta3 */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Color del panel Resta3</label>
+              <label className="block text-xs font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Color de acento y botones</label>
               {renderColorRow('resta3_accent', r3Accent)}
-              <div className="mt-2 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium"
-                style={{ backgroundColor: r3Accent, color: '#000' }}>
-                Vista previa Resta3
+              <div className="mt-2 flex gap-2">
+                <span className="inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: r3Accent, color: '#000' }}>Botón activo</span>
+                <span className="inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: `${r3Accent}22`, color: r3Accent }}>Hover</span>
               </div>
+              <p className="text-xs mt-2" style={{ color: S.sub }}>Controla el sidebar, botones activos y links de /resta3</p>
             </div>
 
           </div>
