@@ -17,9 +17,11 @@ const TEXT_SETTINGS = [
   { key: 'registro_subtitulo', label: 'Subtítulo de bienvenida', placeholder: 'Completa tus datos para registrarte...', hint: 'Texto debajo del título en /registro' },
 ]
 
-interface AdminItem { id: string; name: string; role: string; createdAt: string }
+interface AdminItem    { id: string; name: string; role: string; createdAt: string }
+interface EmployeeItem { id: string; name: string; role: string; createdAt: string }
 
-const ROLES = ['Administrador', 'Gerente', 'Supervisor', 'Encargado', 'Cajero', 'Auditor']
+const ROLES     = ['Administrador', 'Gerente', 'Supervisor', 'Encargado', 'Cajero', 'Auditor']
+const EMP_ROLES = ['Mesero', 'Capitán', 'Hostess', 'Bartender', 'Barista', 'Cocina', 'Cajero', 'Repartidor']
 
 function generatePassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$'
@@ -55,6 +57,15 @@ export default function AdminConfiguracionPage() {
   const [passCopied, setPassCopied] = useState(false)
   const [profileError, setProfileError] = useState('')
   const [creating, setCreating]     = useState(false)
+
+  const [employees, setEmployees]     = useState<EmployeeItem[]>([])
+  const [empName, setEmpName]         = useState('')
+  const [empRole, setEmpRole]         = useState('Mesero')
+  const [empPass, setEmpPass]         = useState(() => generatePassword())
+  const [empPassCopied, setEmpPassCopied] = useState(false)
+  const [empError, setEmpError]       = useState('')
+  const [creatingEmp, setCreatingEmp] = useState(false)
+
   const me = currentAdminName()
 
   useEffect(() => {
@@ -73,13 +84,55 @@ export default function AdminConfiguracionPage() {
     })
 
     loadAdmins()
+    loadEmployees()
   }, [])
 
   async function loadAdmins() {
     const r = await fetch('/api/admins')
     if (!r.ok) return
-    const list: AdminItem[] = await r.json()
-    setAdmins(list)
+    setAdmins(await r.json())
+  }
+
+  async function loadEmployees() {
+    const r = await fetch('/api/employees')
+    if (!r.ok) return
+    setEmployees(await r.json())
+  }
+
+  async function createEmp() {
+    setEmpError('')
+    if (!empName.trim()) { setEmpError('El nombre es requerido'); return }
+    setCreatingEmp(true)
+    try {
+      const r = await fetch('/api/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: empName.trim(), password: empPass, role: empRole }),
+      })
+      const d = await r.json()
+      if (!r.ok) { setEmpError(d.error ?? 'Error al crear empleado'); return }
+      setEmpName('')
+      setEmpRole('Mesero')
+      setEmpPass(generatePassword())
+      setEmpPassCopied(false)
+      await loadEmployees()
+    } finally {
+      setCreatingEmp(false)
+    }
+  }
+
+  async function deleteEmp(id: string, name: string) {
+    if (!confirm(`¿Eliminar al empleado "${name}"? Esta acción no se puede deshacer.`)) return
+    setEmpError('')
+    const r = await fetch(`/api/employees?id=${id}`, { method: 'DELETE' })
+    if (!r.ok) { const d = await r.json(); setEmpError(d.error ?? 'No se pudo eliminar'); return }
+    await loadEmployees()
+  }
+
+  async function copyEmpPassword() {
+    await navigator.clipboard.writeText(empPass)
+    setEmpPassCopied(true)
+    setTimeout(() => setEmpPassCopied(false), 2500)
   }
 
   async function saveSetting(key: string, valueOverride?: string) {
@@ -727,6 +780,95 @@ export default function AdminConfiguracionPage() {
 
               {profileError && (
                 <p className="text-xs font-medium" style={{ color: '#f87171' }}>{profileError}</p>
+              )}
+            </div>
+
+          </div>
+        </div>
+
+        {/* ===== Administración de empleados ===== */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <p className="font-bold text-sm" style={{ color: S.text }}>Empleados · Meseros y personal</p>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Usuarios con acceso al panel /employee</p>
+          </div>
+          <div className="p-5 space-y-4">
+
+            <div className="space-y-2">
+              {employees.map(e => (
+                <div key={e.id} className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                  style={{ backgroundColor: S.bg, border: `1px solid ${S.border}` }}>
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
+                    style={{ background: 'linear-gradient(135deg,#0891b2,#06b6d4)', color: '#fff' }}>
+                    {e.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold truncate" style={{ color: S.text }}>{e.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: 'rgba(6,182,212,0.15)', color: '#06b6d4' }}>
+                        {e.role || 'Mesero'}
+                      </span>
+                      <span className="text-xs" style={{ color: S.sub }}>Alta: {new Date(e.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  <button onClick={() => deleteEmp(e.id, e.name)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all"
+                    style={{ color: '#f87171', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'transparent' }}>
+                    Eliminar
+                  </button>
+                </div>
+              ))}
+              {employees.length === 0 && (
+                <p className="text-xs" style={{ color: S.sub }}>Sin empleados registrados aún.</p>
+              )}
+            </div>
+
+            <div className="pt-4 space-y-3" style={{ borderTop: `1px solid ${S.border}` }}>
+              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: S.sub }}>Agregar empleado</p>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input type="text" value={empName}
+                  onChange={e => { setEmpName(e.target.value); setEmpError('') }}
+                  placeholder="Nombre del empleado"
+                  className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }} />
+                <select value={empRole} onChange={e => setEmpRole(e.target.value)}
+                  className="px-4 py-3 rounded-2xl text-sm outline-none font-medium"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}>
+                  {EMP_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+
+              <div className="rounded-2xl p-3 space-y-2" style={{ backgroundColor: S.bg, border: `1px solid ${S.border}` }}>
+                <p className="text-xs font-bold uppercase tracking-wide" style={{ color: S.sub }}>Contraseña generada automáticamente</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 px-3 py-2.5 rounded-xl text-sm font-mono tracking-wider select-all"
+                    style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }}>
+                    {empPass}
+                  </code>
+                  <button onClick={copyEmpPassword}
+                    className="px-3 py-2.5 rounded-xl text-xs font-bold shrink-0 transition-all"
+                    style={{ backgroundColor: empPassCopied ? 'rgba(74,222,128,.2)' : 'rgba(6,182,212,0.15)', color: empPassCopied ? '#4ade80' : '#06b6d4' }}>
+                    {empPassCopied ? '✓ Copiada' : 'Copiar'}
+                  </button>
+                  <button onClick={() => { setEmpPass(generatePassword()); setEmpPassCopied(false) }}
+                    className="px-3 py-2.5 rounded-xl text-xs font-bold shrink-0 transition-all"
+                    style={{ backgroundColor: 'rgba(6,182,212,0.15)', color: '#06b6d4' }}>
+                    Nueva
+                  </button>
+                </div>
+                <p className="text-xs" style={{ color: S.sub }}>Copia la contraseña antes de crear — no se puede recuperar después.</p>
+              </div>
+
+              <button onClick={createEmp} disabled={creatingEmp || !empName.trim()}
+                className="w-full py-3 rounded-2xl text-sm font-bold transition-all disabled:opacity-50"
+                style={{ backgroundColor: '#06b6d4', color: '#000' }}>
+                {creatingEmp ? 'Creando...' : '+ Agregar empleado'}
+              </button>
+
+              {empError && (
+                <p className="text-xs font-medium" style={{ color: '#f87171' }}>{empError}</p>
               )}
             </div>
 
