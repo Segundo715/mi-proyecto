@@ -22,12 +22,14 @@ interface Order {
 }
 
 const S = {
-  bg:     'var(--ad-bg)',
-  card:   'var(--ad-card)',
+  bg:     '#080b16',
+  card:   '#0e1225',
   accent: 'var(--ad-accent)',
-  text:   'var(--ad-text)',
-  sub:    'var(--ad-sub)',
-  border: 'var(--ad-border)',
+  text:   '#eef2f7',
+  sub:    '#6b7a94',
+  border: 'rgba(255,255,255,0.07)',
+  elevated: '#0a0e1c',
+  overlay:  'rgba(255,255,255,0.04)',
 }
 
 const STATUS_CONFIG: Record<Order['status'], { label: string; headerBg: string; cardBorderColor: string; step: number }> = {
@@ -314,7 +316,7 @@ export default function EmployeeOrdersPage() {
           {tab === 'activos' && (
             <button type="button" onClick={load}
               className="ml-auto text-xs px-3 py-1.5 rounded-full font-semibold"
-              style={{ backgroundColor: 'var(--ad-overlay)', color: S.accent, border: `1px solid ${S.border}` }}>
+              style={{ backgroundColor: S.overlay, color: S.accent, border: `1px solid ${S.border}` }}>
               ↻ Actualizar
             </button>
           )}
@@ -356,7 +358,7 @@ export default function EmployeeOrdersPage() {
                         style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
                         {item.imageUrl
                           ? <img src={item.imageUrl} alt={item.name} className="w-full object-cover" style={{ height: '72px' }} />
-                          : <div className="w-full flex items-center justify-center" style={{ height: '56px', backgroundColor: 'var(--ad-overlay)', color: S.sub }}><Icon name="utensils" size={22} /></div>
+                          : <div className="w-full flex items-center justify-center" style={{ height: '56px', backgroundColor: S.overlay, color: S.sub }}><Icon name="utensils" size={22} /></div>
                         }
                         <div className="p-2.5">
                           <p className="text-xs font-bold truncate" style={{ color: S.text }}>{item.name}</p>
@@ -378,13 +380,13 @@ export default function EmployeeOrdersPage() {
                   <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Cliente *</label>
                   <input value={tpvCustomer} onChange={e => setTpvCustomer(e.target.value)} placeholder="Nombre"
                     className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                    style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
+                    style={{ backgroundColor: S.elevated, color: S.text, border: `1px solid ${S.border}` }} />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Mesa</label>
                   <input value={tpvTable} onChange={e => setTpvTable(e.target.value)} placeholder="Ej: 3"
                     className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                    style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
+                    style={{ backgroundColor: S.elevated, color: S.text, border: `1px solid ${S.border}` }} />
                 </div>
               </div>
 
@@ -397,7 +399,7 @@ export default function EmployeeOrdersPage() {
                 <div className="space-y-1.5">
                   {cart.map(line => (
                     <div key={line.item.id} className="rounded-xl p-2 flex items-center gap-2"
-                      style={{ backgroundColor: 'var(--ad-elevated)' }}>
+                      style={{ backgroundColor: S.elevated }}>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold truncate" style={{ color: S.text }}>{line.item.name}</p>
                         <p className="text-xs" style={{ color: S.accent }}>${(line.item.price * line.qty).toFixed(2)}</p>
@@ -422,7 +424,7 @@ export default function EmployeeOrdersPage() {
                   {[{ id: 'efectivo', label: 'Efectivo' }, { id: 'tarjeta', label: 'Tarjeta' }, { id: 'transferencia', label: 'Transfer.' }].map(p => (
                     <button key={p.id} type="button" onClick={() => setTpvPayment(p.id)}
                       className="py-1.5 rounded-xl text-xs font-bold transition-all"
-                      style={tpvPayment === p.id ? { backgroundColor: `${S.accent}22`, color: S.accent, border: `1px solid ${S.accent}44` } : { backgroundColor: 'var(--ad-elevated)', color: S.sub, border: `1px solid ${S.border}` }}>
+                      style={tpvPayment === p.id ? { backgroundColor: `${S.accent}22`, color: S.accent, border: `1px solid ${S.accent}44` } : { backgroundColor: S.elevated, color: S.sub, border: `1px solid ${S.border}` }}>
                       {p.label}
                     </button>
                   ))}
@@ -433,7 +435,7 @@ export default function EmployeeOrdersPage() {
                 <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Notas</label>
                 <input value={tpvNotes} onChange={e => setTpvNotes(e.target.value)} placeholder="Alergias, preferencias..."
                   className="w-full px-3 py-2 rounded-xl text-xs outline-none"
-                  style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
+                  style={{ backgroundColor: S.elevated, color: S.text, border: `1px solid ${S.border}` }} />
               </div>
 
               <div className="pt-1" style={{ borderTop: `1px solid ${S.border}` }}>
@@ -467,10 +469,10 @@ export default function EmployeeOrdersPage() {
           <div className="space-y-4">
             {[1, 2].map(i => (
               <div key={i} className="rounded-2xl overflow-hidden animate-pulse" style={{ backgroundColor: S.card }}>
-                <div className="h-12" style={{ backgroundColor: 'var(--ad-overlay)' }} />
+                <div className="h-12" style={{ backgroundColor: S.overlay }} />
                 <div className="p-4 space-y-3">
-                  <div className="h-4 rounded-full w-2/3" style={{ backgroundColor: 'var(--ad-overlay)' }} />
-                  <div className="h-10 rounded-xl mt-4" style={{ backgroundColor: 'var(--ad-overlay)' }} />
+                  <div className="h-4 rounded-full w-2/3" style={{ backgroundColor: S.overlay }} />
+                  <div className="h-10 rounded-xl mt-4" style={{ backgroundColor: S.overlay }} />
                 </div>
               </div>
             ))}
@@ -530,7 +532,7 @@ export default function EmployeeOrdersPage() {
                 </div>
 
                 <div className="rounded-xl p-3 space-y-1.5"
-                  style={{ backgroundColor: 'var(--ad-overlay)', border: `1px solid ${S.border}` }}>
+                  style={{ backgroundColor: S.overlay, border: `1px solid ${S.border}` }}>
                   {order.items.map((item, i) => (
                     <div key={i} className="flex justify-between text-sm">
                       <span style={{ color: S.text }}>
@@ -559,7 +561,7 @@ export default function EmployeeOrdersPage() {
                   )}
                   <button type="button" onClick={() => printTicket(order, ticketInfo)}
                     className="px-4 py-3.5 rounded-xl font-black text-sm transition-all"
-                    style={{ backgroundColor: 'var(--ad-overlay)', color: S.text, border: `1px solid ${S.border}` }}
+                    style={{ backgroundColor: S.overlay, color: S.text, border: `1px solid ${S.border}` }}
                     title="Imprimir ticket">
                     🖨️
                   </button>
