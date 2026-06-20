@@ -75,6 +75,8 @@ export default function AdminTarjetasPage() {
   const [draft, setDraft] = useState<RewardCategory>({ ...DEFAULT_CATEGORIES[0] })
   const [activeId, setActiveId] = useState<string | null>(DEFAULT_CATEGORIES[0].id) // null = creando nueva
   const [savingCats, setSavingCats] = useState(false)
+  const [savedOk, setSavedOk] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [uploading, setUploading] = useState<'logo' | 'image' | 'icon' | 'brandLogo' | null>(null)
   const [adminName, setAdminName] = useState('')
 
@@ -111,12 +113,25 @@ export default function AdminTarjetasPage() {
   async function persistCategories(next: RewardCategory[]) {
     setCategories(next)
     setSavingCats(true)
-    await fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: CATEGORIES_KEY, value: JSON.stringify(next) }),
-    })
-    setSavingCats(false)
+    setSavedOk(false)
+    setSaveError('')
+    try {
+      const r = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: CATEGORIES_KEY, value: JSON.stringify(next) }),
+      })
+      if (r.ok) {
+        setSavedOk(true)
+        setTimeout(() => setSavedOk(false), 3000)
+      } else {
+        setSaveError('No se pudo guardar. Intenta de nuevo.')
+      }
+    } catch {
+      setSaveError('Error de conexión.')
+    } finally {
+      setSavingCats(false)
+    }
   }
 
   function selectCategory(c: RewardCategory) {
@@ -513,17 +528,30 @@ export default function AdminTarjetasPage() {
                   Eliminar
                 </button>
               )}
-              {draft.lastChangedAt && (
-                <p className="text-xs ml-auto" style={{ color: S.sub }}>
-                  Modificado por <span className="font-bold" style={{ color: S.text }}>{draft.lastChangedBy ?? 'Administrador'}</span>
-                  {' · '}{new Date(draft.lastChangedAt).toLocaleString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                </p>
+              {savedOk && (
+                <span className="text-xs font-bold px-3 py-1.5 rounded-xl"
+                  style={{ backgroundColor: 'rgba(74,222,128,.15)', color: '#4ade80' }}>
+                  ✓ ¡Cambios guardados!
+                </span>
               )}
-              {!draft.lastChangedAt && adminName && (
-                <p className="text-xs ml-auto" style={{ color: S.sub }}>
-                  Sesión activa: <span className="font-bold" style={{ color: S.text }}>{adminName}</span>
-                </p>
+              {saveError && (
+                <span className="text-xs font-bold px-3 py-1.5 rounded-xl"
+                  style={{ backgroundColor: 'rgba(239,68,68,.12)', color: '#f87171' }}>
+                  {saveError}
+                </span>
               )}
+              <div className="ml-auto text-right">
+                {draft.lastChangedAt ? (
+                  <p className="text-xs" style={{ color: S.sub }}>
+                    Modificado por <span className="font-bold" style={{ color: S.text }}>{draft.lastChangedBy ?? 'Administrador'}</span>
+                    <br />{new Date(draft.lastChangedAt).toLocaleString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                ) : adminName ? (
+                  <p className="text-xs" style={{ color: S.sub }}>
+                    Sesión activa: <span className="font-bold" style={{ color: S.text }}>{adminName}</span>
+                  </p>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
