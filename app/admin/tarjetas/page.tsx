@@ -23,6 +23,7 @@ interface RewardCategory {
   id: string; name: string; reward: string; goal: number; icon: string; color: string
   iconColor?: string; logo?: string; image?: string; brandText?: string; brandLogo?: string
   perks?: string[]
+  lastChangedBy?: string; lastChangedAt?: string
 }
 
 const CATEGORIES_KEY = 'reward_categories'
@@ -75,6 +76,12 @@ export default function AdminTarjetasPage() {
   const [activeId, setActiveId] = useState<string | null>(DEFAULT_CATEGORIES[0].id) // null = creando nueva
   const [savingCats, setSavingCats] = useState(false)
   const [uploading, setUploading] = useState<'logo' | 'image' | 'icon' | 'brandLogo' | null>(null)
+  const [adminName, setAdminName] = useState('')
+
+  useEffect(() => {
+    const match = document.cookie.split('; ').find(r => r.startsWith('admin_name='))
+    if (match) setAdminName(decodeURIComponent(match.split('=')[1]))
+  }, [])
 
   async function load() {
     const r = await fetch('/api/loyalty')
@@ -145,13 +152,14 @@ export default function AdminTarjetasPage() {
     const reward = draft.reward.trim()
     if (!name || !reward) return
     const goal = Math.max(1, Math.round(draft.goal) || 1)
+    const audit = { lastChangedBy: adminName || 'Administrador', lastChangedAt: new Date().toISOString() }
     if (activeId) {
       await persistCategories(categories.map(c =>
-        c.id === activeId ? { ...draft, id: activeId, name, reward, goal } : c
+        c.id === activeId ? { ...draft, id: activeId, name, reward, goal, ...audit } : c
       ))
     } else {
       const id = crypto.randomUUID()
-      await persistCategories([...categories, { ...draft, id, name, reward, goal }])
+      await persistCategories([...categories, { ...draft, id, name, reward, goal, ...audit }])
       setActiveId(id)
     }
   }
@@ -491,12 +499,12 @@ export default function AdminTarjetasPage() {
               </div>
             </div>
 
-            <div className="flex gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <button onClick={saveCategory}
                 disabled={!draft.name.trim() || !draft.reward.trim() || savingCats}
                 className="px-4 py-2 rounded-2xl text-sm font-bold transition-all disabled:opacity-40"
                 style={{ backgroundColor: S.accent, color: '#000' }}>
-                {activeId ? 'Guardar cambios' : '+ Crear categoría'}
+                {savingCats ? 'Guardando…' : activeId ? 'Guardar cambios' : '+ Crear categoría'}
               </button>
               {activeId && (
                 <button onClick={() => deleteCategory(activeId)}
@@ -504,6 +512,17 @@ export default function AdminTarjetasPage() {
                   style={{ backgroundColor: 'rgba(239,68,68,.08)', color: '#f87171' }}>
                   Eliminar
                 </button>
+              )}
+              {draft.lastChangedAt && (
+                <p className="text-xs ml-auto" style={{ color: S.sub }}>
+                  Modificado por <span className="font-bold" style={{ color: S.text }}>{draft.lastChangedBy ?? 'Administrador'}</span>
+                  {' · '}{new Date(draft.lastChangedAt).toLocaleString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </p>
+              )}
+              {!draft.lastChangedAt && adminName && (
+                <p className="text-xs ml-auto" style={{ color: S.sub }}>
+                  Sesión activa: <span className="font-bold" style={{ color: S.text }}>{adminName}</span>
+                </p>
               )}
             </div>
           </div>
