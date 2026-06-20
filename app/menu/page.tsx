@@ -547,20 +547,37 @@ export default function MenuPage() {
       </div>
 
       {/* Botón flotante del carrito */}
-      <div className="fixed z-40" style={{ bottom: '72px', right: '20px' }}>
-        <button type="button" onClick={() => cartCount > 0 && setShowOrder(true)}
-          aria-label={cartCount > 0 ? `Ver carrito (${cartCount} artículo${cartCount > 1 ? 's' : ''})` : 'Carrito vacío'}
-          className="relative flex items-center justify-center rounded-full shadow-2xl transition-transform active:scale-95"
-          style={{ width: '60px', height: '60px', backgroundColor: '#DC5E86', opacity: cartCount > 0 ? 1 : 0.45 }}>
-          <img src={logo} alt="" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
-          {cartCount > 0 && (
-            <span className="absolute flex items-center justify-center text-white font-black rounded-full"
-              style={{ top: '-4px', right: '-4px', width: '22px', height: '22px', backgroundColor: '#B02350', fontSize: '11px' }}>
+      <style>{`
+        @keyframes cart-expand {
+          from { transform: scale(0.88) translateY(6px); opacity: 0; }
+          to   { transform: scale(1)    translateY(0);   opacity: 1; }
+        }
+      `}</style>
+      {cartCount > 0 ? (
+        <div className="fixed z-40 left-4 right-4" style={{ bottom: '80px' }}>
+          <button type="button" onClick={() => setShowOrder(true)}
+            aria-label={`Ver carrito (${cartCount} artículo${cartCount > 1 ? 's' : ''})`}
+            className="w-full flex items-center rounded-2xl shadow-2xl active:scale-[0.97] transition-transform"
+            style={{ backgroundColor: hoverColor, height: '58px', animation: 'cart-expand 0.22s ease-out' }}>
+            <span className="flex items-center justify-center rounded-xl font-black text-white text-sm ml-3 shrink-0"
+              style={{ width: '36px', height: '36px', backgroundColor: 'rgba(0,0,0,0.22)', fontSize: '15px' }}>
               {cartCount}
             </span>
-          )}
-        </button>
-      </div>
+            <span className="flex-1 text-center font-black text-white text-base">Realizar pedido</span>
+            <span className="font-black text-white text-sm mr-4 shrink-0">
+              ${cartTotal.toFixed(2)} <span style={{ opacity: 0.7 }}>MXN</span>
+            </span>
+          </button>
+        </div>
+      ) : (
+        <div className="fixed z-40" style={{ bottom: '80px', right: '20px' }}>
+          <button type="button" disabled aria-label="Carrito vacío"
+            className="relative flex items-center justify-center rounded-full shadow-2xl"
+            style={{ width: '60px', height: '60px', backgroundColor: '#DC5E86', opacity: 0.4 }}>
+            <img src={logo} alt="" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+          </button>
+        </div>
+      )}
 
       {/* Modal del pedido â€” baja desde arriba para no quedar tapado por el nav */}
       {showOrder && (
