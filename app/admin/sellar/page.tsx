@@ -1,43 +1,32 @@
 'use client'
 
-// Panel de sellado para admin (misma UX que el empleado). El QR del negocio codifica
-// window.location.origin para que los clientes se registren escaneando.
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
+import AdminNav from '@/app/components/AdminNav'
 import { QRScanner } from '../../components/QRScanner'
 import { Icon } from '@/app/components/Icon'
 
-// Cargado sólo en cliente para evitar problemas de renderizado en móvil
 const QRCode = dynamic(() => import('react-qr-code'), { ssr: false })
 
-interface Stamp {
-  timestamp: string
-  visitsAfter: number
+const S = {
+  bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)',
+  text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)',
 }
 
+interface Stamp { timestamp: string; visitsAfter: number }
 interface Customer {
-  id: string
-  name: string
-  phone: string
-  visits: number
-  confirmed: boolean
-  registeredAt: string
-  stamps: Stamp[]
-  requestedAt?: string
+  id: string; name: string; phone: string; visits: number
+  confirmed: boolean; registeredAt: string; stamps: Stamp[]; requestedAt?: string
 }
-
 type ScanMode = 'idle' | 'camera' | 'phone'
 type ScanState = 'idle' | 'scanning' | 'found' | 'stamping' | 'done'
 type Tab = 'scan' | 'dashboard'
 
 function fmt(iso: string) {
-  return new Date(iso).toLocaleString('es-MX', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
+  return new Date(iso).toLocaleString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-export default function AdminPage() {
+export default function AdminSellarPage() {
   const [tab, setTab] = useState<Tab>('scan')
   const [origin, setOrigin] = useState('')
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -63,38 +52,26 @@ export default function AdminPage() {
     try {
       const res = await fetch('/api/customers')
       if (res.ok) setCustomers(await res.json())
-    } finally {
-      setLoadingList(false)
-    }
+    } finally { setLoadingList(false) }
   }
 
   async function loadCustomer(id: string) {
-    setScanState('found')
-    setScanError('')
+    setScanState('found'); setScanError('')
     const res = await fetch(`/api/customers/${id}`)
-    if (res.ok) {
-      setScanned(await res.json())
-    } else {
-      setScanError('Cliente no encontrado.')
-      setScanState('idle')
-    }
+    if (res.ok) { setScanned(await res.json()) }
+    else { setScanError('Cliente no encontrado.'); setScanState('idle') }
   }
 
   async function searchByPhone() {
     const q = phoneSearch.replace(/\D/g, '')
     if (q.length < 6) { setScanError('Ingresa al menos 6 dígitos del teléfono.'); return }
-    setSearching(true)
-    setScanError('')
+    setSearching(true); setScanError('')
     const res = await fetch('/api/customers')
     if (res.ok) {
       const all: Customer[] = await res.json()
       const match = all.find(c => c.phone.replace(/\D/g, '').includes(q) && c.confirmed)
-      if (match) {
-        setScanned(match)
-        setScanState('found')
-      } else {
-        setScanError('No se encontró ningún cliente confirmado con ese número.')
-      }
+      if (match) { setScanned(match); setScanState('found') }
+      else { setScanError('No se encontró ningún cliente confirmado con ese número.') }
     }
     setSearching(false)
   }
@@ -113,8 +90,7 @@ export default function AdminPage() {
 
   async function activateCustomer(id: string) {
     await fetch(`/api/customers/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'confirm' }),
     })
     loadCustomers()
@@ -124,51 +100,32 @@ export default function AdminPage() {
     if (!scanned) return
     setScanState('stamping')
     const res = await fetch(`/api/customers/${scanned.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'redeem' }),
     })
-    if (res.ok) {
-      setScanned(await res.json())
-      setScanState('done')
-      loadCustomers()
-    } else {
-      setScanState('found')
-    }
+    if (res.ok) { setScanned(await res.json()); setScanState('done'); loadCustomers() }
+    else { setScanState('found') }
   }
 
   async function stampVisit() {
     if (!scanned) return
     setScanState('stamping')
     const res = await fetch(`/api/customers/${scanned.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'stamp' }),
     })
-    if (res.ok) {
-      setScanned(await res.json())
-      setScanState('done')
-      loadCustomers()
-    } else {
-      setScanState('found')
-      setScanError('Error al registrar la visita.')
-    }
+    if (res.ok) { setScanned(await res.json()); setScanState('done'); loadCustomers() }
+    else { setScanState('found'); setScanError('Error al registrar la visita.') }
   }
 
   function resetScan() {
     scanKey.current += 1
-    setScanMode('idle')
-    setScanState('idle')
-    setScanned(null)
-    setScanError('')
-    setPhoneSearch('')
+    setScanMode('idle'); setScanState('idle'); setScanned(null); setScanError(''); setPhoneSearch('')
   }
 
   function activationWALink(c: Customer) {
     const link = `${origin}/activate?id=${c.id}`
-    const msg = encodeURIComponent(
-      `¡Hola ${c.name}! 🎉 Tu tarjeta de fidelización ☕ está lista.\n\nToca este link para activarla:\n${link}\n\nCon cada 5 visitas ganas un café gratis. ¡Gracias!`
-    )
+    const msg = encodeURIComponent(`¡Hola ${c.name}! 🎉 Tu tarjeta de fidelización ☕ está lista.\n\nToca este link para activarla:\n${link}\n\nCon cada 5 visitas ganas un café gratis. ¡Gracias!`)
     return `https://wa.me/${c.phone.replace(/\D/g, '')}?text=${msg}`
   }
 
@@ -180,38 +137,35 @@ export default function AdminPage() {
 
   const pending = customers.filter(c => !c.confirmed)
   const confirmed = customers.filter(c => c.confirmed)
-  const checkIns = customers.filter(c => {
-    if (!c.requestedAt) return false
-    return Date.now() - new Date(c.requestedAt).getTime() < 3 * 60 * 1000
-  })
+  const checkIns = customers.filter(c => c.requestedAt && Date.now() - new Date(c.requestedAt).getTime() < 3 * 60 * 1000)
   const sortedConfirmed = [...confirmed].sort((a, b) => {
     const aT = a.stamps.at(-1)?.timestamp ?? a.registeredAt
     const bT = b.stamps.at(-1)?.timestamp ?? b.registeredAt
     return bT.localeCompare(aT)
   })
 
-  // Bloque reutilizable: muestra info del cliente escaneado + botón de sello
+  const inp = 'w-full px-4 py-3 rounded-xl text-sm outline-none'
+  const inpStyle = { backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }
+
   const ScannedCard = scanned ? (
     <div className="space-y-3">
-      <div className="bg-zinc-800/60 border border-zinc-700 rounded-xl p-4">
+      <div className="rounded-2xl p-4" style={{ backgroundColor: S.bg, border: `1px solid ${S.border}` }}>
         <div className="flex justify-between items-center mb-3">
           <div>
-            <p className="font-bold text-zinc-100 text-lg">{scanned.name}</p>
-            <p className="text-zinc-400 text-sm">{scanned.phone}</p>
+            <p className="font-bold text-lg" style={{ color: S.text }}>{scanned.name}</p>
+            <p className="text-sm" style={{ color: S.sub }}>{scanned.phone}</p>
           </div>
           <div className="text-right">
-            <span className={`text-3xl font-bold ${scanned.visits >= 5 ? 'text-green-400' : 'text-amber-400'}`}>
+            <span className="text-3xl font-bold" style={{ color: scanned.visits >= 5 ? '#4ade80' : S.accent }}>
               {scanned.visits}/5
             </span>
-            <p className="text-xs text-zinc-500">visitas</p>
+            <p className="text-xs" style={{ color: S.sub }}>visitas</p>
           </div>
         </div>
         <div className="flex gap-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className={`flex-1 h-8 rounded-full flex items-center justify-center ${i < scanned.visits ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-700 text-zinc-600'}`}
-            >
+            <div key={i} className="flex-1 h-8 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: i < scanned.visits ? S.accent : S.border, color: i < scanned.visits ? '#000' : S.sub }}>
               <Icon name="coffee" size={15} />
             </div>
           ))}
@@ -219,283 +173,266 @@ export default function AdminPage() {
       </div>
 
       {!scanned.confirmed ? (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-4 text-center text-sm">
-          Este cliente aún no activó su tarjeta. Envíale el link desde la pestaña Clientes.
+        <div className="rounded-xl p-4 text-center text-sm" style={{ backgroundColor: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#f87171' }}>
+          Este cliente aún no activó su tarjeta. Actívala desde la pestaña Clientes.
         </div>
       ) : scanState === 'done' ? (
-        <div className="bg-green-500/15 text-green-300 rounded-xl p-4 text-center font-bold flex items-center justify-center gap-2">
+        <div className="rounded-xl p-4 text-center font-bold flex items-center justify-center gap-2"
+          style={{ backgroundColor: 'rgba(74,222,128,.12)', color: '#4ade80' }}>
           <Icon name="checkCircle" size={16} /> Visita registrada — {scanned.visits}/5 sellos
         </div>
       ) : scanned.visits >= 5 ? (
-        <button
-          onClick={redeemCoffee}
-          disabled={scanState === 'stamping'}
-          className="w-full bg-yellow-400 active:bg-yellow-500 text-amber-900 font-bold py-4 rounded-xl text-base disabled:opacity-60"
-        >
+        <button onClick={redeemCoffee} disabled={scanState === 'stamping'}
+          className="w-full font-bold py-4 rounded-xl text-base disabled:opacity-60"
+          style={{ backgroundColor: '#f59e0b', color: '#000' }}>
           {scanState === 'stamping' ? 'Canjeando...' : <span className="inline-flex items-center justify-center gap-2"><Icon name="gift" size={16} /> Canjear café gratis y reiniciar</span>}
         </button>
       ) : (
-        <button
-          onClick={stampVisit}
-          disabled={scanState === 'stamping'}
-          className="w-full bg-amber-600 active:bg-amber-800 text-white font-bold py-4 rounded-xl text-base disabled:opacity-60"
-        >
+        <button onClick={stampVisit} disabled={scanState === 'stamping'}
+          className="w-full font-bold py-4 rounded-xl text-base disabled:opacity-60"
+          style={{ backgroundColor: S.accent, color: '#000' }}>
           {scanState === 'stamping' ? 'Sellando...' : <span className="inline-flex items-center justify-center gap-2"><Icon name="coffee" size={16} /> Sellar visita</span>}
         </button>
       )}
-
-      <button onClick={resetScan} className="w-full text-sm text-zinc-500 underline py-1">
+      <button onClick={resetScan} className="w-full text-sm underline py-1" style={{ color: S.sub }}>
         Buscar otro cliente
       </button>
     </div>
   ) : null
 
   return (
-    <div className="min-h-screen bg-zinc-950">
-      {/* Header */}
-      <div className="bg-zinc-900 border-b border-zinc-800 text-zinc-100 sticky top-0 z-20 shadow-lg shadow-black/40">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="font-bold text-base flex items-center gap-2"><Icon name="coffee" size={18} /> Panel del empleado</h1>
+    <div className="min-h-screen md:ml-[240px] md:pt-16" style={{ backgroundColor: S.bg }}>
+      <AdminNav />
+      <div className="max-w-lg mx-auto p-4 space-y-4">
+
+        {/* Header + tabs */}
+        <div className="flex items-center justify-between pt-1">
+          <div>
+            <h1 className="text-xl font-black" style={{ color: S.text }}>Sellar visitas</h1>
+            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Fidelización de clientes</p>
+          </div>
           <div className="flex gap-2">
-            <button
-              onClick={() => setTab('scan')}
-              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${tab === 'scan' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-800 text-zinc-300'}`}
-            >
+            <button onClick={() => setTab('scan')}
+              className="px-4 py-2 rounded-xl text-sm font-bold transition-colors"
+              style={tab === 'scan'
+                ? { backgroundColor: S.accent, color: '#000' }
+                : { backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }}>
               Sellar
             </button>
-            <button
-              onClick={() => { setTab('dashboard'); resetScan() }}
-              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${tab === 'dashboard' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-800 text-zinc-300'}`}
-            >
-              Clientes{pending.length > 0 && (
-                <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">{pending.length}</span>
+            <button onClick={() => { setTab('dashboard'); resetScan() }}
+              className="px-4 py-2 rounded-xl text-sm font-bold transition-colors relative"
+              style={tab === 'dashboard'
+                ? { backgroundColor: S.accent, color: '#000' }
+                : { backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }}>
+              Clientes
+              {pending.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {pending.length}
+                </span>
               )}
             </button>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-lg mx-auto p-4 space-y-4">
+        {/* ── TAB: SELLAR ── */}
+        {tab === 'scan' && (<>
 
-        {/* ────── TAB: SELLAR ────── */}
-        {tab === 'scan' && (
-          <>
-            {/* Notificaciones de check-in */}
-            {checkIns.map(c => (
-              <div key={c.id} className="bg-green-500 text-white rounded-2xl p-4 flex items-center gap-3 shadow-lg animate-pulse">
-                <span><Icon name="bell" size={22} /></span>
-                <div>
-                  <p className="font-bold">{c.name} está en el mostrador</p>
-                  <p className="text-xs text-green-100">{c.phone} · {c.visits}/5 sellos</p>
-                </div>
+          {/* Alerta de nuevos registros pendientes */}
+          {pending.length > 0 && (
+            <div className="rounded-2xl p-4 flex items-center gap-3 cursor-pointer"
+              style={{ backgroundColor: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.4)' }}
+              onClick={() => { setTab('dashboard'); resetScan() }}>
+              <span className="text-red-400 shrink-0"><Icon name="bell" size={20} /></span>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm" style={{ color: '#f87171' }}>
+                  {pending.length} cliente{pending.length !== 1 ? 's' : ''} esperando activación
+                </p>
+                <p className="text-xs" style={{ color: '#f87171', opacity: 0.7 }}>Toca para ver y activar tarjetas</p>
               </div>
-            ))}
+              <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ backgroundColor: 'rgba(239,68,68,.2)', color: '#f87171' }}>Ver →</span>
+            </div>
+          )}
 
-            {/* QR del negocio */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-lg shadow-black/30 p-5 text-center">
-              <h2 className="font-bold text-amber-400 text-base mb-1">QR del negocio</h2>
-              <p className="text-xs text-zinc-500 mb-4">
-                Muéstralo para que los clientes se registren
-              </p>
-              <div className="flex justify-center mb-3">
-                <div className="p-3 rounded-xl bg-white inline-block min-h-[172px] min-w-[172px] flex items-center justify-center">
-                  {origin
-                    ? <QRCode value={origin} size={160} />
-                    : <span className="text-gray-300 text-sm">Cargando…</span>
-                  }
-                </div>
+          {/* Check-ins en mostrador */}
+          {checkIns.map(c => (
+            <div key={c.id} className="rounded-2xl p-4 flex items-center gap-3 animate-pulse"
+              style={{ backgroundColor: 'rgba(74,222,128,.12)', border: '1px solid rgba(74,222,128,.4)' }}>
+              <span style={{ color: '#4ade80' }}><Icon name="bell" size={22} /></span>
+              <div>
+                <p className="font-bold" style={{ color: '#4ade80' }}>{c.name} está en el mostrador</p>
+                <p className="text-xs" style={{ color: '#4ade80', opacity: 0.7 }}>{c.phone} · {c.visits}/5 sellos</p>
               </div>
-              {origin && <p className="text-xs text-zinc-500 break-all">{origin}</p>}
             </div>
+          ))}
 
-            {/* Sellar visita */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-lg shadow-black/30 p-5">
-              <h2 className="font-bold text-amber-400 text-base mb-3">
-                Sellar visita del cliente
-              </h2>
-
-              {scanError && (
-                <div className="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl px-4 py-3 text-sm mb-3">
-                  {scanError}
-                </div>
-              )}
-
-              {/* Selector de método */}
-              {scanMode === 'idle' && scanState === 'idle' && (
-                <div className="space-y-3">
-                  <button
-                    onClick={() => { setScanError(''); setScanMode('camera'); setScanState('scanning') }}
-                    className="w-full bg-amber-700 active:bg-amber-900 text-white font-bold py-4 rounded-xl text-base"
-                  >
-                    <span className="inline-flex items-center justify-center gap-2"><Icon name="camera" size={16} /> Escanear QR del cliente</span>
-                  </button>
-                  <button
-                    onClick={() => { setScanError(''); setScanMode('phone') }}
-                    className="w-full bg-zinc-800 border-2 border-zinc-700 text-amber-400 font-bold py-4 rounded-xl text-base active:bg-zinc-700"
-                  >
-                    <span className="inline-flex items-center justify-center gap-2"><Icon name="search" size={16} /> Buscar por teléfono</span>
-                  </button>
-                  <p className="text-xs text-zinc-500 text-center">
-                    Si la cámara no abre, usa la búsqueda por teléfono
-                  </p>
-                </div>
-              )}
-
-              {/* Cámara */}
-              {scanMode === 'camera' && scanState === 'scanning' && (
-                <div>
-                  <QRScanner
-                    key={scanKey.current}
-                    onScan={id => loadCustomer(id)}
-                    onCameraError={handleCameraError}
-                  />
-                  <button onClick={resetScan} className="w-full mt-3 text-sm text-zinc-500 underline py-1">
-                    Cancelar
-                  </button>
-                </div>
-              )}
-
-              {/* Búsqueda por teléfono */}
-              {scanMode === 'phone' && scanState === 'idle' && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-semibold text-amber-400 mb-1">
-                      Número de teléfono del cliente
-                    </label>
-                    <input
-                      type="tel"
-                      value={phoneSearch}
-                      onChange={e => setPhoneSearch(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && searchByPhone()}
-                      placeholder="Ej. 55 1234 5678"
-                      className="w-full bg-zinc-800 border-2 border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500 text-lg"
-                      autoFocus
-                    />
-                  </div>
-                  <button
-                    onClick={searchByPhone}
-                    disabled={searching}
-                    className="w-full bg-amber-700 active:bg-amber-900 text-white font-bold py-4 rounded-xl text-base disabled:opacity-60"
-                  >
-                    {searching ? 'Buscando...' : <span className="inline-flex items-center justify-center gap-2"><Icon name="search" size={16} /> Buscar cliente</span>}
-                  </button>
-                  <button onClick={resetScan} className="w-full text-sm text-zinc-500 underline py-1">
-                    Cancelar
-                  </button>
-                </div>
-              )}
-
-              {/* Resultado del escaneo/búsqueda */}
-              {scanState !== 'idle' && scanState !== 'scanning' && ScannedCard}
+          {/* QR del negocio */}
+          <div className="rounded-2xl p-5 text-center" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            <h2 className="font-bold text-base mb-1" style={{ color: S.accent }}>QR del negocio</h2>
+            <p className="text-xs mb-4" style={{ color: S.sub }}>Muéstralo para que los clientes se registren</p>
+            <div className="flex justify-center mb-3">
+              <div className="p-3 rounded-xl bg-white inline-block min-h-[172px] min-w-[172px] flex items-center justify-center">
+                {origin ? <QRCode value={origin} size={160} /> : <span className="text-gray-300 text-sm">Cargando…</span>}
+              </div>
             </div>
-          </>
-        )}
+            {origin && <p className="text-xs break-all" style={{ color: S.sub }}>{origin}</p>}
+          </div>
 
-        {/* ────── TAB: CLIENTES ────── */}
-        {tab === 'dashboard' && (
-          <>
-            {/* Pendientes de activación */}
-            {pending.length > 0 && (
+          {/* Sellar visita */}
+          <div className="rounded-2xl p-5" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            <h2 className="font-bold text-base mb-3" style={{ color: S.accent }}>Sellar visita del cliente</h2>
+
+            {scanError && (
+              <div className="rounded-xl px-4 py-3 text-sm mb-3"
+                style={{ backgroundColor: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#f87171' }}>
+                {scanError}
+              </div>
+            )}
+
+            {scanMode === 'idle' && scanState === 'idle' && (
               <div className="space-y-3">
-                <h2 className="font-bold text-red-400 flex items-center gap-2">
-                  <span className="bg-red-500/15 text-red-300 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">{pending.length}</span>
-                  Pendientes de activación
-                </h2>
-                {pending.map(c => (
-                  <div key={c.id} className="bg-zinc-900 border border-zinc-800 border-l-4 border-l-red-500 rounded-2xl shadow-lg shadow-black/30 p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <p className="font-bold text-zinc-100">{c.name}</p>
-                        <p className="text-sm text-zinc-400">{c.phone}</p>
-                        <p className="text-xs text-zinc-500 mt-0.5">Registrado: {fmt(c.registeredAt)}</p>
-                      </div>
-                      <span className="text-xs bg-red-500/15 text-red-300 font-semibold px-2 py-1 rounded-full">Pendiente</span>
-                    </div>
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => activateCustomer(c.id)}
-                        className="w-full bg-amber-600 active:bg-amber-800 text-white font-bold py-2 rounded-xl text-sm"
-                      >
-                        <span className="inline-flex items-center justify-center gap-2"><Icon name="check" size={15} /> Activar tarjeta ahora</span>
-                      </button>
-                      <div className="flex gap-2">
-                        <a
-                          href={activationWALink(c)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 bg-green-500 active:bg-green-700 text-white font-bold py-2 rounded-xl text-sm text-center"
-                        >
-                          <span className="inline-flex items-center justify-center gap-1.5"><Icon name="message" size={14} /> WhatsApp</span>
-                        </a>
-                        <a
-                          href={activationSMSLink(c)}
-                          className="flex-1 bg-blue-500 active:bg-blue-700 text-white font-bold py-2 rounded-xl text-sm text-center"
-                        >
-                          <span className="inline-flex items-center justify-center gap-1.5"><Icon name="mail" size={14} /> SMS</span>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <hr className="border-zinc-800" />
+                <button onClick={() => { setScanError(''); setScanMode('camera'); setScanState('scanning') }}
+                  className="w-full font-bold py-4 rounded-xl text-base"
+                  style={{ backgroundColor: S.accent, color: '#000' }}>
+                  <span className="inline-flex items-center justify-center gap-2"><Icon name="camera" size={16} /> Escanear QR del cliente</span>
+                </button>
+                <button onClick={() => { setScanError(''); setScanMode('phone') }}
+                  className="w-full font-bold py-4 rounded-xl text-base"
+                  style={{ backgroundColor: S.bg, color: S.text, border: `1px solid ${S.border}` }}>
+                  <span className="inline-flex items-center justify-center gap-2"><Icon name="search" size={16} /> Buscar por teléfono</span>
+                </button>
+                <p className="text-xs text-center" style={{ color: S.sub }}>Si la cámara no abre, usa la búsqueda por teléfono</p>
               </div>
             )}
 
-            {/* Clientes activos */}
-            <div className="flex items-center justify-between">
-              <h2 className="font-bold text-amber-400 text-lg">
-                Activos ({confirmed.length})
-              </h2>
-              <button onClick={loadCustomers} className="text-sm text-amber-400 underline">
-                Actualizar
-              </button>
-            </div>
-
-            {loadingList && <div className="text-center py-10 text-amber-400">Cargando...</div>}
-
-            {!loadingList && confirmed.length === 0 && (
-              <div className="flex flex-col items-center py-10 text-zinc-500">
-                <span className="mb-2"><Icon name="coffee" size={34} /></span>
-                <p>Aún no hay clientes activos</p>
+            {scanMode === 'camera' && scanState === 'scanning' && (
+              <div>
+                <QRScanner key={scanKey.current} onScan={id => loadCustomer(id)} onCameraError={handleCameraError} />
+                <button onClick={resetScan} className="w-full mt-3 text-sm underline py-1" style={{ color: S.sub }}>Cancelar</button>
               </div>
             )}
 
-            {sortedConfirmed.map(c => {
-              const lastStamp = c.stamps.at(-1)
-              return (
-                <div key={c.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-lg shadow-black/30 p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="font-bold text-zinc-100">{c.name}</p>
-                      <p className="text-sm text-zinc-400">{c.phone}</p>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${c.visits >= 5 ? 'bg-green-500/15 text-green-300' : 'bg-amber-500/15 text-amber-300'}`}>
-                      {c.visits >= 5
-                        ? <span className="inline-flex items-center gap-1"><Icon name="gift" size={11} /> Premio</span>
-                        : <span className="inline-flex items-center gap-1">{c.visits}/5 <Icon name="coffee" size={11} /></span>}
-                    </span>
-                  </div>
-                  <div className="flex gap-1.5 mb-3">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className={`flex-1 h-2 rounded-full ${i < c.visits ? 'bg-amber-500' : 'bg-zinc-700'}`} />
-                    ))}
-                  </div>
-                  <div className="text-xs text-zinc-500 space-y-0.5">
-                    <p>Registrado: {fmt(c.registeredAt)}</p>
-                    {lastStamp && <p>Último sello: {fmt(lastStamp.timestamp)}</p>}
-                    {c.stamps.length > 0 && <p>{c.stamps.length} sello{c.stamps.length !== 1 ? 's' : ''} en total</p>}
-                  </div>
-                  <button
-                    onClick={() => deleteCustomerFn(c.id)}
-                    className="mt-3 w-full text-red-400 border border-red-500/30 rounded-xl py-1.5 text-sm font-medium active:bg-red-500/10 inline-flex items-center justify-center gap-1.5"
-                  >
-                    <Icon name="trash" size={14} /> Eliminar cliente
-                  </button>
+            {scanMode === 'phone' && scanState === 'idle' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-semibold mb-1" style={{ color: S.accent }}>Número de teléfono del cliente</label>
+                  <input type="tel" value={phoneSearch}
+                    onChange={e => setPhoneSearch(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && searchByPhone()}
+                    placeholder="Ej. 55 1234 5678"
+                    className={`${inp} text-lg`} style={inpStyle} autoFocus />
                 </div>
-              )
-            })}
-          </>
-        )}
+                <button onClick={searchByPhone} disabled={searching}
+                  className="w-full font-bold py-4 rounded-xl text-base disabled:opacity-60"
+                  style={{ backgroundColor: S.accent, color: '#000' }}>
+                  {searching ? 'Buscando...' : <span className="inline-flex items-center justify-center gap-2"><Icon name="search" size={16} /> Buscar cliente</span>}
+                </button>
+                <button onClick={resetScan} className="w-full text-sm underline py-1" style={{ color: S.sub }}>Cancelar</button>
+              </div>
+            )}
+
+            {scanState !== 'idle' && scanState !== 'scanning' && ScannedCard}
+          </div>
+        </>)}
+
+        {/* ── TAB: CLIENTES ── */}
+        {tab === 'dashboard' && (<>
+
+          {/* Pendientes de activación */}
+          {pending.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white bg-red-500">{pending.length}</span>
+                <h2 className="font-bold" style={{ color: '#f87171' }}>Pendientes de activación</h2>
+              </div>
+              {pending.map(c => (
+                <div key={c.id} className="rounded-2xl p-4"
+                  style={{ backgroundColor: S.card, border: `1px solid ${S.border}`, borderLeft: '4px solid #ef4444' }}>
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-bold" style={{ color: S.text }}>{c.name}</p>
+                      <p className="text-sm" style={{ color: S.sub }}>{c.phone}</p>
+                      <p className="text-xs mt-0.5" style={{ color: S.sub }}>Registrado: {fmt(c.registeredAt)}</p>
+                    </div>
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(239,68,68,.15)', color: '#f87171' }}>Pendiente</span>
+                  </div>
+                  <div className="space-y-2">
+                    <button onClick={() => activateCustomer(c.id)}
+                      className="w-full font-bold py-2.5 rounded-xl text-sm"
+                      style={{ backgroundColor: S.accent, color: '#000' }}>
+                      <span className="inline-flex items-center justify-center gap-2"><Icon name="check" size={15} /> Activar tarjeta ahora</span>
+                    </button>
+                    <div className="flex gap-2">
+                      <a href={activationWALink(c)} target="_blank" rel="noopener noreferrer"
+                        className="flex-1 font-bold py-2 rounded-xl text-sm text-center text-white"
+                        style={{ backgroundColor: '#16a34a' }}>
+                        <span className="inline-flex items-center justify-center gap-1.5"><Icon name="message" size={14} /> WhatsApp</span>
+                      </a>
+                      <a href={activationSMSLink(c)}
+                        className="flex-1 font-bold py-2 rounded-xl text-sm text-center text-white"
+                        style={{ backgroundColor: '#2563eb' }}>
+                        <span className="inline-flex items-center justify-center gap-1.5"><Icon name="mail" size={14} /> SMS</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="h-px" style={{ backgroundColor: S.border }} />
+            </div>
+          )}
+
+          {/* Clientes activos */}
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-lg" style={{ color: S.text }}>Activos ({confirmed.length})</h2>
+            <button onClick={loadCustomers} className="text-sm underline" style={{ color: S.accent }}>Actualizar</button>
+          </div>
+
+          {loadingList && <div className="text-center py-10" style={{ color: S.accent }}>Cargando...</div>}
+
+          {!loadingList && confirmed.length === 0 && (
+            <div className="flex flex-col items-center py-10" style={{ color: S.sub }}>
+              <span className="mb-2"><Icon name="coffee" size={34} /></span>
+              <p>Aún no hay clientes activos</p>
+            </div>
+          )}
+
+          {sortedConfirmed.map(c => {
+            const lastStamp = c.stamps.at(-1)
+            return (
+              <div key={c.id} className="rounded-2xl p-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <p className="font-bold" style={{ color: S.text }}>{c.name}</p>
+                    <p className="text-sm" style={{ color: S.sub }}>{c.phone}</p>
+                  </div>
+                  <span className="px-2 py-1 rounded-full text-xs font-bold"
+                    style={c.visits >= 5
+                      ? { backgroundColor: 'rgba(74,222,128,.12)', color: '#4ade80' }
+                      : { backgroundColor: `${S.accent}20`, color: S.accent }}>
+                    {c.visits >= 5
+                      ? <span className="inline-flex items-center gap-1"><Icon name="gift" size={11} /> Premio</span>
+                      : <span className="inline-flex items-center gap-1">{c.visits}/5 <Icon name="coffee" size={11} /></span>}
+                  </span>
+                </div>
+                <div className="flex gap-1.5 mb-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex-1 h-2 rounded-full"
+                      style={{ backgroundColor: i < c.visits ? S.accent : S.border }} />
+                  ))}
+                </div>
+                <div className="text-xs space-y-0.5" style={{ color: S.sub }}>
+                  <p>Registrado: {fmt(c.registeredAt)}</p>
+                  {lastStamp && <p>Último sello: {fmt(lastStamp.timestamp)}</p>}
+                  {c.stamps.length > 0 && <p>{c.stamps.length} sello{c.stamps.length !== 1 ? 's' : ''} en total</p>}
+                </div>
+                <button onClick={() => deleteCustomerFn(c.id)}
+                  className="mt-3 w-full rounded-xl py-1.5 text-sm font-medium inline-flex items-center justify-center gap-1.5"
+                  style={{ color: '#f87171', border: '1px solid rgba(239,68,68,.3)' }}>
+                  <Icon name="trash" size={14} /> Eliminar cliente
+                </button>
+              </div>
+            )
+          })}
+        </>)}
       </div>
     </div>
   )
