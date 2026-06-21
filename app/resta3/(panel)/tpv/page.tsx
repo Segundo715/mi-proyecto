@@ -11,7 +11,7 @@ import { Icon, type IconName } from '@/app/components/Icon'
 const S = { bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)', text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)' }
 
 interface MenuItem { id: string; name: string; category: string; price: number; imageUrl?: string; available: boolean }
-interface LineItem { item: MenuItem; qty: number }
+interface LineItem { item: MenuItem; qty: number; note?: string }
 interface Order { id: string; customerName: string; tableNumber?: string; status: string; total: number; notes?: string; createdAt: string; items: { name: string; quantity: number; price: number }[] }
 
 const CATS = ['Todos', 'Platillos', 'Bebidas', 'Postres', 'Ensaladas', 'Entradas', 'Especiales']
@@ -89,7 +89,11 @@ export default function TPVPage() {
   }
 
   function changeQty(id: string, delta: number) {
-    setCart(c => c.map(l => l.item.id === id ? { ...l, qty: Math.max(1, l.qty + delta) } : l).filter(l => l.qty > 0))
+    setCart(c => c.map(l => l.item.id === id ? { ...l, qty: l.qty + delta } : l).filter(l => l.qty > 0))
+  }
+
+  function changeNote(id: string, note: string) {
+    setCart(c => c.map(l => l.item.id === id ? { ...l, note } : l))
   }
 
   const total = cart.reduce((s, l) => s + l.item.price * l.qty, 0)
@@ -104,7 +108,7 @@ export default function TPVPage() {
       body: JSON.stringify({
         customerName: customer.trim(),
         tableNumber: tableNum.trim() || undefined,
-        items: cart.map(l => ({ menuItemId: l.item.id, name: l.item.name, price: l.item.price, quantity: l.qty })),
+        items: cart.map(l => ({ menuItemId: l.item.id, name: l.item.name, price: l.item.price, quantity: l.qty, note: l.note?.trim() || undefined })),
         total,
         notes: notes.trim() ? `[${payment.toUpperCase()}] ${notes.trim()}` : `[${payment.toUpperCase()}]`,
       }),
@@ -278,21 +282,31 @@ export default function TPVPage() {
                   ) : (
                     <div className="space-y-1.5">
                       {cart.map(line => (
-                        <div key={line.item.id} className="rounded-xl p-2.5 flex items-center gap-2"
+                        <div key={line.item.id} className="rounded-xl p-2.5 space-y-1.5"
                           style={{ backgroundColor: 'var(--ad-elevated)' }}>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold truncate" style={{ color: S.text }}>{line.item.name}</p>
-                            <p className="text-xs" style={{ color: S.accent }}>${(line.item.price * line.qty).toFixed(2)}</p>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold truncate" style={{ color: S.text }}>{line.item.name}</p>
+                              <p className="text-xs" style={{ color: S.accent }}>${(line.item.price * line.qty).toFixed(2)}</p>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button onClick={() => changeQty(line.item.id, -1)}
+                                className="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center"
+                                style={{ backgroundColor: S.card, color: '#f87171' }}>−</button>
+                              <span className="text-xs font-black w-4 text-center" style={{ color: S.text }}>{line.qty}</span>
+                              <button onClick={() => changeQty(line.item.id, 1)}
+                                className="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center"
+                                style={{ backgroundColor: S.card, color: S.accent }}>+</button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button onClick={() => changeQty(line.item.id, -1)}
-                              className="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center"
-                              style={{ backgroundColor: S.card, color: S.sub }}>−</button>
-                            <span className="text-xs font-black w-4 text-center" style={{ color: S.text }}>{line.qty}</span>
-                            <button onClick={() => changeQty(line.item.id, 1)}
-                              className="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center"
-                              style={{ backgroundColor: S.card, color: S.accent }}>+</button>
-                          </div>
+                          <input
+                            type="text"
+                            value={line.note ?? ''}
+                            onChange={e => changeNote(line.item.id, e.target.value)}
+                            placeholder="Nota del platillo..."
+                            className="w-full rounded-lg px-2 py-1 text-xs outline-none"
+                            style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }}
+                          />
                         </div>
                       ))}
                     </div>
