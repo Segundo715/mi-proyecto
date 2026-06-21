@@ -52,7 +52,7 @@ export default function CardPage() {
             setCustomer(data)
             setStep(data.active ? 'card' : 'waiting')
           } else {
-            // Tarjeta eliminada — limpiar localStorage y mostrar formulario
+            // Tarjeta eliminada — limpiar locadelStorage y mostrar formulario
             localStorage.removeItem(STORAGE_KEY)
           }
         })
