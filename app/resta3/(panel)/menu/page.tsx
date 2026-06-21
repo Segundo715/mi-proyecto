@@ -227,7 +227,7 @@ export default function Resta3MenuPage() {
                             <h3 className="font-bold" style={{ color: S.text }}>{item.name}</h3>
                             <span className="text-sm font-bold" style={{ color: S.accent }}>${item.price.toFixed(2)}</span>
                             {item.available
-                              ? <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>Disponible</span>
+                              ? <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'color-mix(in srgb, var(--ad-accent) 15%, transparent)', color: 'var(--ad-accent)' }}>Disponible</span>
                               : <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'rgba(239,68,68,0.15)', color: '#f87171' }}>No disponible</span>}
                           </div>
                           {item.description && <p className="text-sm mt-0.5 line-clamp-2" style={{ color: S.sub }}>{item.description}</p>}
@@ -236,7 +236,7 @@ export default function Resta3MenuPage() {
                       <div className="flex gap-2 mt-3">
                         <button onClick={() => toggleAvailable(item)}
                           className="flex-1 py-1.5 rounded-xl text-sm font-medium"
-                          style={{ border: item.available ? '1px solid rgba(251,146,60,0.4)' : '1px solid rgba(34,197,94,0.4)', color: item.available ? '#fb923c' : '#4ade80', backgroundColor: 'transparent' }}>
+                          style={{ border: item.available ? '1px solid rgba(251,146,60,0.4)' : `1px solid color-mix(in srgb, var(--ad-accent) 40%, transparent)`, color: item.available ? '#fb923c' : 'var(--ad-accent)', backgroundColor: 'transparent' }}>
                           {item.available ? 'Desactivar' : 'Activar'}
                         </button>
                         <button onClick={() => startEdit(item)}

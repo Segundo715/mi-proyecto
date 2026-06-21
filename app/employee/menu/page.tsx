@@ -357,7 +357,7 @@ export default function EmployeeMenuPage() {
                             )}
                             {item.available ? (
                               <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                                style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>Disponible</span>
+                                style={{ backgroundColor: 'color-mix(in srgb, var(--ad-accent) 15%, transparent)', color: 'var(--ad-accent)' }}>Disponible</span>
                             ) : (
                               <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                                 style={{ backgroundColor: 'rgba(239,68,68,0.15)', color: '#f87171' }}>No disponible</span>
@@ -372,8 +372,8 @@ export default function EmployeeMenuPage() {
                         <button onClick={() => toggleAvailable(item)}
                           className="flex-1 py-1.5 rounded-xl text-sm font-medium"
                           style={{
-                            border: item.available ? '1px solid rgba(251,146,60,0.4)' : '1px solid rgba(34,197,94,0.4)',
-                            color: item.available ? '#fb923c' : '#4ade80',
+                            border: item.available ? '1px solid rgba(251,146,60,0.4)' : `1px solid color-mix(in srgb, var(--ad-accent) 40%, transparent)`,
+                            color: item.available ? '#fb923c' : 'var(--ad-accent)',
                             backgroundColor: 'transparent',
                           }}>
                           {item.available ? 'Desactivar' : 'Activar'}

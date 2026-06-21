@@ -85,7 +85,7 @@ export default function AdminReviewsPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Publicadas', value: goodReviews.filter(r => r.published).length, icon: 'checkCircle' as const, color: '#4ade80' },
+            { label: 'Publicadas', value: goodReviews.filter(r => r.published).length, icon: 'checkCircle' as const, color: 'var(--ad-accent)' },
             { label: 'Promedio', value: avgGood ? `${avgGood}` : '—', icon: 'star' as const, color: '#fbbf24' },
             { label: 'Negativas', value: badReviews.length, icon: 'mail' as const, color: '#f87171' },
           ].map(s => (
@@ -102,13 +102,13 @@ export default function AdminReviewsPage() {
           <button type="button" onClick={() => setTab('good')}
             className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2"
             style={tab === 'good'
-              ? { backgroundColor: '#22c55e', color: '#000' }
+              ? { backgroundColor: 'var(--ad-accent)', color: 'var(--ad-accent-text, #000)' }
               : { color: S.sub, backgroundColor: 'transparent' }}>
             <Icon name="check" size={15} /> Buenas
             <span className="text-xs px-1.5 py-0.5 rounded-full font-black"
               style={tab === 'good'
-                ? { backgroundColor: 'rgba(0,0,0,0.2)', color: '#000' }
-                : { backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>
+                ? { backgroundColor: 'rgba(0,0,0,0.2)', color: 'inherit' }
+                : { backgroundColor: 'color-mix(in srgb, var(--ad-accent) 15%, transparent)', color: 'var(--ad-accent)' }}>
               {goodReviews.length}
             </span>
           </button>
@@ -156,7 +156,7 @@ export default function AdminReviewsPage() {
                 style={{
                   backgroundColor: S.card,
                   border: `1px solid ${S.border}`,
-                  borderLeft: `4px solid ${review.bad ? '#ef4444' : review.published ? '#22c55e' : '#f59e0b'}`,
+                  borderLeft: `4px solid ${review.bad ? '#ef4444' : review.published ? 'var(--ad-accent)' : '#f59e0b'}`,
                 }}>
                 <div className="p-4">
                   <div className="flex items-start gap-3 mb-3">
@@ -182,7 +182,7 @@ export default function AdminReviewsPage() {
                     )}
                     {review.published && (
                       <span className="text-xs px-2.5 py-1 rounded-full font-bold"
-                        style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#4ade80' }}><span className="inline-flex items-center gap-1"><Icon name="check" size={11} /> Publicada</span></span>
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--ad-accent) 15%, transparent)', color: 'var(--ad-accent)' }}><span className="inline-flex items-center gap-1"><Icon name="check" size={11} /> Publicada</span></span>
                     )}
                     {!review.bad && !review.published && (
                       <span className="text-xs px-2.5 py-1 rounded-full font-bold"
@@ -197,7 +197,7 @@ export default function AdminReviewsPage() {
                       className="flex-1 py-3 text-sm font-bold transition-colors"
                       style={{
                         borderRight: `1px solid ${S.border}`,
-                        color: review.published ? '#fb923c' : '#4ade80',
+                        color: review.published ? '#fb923c' : 'var(--ad-accent)',
                         backgroundColor: 'transparent',
                       }}>
                       {review.published ? 'Despublicar' : 'Publicar'}
