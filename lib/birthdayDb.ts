@@ -1,15 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const serviceKey = process.env.SUPABASE_SERVICE_KEY!
-const supabase = createClient(url, serviceKey)
-
 export interface BirthdayRegistration {
   id: string
   name: string
   phone: string
   birthdate: string
   createdAt: string
+}
+
+function getClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const key = process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  return createClient(url, key)
 }
 
 function toReg(row: Record<string, unknown>): BirthdayRegistration {
@@ -23,7 +25,7 @@ function toReg(row: Record<string, unknown>): BirthdayRegistration {
 }
 
 export async function getAllBirthdays(): Promise<BirthdayRegistration[]> {
-  const { data } = await supabase
+  const { data } = await getClient()
     .from('birthday_registrations')
     .select('*')
     .order('birthdate')
@@ -35,7 +37,7 @@ export async function createBirthday(
   phone: string,
   birthdate: string,
 ): Promise<BirthdayRegistration> {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('birthday_registrations')
     .insert({ name, phone, birthdate })
     .select()
@@ -45,5 +47,5 @@ export async function createBirthday(
 }
 
 export async function deleteBirthday(id: string): Promise<void> {
-  await supabase.from('birthday_registrations').delete().eq('id', id)
+  await getClient().from('birthday_registrations').delete().eq('id', id)
 }
