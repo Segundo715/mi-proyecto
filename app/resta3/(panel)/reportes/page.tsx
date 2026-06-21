@@ -1,15 +1,40 @@
 'use client'
 
-// Reportes de ventas e inventario de RESTA3. Datos calculados desde /api/orders y /api/resta3/inventory.
 import { useState, useEffect } from 'react'
 import Resta3Nav from '@/app/components/Resta3Nav'
 import { Icon } from '@/app/components/Icon'
 
 const S = { bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)', text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)' }
 
-interface Order { id: string; customerName: string; status: string; total?: number; createdAt: string }
+const DELIVERY_KEYS = ['GOGO', 'RAPPI', 'UBEREATS']
+const DELIVERY_LABELS: Record<string, string> = { GOGO: 'Gogo', RAPPI: 'Rappi', UBEREATS: 'Uber Eats' }
+const DELIVERY_COLORS: Record<string, string> = { GOGO: '#ff6b35', RAPPI: '#ff441b', UBEREATS: '#06c167' }
+
+interface Order { id: string; customerName: string; status: string; total?: number; notes?: string; tableNumber?: string; createdAt: string }
 interface MenuItem { id: string; name: string; category: string; price: number; likes: number }
 interface Review { id: string; customerName: string; rating: number; comment: string; createdAt: string }
+
+function detectType(o: Order): { label: string; color: string; icon: string } {
+  const note = (o.notes ?? '').toUpperCase()
+  for (const key of DELIVERY_KEYS) {
+    if (note.includes(`[${key}]`)) return { label: DELIVERY_LABELS[key], color: DELIVERY_COLORS[key], icon: 'truck' }
+  }
+  return { label: o.tableNumber ? `Mesa ${o.tableNumber}` : 'Restaurante', color: '#3b82f6', icon: 'utensils' }
+}
+
+function paymentLabel(o: Order) {
+  const m = (o.notes ?? '').match(/\[(\w+)\]/)
+  if (!m) return '—'
+  const key = m[1].toUpperCase()
+  if (DELIVERY_KEYS.includes(key)) {
+    const pay = (o.notes ?? '').match(/Pago:\s*(\w+)/i)
+    return pay ? pay[1] : '—'
+  }
+  return key === 'EFECTIVO' ? 'Efectivo' : key === 'TARJETA' ? 'Tarjeta' : key === 'TRANSFERENCIA' ? 'Transferencia' : key
+}
+
+const STATUS_COLOR: Record<string, string> = { pending: '#f59e0b', preparing: '#3b82f6', ready: '#22c55e', delivered: '#64748b' }
+const STATUS_LABEL: Record<string, string> = { pending: 'Pendiente', preparing: 'En cocina', ready: 'Listo', delivered: 'Entregado' }
 
 export default function ReportesPage() {
   const [orders, setOrders] = useState<Order[]>([])
@@ -46,16 +71,27 @@ export default function ReportesPage() {
   const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0
   const topMenu = [...menu].sort((a, b) => b.likes - a.likes).slice(0, 5)
 
+  // Desglose por tipo
+  const inHouse   = filtered.filter(o => !DELIVERY_KEYS.some(k => (o.notes ?? '').toUpperCase().includes(`[${k}]`)))
+  const delivery  = filtered.filter(o => DELIVERY_KEYS.some(k => (o.notes ?? '').toUpperCase().includes(`[${k}]`)))
+  const inRevenue = inHouse.reduce((s, o) => s + (o.total ?? 0), 0)
+  const delRevenue = delivery.reduce((s, o) => s + (o.total ?? 0), 0)
+
   const byCategory = menu.reduce((acc, m) => {
     acc[m.category] = (acc[m.category] ?? 0) + 1
     return acc
   }, {} as Record<string, number>)
+
+  function fmtTime(iso: string) {
+    return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+  }
 
   return (
     <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
       <Resta3Nav />
       <div className="max-w-[1100px] mx-auto p-4 space-y-5">
 
+        {/* Header + filtro periodo */}
         <div className="flex items-center justify-between pt-1">
           <h1 className="text-xl font-black" style={{ color: S.text }}>Reportes y Estadísticas</h1>
           <div className="flex gap-1.5">
@@ -83,6 +119,79 @@ export default function ReportesPage() {
               <p className="text-xs mt-0.5" style={{ color: S.sub }}>{k.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* Desglose: Restaurante vs Domicilio */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-2xl p-4 flex items-center gap-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(59,130,246,0.12)', color: '#3b82f6' }}>
+              <Icon name="utensils" size={22} />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: S.sub }}>En restaurante</p>
+              <p className="text-2xl font-black" style={{ color: '#3b82f6' }}>{inHouse.length}</p>
+              <p className="text-xs font-semibold" style={{ color: S.sub }}>${inRevenue.toFixed(0)}</p>
+            </div>
+          </div>
+          <div className="rounded-2xl p-4 flex items-center gap-4" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(249,115,22,0.12)', color: '#f97316' }}>
+              <Icon name="truck" size={22} />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: S.sub }}>A domicilio</p>
+              <p className="text-2xl font-black" style={{ color: '#f97316' }}>{delivery.length}</p>
+              <p className="text-xs font-semibold" style={{ color: S.sub }}>${delRevenue.toFixed(0)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Pedidos recientes */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <span className="font-bold text-sm" style={{ color: S.text }}>Pedidos del periodo</span>
+          </div>
+          {filtered.length === 0 ? (
+            <div className="p-8 text-center text-sm" style={{ color: S.sub }}>Sin pedidos en este periodo</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${S.border}` }}>
+                    {['Cliente', 'Tipo', 'Pago', 'Total', 'Estado', 'Hora'].map(h => (
+                      <th key={h} className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: S.sub }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...filtered].reverse().map(o => {
+                    const type = detectType(o)
+                    const sc = STATUS_COLOR[o.status] ?? '#64748b'
+                    return (
+                      <tr key={o.id} className="hover:bg-white/[.02]" style={{ borderBottom: `1px solid ${S.border}` }}>
+                        <td className="px-4 py-3 font-bold" style={{ color: S.text }}>{o.customerName}</td>
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                            style={{ backgroundColor: `${type.color}18`, color: type.color }}>
+                            <Icon name={type.icon as 'truck' | 'utensils'} size={11} />
+                            {type.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs" style={{ color: S.sub }}>{paymentLabel(o)}</td>
+                        <td className="px-4 py-3 font-black" style={{ color: S.accent }}>${(o.total ?? 0).toFixed(2)}</td>
+                        <td className="px-4 py-3">
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                            style={{ backgroundColor: `${sc}18`, color: sc }}>
+                            {STATUS_LABEL[o.status] ?? o.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs" style={{ color: S.sub }}>{fmtTime(o.createdAt)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
