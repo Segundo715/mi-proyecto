@@ -13,6 +13,8 @@ const DELIVERY_COLORS: Record<string, string> = { GOGO: '#ff6b35', RAPPI: '#ff44
 interface Order { id: string; customerName: string; status: string; total?: number; notes?: string; tableNumber?: string; createdAt: string }
 interface MenuItem { id: string; name: string; category: string; price: number; likes: number }
 interface Review { id: string; customerName: string; rating: number; comment: string; createdAt: string }
+interface Corte { id: string; inicio: string; fin: string; by: string; receives: string | null; orders: number; efectivo: number; tarjeta: number; transferencia: number; domicilio: number; total: number }
+interface StaffStat { name: string; total: number; efectivo: number; tarjeta: number; transferencia: number; domicilio: number; shifts: number; orders: number }
 
 function detectType(o: Order): { label: string; color: string; icon: string } {
   const note = (o.notes ?? '').toUpperCase()
@@ -40,6 +42,7 @@ export default function ReportesPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
+  const [cortes, setCortes] = useState<Corte[]>([])
   const [period, setPeriod] = useState<'hoy' | 'semana' | 'mes'>('hoy')
 
   useEffect(() => {
@@ -47,10 +50,12 @@ export default function ReportesPage() {
       fetch('/api/orders').then(r => r.json()),
       fetch('/api/menu').then(r => r.json()),
       fetch('/api/reviews?all=1').then(r => r.json()),
-    ]).then(([o, m, rv]) => {
+      fetch('/api/resta3/corte').then(r => r.json()),
+    ]).then(([o, m, rv, c]) => {
       setOrders(Array.isArray(o) ? o : [])
       setMenu(Array.isArray(m) ? m : [])
       setReviews(Array.isArray(rv) ? rv : [])
+      setCortes(Array.isArray(c?.historial) ? c.historial : [])
     })
   }, [])
 
@@ -72,10 +77,37 @@ export default function ReportesPage() {
   const topMenu = [...menu].sort((a, b) => b.likes - a.likes).slice(0, 5)
 
   // Desglose por tipo
-  const inHouse   = filtered.filter(o => !DELIVERY_KEYS.some(k => (o.notes ?? '').toUpperCase().includes(`[${k}]`)))
-  const delivery  = filtered.filter(o => DELIVERY_KEYS.some(k => (o.notes ?? '').toUpperCase().includes(`[${k}]`)))
-  const inRevenue = inHouse.reduce((s, o) => s + (o.total ?? 0), 0)
+  const inHouse    = filtered.filter(o => !DELIVERY_KEYS.some(k => (o.notes ?? '').toUpperCase().includes(`[${k}]`)))
+  const delivery   = filtered.filter(o => DELIVERY_KEYS.some(k => (o.notes ?? '').toUpperCase().includes(`[${k}]`)))
+  const inRevenue  = inHouse.reduce((s, o) => s + (o.total ?? 0), 0)
   const delRevenue = delivery.reduce((s, o) => s + (o.total ?? 0), 0)
+
+  // Ingresos por admin — filtrar cortes por periodo y agrupar por nombre
+  function corteInPeriod(c: Corte) {
+    const d = new Date(c.fin)
+    const now = new Date()
+    if (period === 'hoy') return d.toDateString() === now.toDateString()
+    if (period === 'semana') return (now.getTime() - d.getTime()) < 7 * 86400000
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+  }
+  const filteredCortes = cortes.filter(corteInPeriod)
+  const staffMap = new Map<string, StaffStat>()
+  for (const c of filteredCortes) {
+    const name = c.by
+    const prev = staffMap.get(name) ?? { name, total: 0, efectivo: 0, tarjeta: 0, transferencia: 0, domicilio: 0, shifts: 0, orders: 0 }
+    staffMap.set(name, {
+      name,
+      total:         prev.total         + c.total,
+      efectivo:      prev.efectivo      + c.efectivo,
+      tarjeta:       prev.tarjeta       + c.tarjeta,
+      transferencia: prev.transferencia + c.transferencia,
+      domicilio:     prev.domicilio     + c.domicilio,
+      shifts:        prev.shifts        + 1,
+      orders:        prev.orders        + c.orders,
+    })
+  }
+  const staffStats: StaffStat[] = [...staffMap.values()].sort((a, b) => b.total - a.total)
+  const maxStaffTotal = staffStats[0]?.total || 1
 
   const byCategory = menu.reduce((acc, m) => {
     acc[m.category] = (acc[m.category] ?? 0) + 1
@@ -143,6 +175,59 @@ export default function ReportesPage() {
               <p className="text-xs font-semibold" style={{ color: S.sub }}>${delRevenue.toFixed(0)}</p>
             </div>
           </div>
+        </div>
+
+        {/* Ingresos por admin */}
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
+          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
+            <span className="font-bold text-sm" style={{ color: S.text }}>Ingresos por admin</span>
+            <span className="ml-2 text-xs" style={{ color: S.sub }}>basado en cortes de caja</span>
+          </div>
+          {staffStats.length === 0 ? (
+            <div className="p-8 text-center text-sm" style={{ color: S.sub }}>Sin cortes de caja en este periodo</div>
+          ) : (
+            <div className="divide-y" style={{ borderColor: S.border }}>
+              {staffStats.map((st, i) => (
+                <div key={st.name} className="px-5 py-4 space-y-2.5">
+                  {/* Fila principal */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shrink-0"
+                      style={{ background: i === 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'var(--ad-elevated)', color: i === 0 ? '#000' : S.sub }}>
+                      {i + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-sm truncate" style={{ color: S.text }}>{st.name}</p>
+                        <span className="text-xs px-1.5 py-0.5 rounded-full shrink-0"
+                          style={{ backgroundColor: 'var(--ad-elevated)', color: S.sub }}>
+                          {st.shifts} turno{st.shifts !== 1 ? 's' : ''} · {st.orders} pedidos
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full mt-1.5" style={{ backgroundColor: 'var(--ad-elevated)' }}>
+                        <div className="h-full rounded-full transition-all"
+                          style={{ width: `${(st.total / maxStaffTotal) * 100}%`, backgroundColor: 'var(--ad-accent)' }} />
+                      </div>
+                    </div>
+                    <p className="text-base font-black shrink-0" style={{ color: S.accent }}>${st.total.toFixed(0)}</p>
+                  </div>
+                  {/* Desglose por método */}
+                  <div className="grid grid-cols-4 gap-1.5 ml-11">
+                    {([
+                      { label: 'Efectivo',  value: st.efectivo,      color: '#22c55e' },
+                      { label: 'Tarjeta',   value: st.tarjeta,       color: '#3b82f6' },
+                      { label: 'Transfer.', value: st.transferencia, color: '#a855f7' },
+                      { label: 'Domicilio', value: st.domicilio,     color: '#f97316' },
+                    ]).map(({ label, value, color }) => (
+                      <div key={label} className="rounded-lg p-1.5 text-center" style={{ backgroundColor: 'var(--ad-elevated)' }}>
+                        <p className="text-[10px]" style={{ color: S.sub }}>{label}</p>
+                        <p className="text-xs font-black" style={{ color }}>${value.toFixed(0)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Pedidos recientes */}
