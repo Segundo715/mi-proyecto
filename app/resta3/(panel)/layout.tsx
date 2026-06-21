@@ -28,13 +28,17 @@ export default async function Resta3Layout({ children }: { children: React.React
     getFeatureFlags(),
   ])
 
+  const finalAccent = r3Accent || accent
+  const accentCss = /^#[0-9a-fA-F]{6}$/.test(finalAccent) ? finalAccent : '#00e676'
+
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
+      <style dangerouslySetInnerHTML={{ __html: `:root { --ad-accent: ${accentCss}; }` }} />
       <BrandProvider value={{
         name:    r3Name   || name,
         logo:    r3Logo   || logo,
-        accent:  r3Accent || accent,
+        accent:  finalAccent,
         features,
       }}>
         <RightRail>
