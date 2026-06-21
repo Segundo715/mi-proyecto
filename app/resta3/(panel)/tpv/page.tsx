@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom'
 import Resta3Nav from '@/app/components/Resta3Nav'
 import { useRightRail } from '@/app/components/RightRail'
 import { Icon, type IconName } from '@/app/components/Icon'
+import { useBrand } from '@/app/components/BrandProvider'
 
 const S = { bg: 'var(--ad-bg)', card: 'var(--ad-card)', accent: 'var(--ad-accent)', text: 'var(--ad-text)', sub: 'var(--ad-sub)', border: 'var(--ad-border)' }
 
@@ -42,6 +43,7 @@ export default function TPVPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loadingOrders, setLoadingOrders] = useState(false)
   const { mount, setFilled, setTitle, setOpen } = useRightRail()
+  const brand = useBrand()
 
   // Paso posterior al envío: clasificar el pedido como dentro del restaurante o a domicilio.
   const [postSend, setPostSend] = useState<'none' | 'choose' | 'domicilio'>('none')
@@ -94,6 +96,60 @@ export default function TPVPage() {
 
   function changeNote(id: string, note: string) {
     setCart(c => c.map(l => l.item.id === id ? { ...l, note } : l))
+  }
+
+  function printTicket(source: 'cart' | Order = 'cart') {
+    const restaurantName = brand.name || 'Restaurante'
+    const isOrder = typeof source === 'object'
+    const custName  = isOrder ? source.customerName : customer.trim() || '—'
+    const tableLabel = isOrder ? (source.tableNumber || '') : tableNum.trim()
+    const ticketTotal = isOrder ? source.total : cart.reduce((s, l) => s + l.item.price * l.qty, 0)
+    const payLabel = payment.toUpperCase()
+    const now = new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
+
+    const rows = isOrder
+      ? source.items.map(i => `<div class="row"><span class="name">${i.quantity}x ${i.name}</span><span class="price">$${(i.price * i.quantity).toFixed(2)}</span></div>`)
+      : cart.map(l => [
+          `<div class="row"><span class="name">${l.qty}x ${l.item.name}</span><span class="price">$${(l.item.price * l.qty).toFixed(2)}</span></div>`,
+          l.note?.trim() ? `<div class="note">↳ ${l.note.trim()}</div>` : '',
+        ].join(''))
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ticket</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Courier New',monospace;font-size:12px;width:76mm;margin:0 auto;padding:6px}
+  .center{text-align:center}
+  .bold{font-weight:700}
+  .sep{border-top:1px dashed #000;margin:5px 0}
+  .row{display:flex;justify-content:space-between;margin:2px 0}
+  .name{flex:1;padding-right:6px}
+  .price{white-space:nowrap}
+  .note{font-size:10px;padding-left:10px;font-style:italic;margin-bottom:2px}
+  .total{font-size:14px;font-weight:700}
+</style></head><body>
+  <div class="center bold" style="font-size:15px">${restaurantName}</div>
+  <div class="center">Ticket de venta</div>
+  <div class="center">${now}</div>
+  <div class="sep"></div>
+  <div>Cliente: <b>${custName}</b></div>
+  ${tableLabel ? `<div>Mesa: ${tableLabel}</div>` : ''}
+  <div class="sep"></div>
+  ${rows.join('')}
+  <div class="sep"></div>
+  <div class="row total"><span>TOTAL</span><span>$${ticketTotal.toFixed(2)}</span></div>
+  <div class="sep"></div>
+  <div class="center">Pago: ${payLabel}</div>
+  ${notes.trim() && !isOrder ? `<div class="center" style="font-size:10px">${notes.trim()}</div>` : ''}
+  <div class="sep"></div>
+  <div class="center">¡Gracias por su preferencia!</div>
+</body></html>`
+
+    const blob = new Blob([html], { type: 'text/html' })
+    const url  = URL.createObjectURL(blob)
+    const win  = window.open(url, '_blank', 'width=420,height=600')
+    if (!win) return
+    win.focus()
+    setTimeout(() => { win.print(); URL.revokeObjectURL(url) }, 300)
   }
 
   const total = cart.reduce((s, l) => s + l.item.price * l.qty, 0)
@@ -405,11 +461,21 @@ export default function TPVPage() {
                         <span className="text-sm" style={{ color: S.sub }}>Total ({cart.reduce((s, l) => s + l.qty, 0)} items)</span>
                         <span className="text-2xl font-black" style={{ color: S.accent }}>${total.toFixed(2)}</span>
                       </div>
-                      <button onClick={placeOrder} disabled={saving || !canOrder}
-                        className="w-full py-3.5 rounded-xl font-black text-sm disabled:opacity-40 transition-all"
-                        style={{ background: canOrder ? 'linear-gradient(135deg,#f59e0b,#d97706)' : S.card, color: canOrder ? '#000' : S.sub }}>
-                        {saving ? 'Enviando...' : <span className="inline-flex items-center justify-center gap-1.5"><Icon name="receipt" size={15} /> Enviar a cocina</span>}
-                      </button>
+                      <div className="flex gap-2">
+                        <button onClick={placeOrder} disabled={saving || !canOrder}
+                          className="flex-1 py-3.5 rounded-xl font-black text-sm disabled:opacity-40 transition-all"
+                          style={{ background: canOrder ? 'linear-gradient(135deg,#f59e0b,#d97706)' : S.card, color: canOrder ? '#000' : S.sub }}>
+                          {saving ? 'Enviando...' : <span className="inline-flex items-center justify-center gap-1.5"><Icon name="receipt" size={15} /> Enviar a cocina</span>}
+                        </button>
+                        {cart.length > 0 && (
+                          <button onClick={() => printTicket('cart')}
+                            className="px-3 py-3.5 rounded-xl font-black text-sm transition-all"
+                            style={{ backgroundColor: 'var(--ad-elevated)', color: S.sub, border: `1px solid ${S.border}` }}
+                            title="Imprimir ticket">
+                            <Icon name="printer" size={17} />
+                          </button>
+                        )}
+                      </div>
                     </>
                   )}
                 </div>

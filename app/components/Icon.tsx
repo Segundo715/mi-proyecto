@@ -10,7 +10,7 @@ export type IconName =
   | 'mail' | 'message' | 'chair' | 'coffee' | 'camera' | 'bot' | 'party'
   | 'dot' | 'monitor' | 'map' | 'clock'
   | 'gem' | 'gift' | 'wallet' | 'trendingUp' | 'tag' | 'percent' | 'send' | 'image' | 'settings' | 'eye' | 'download' | 'sparkles'
-  | 'calendar' | 'ticket' | 'compass' | 'zap' | 'leaf' | 'megaphone' | 'music' | 'thumbsUp' | 'factory' | 'chevronDown' | 'tv'
+  | 'calendar' | 'ticket' | 'compass' | 'zap' | 'leaf' | 'megaphone' | 'music' | 'thumbsUp' | 'factory' | 'chevronDown' | 'tv' | 'printer'
 
 const PATHS: Record<IconName, string> = {
   check:       '<polyline points="20 6 9 17 4 12"/>',
@@ -78,6 +78,7 @@ const PATHS: Record<IconName, string> = {
   factory:     '<path d="M2 20h20"/><path d="M3 20V9l5 4V9l5 4V9l5 4V20"/><line x1="7" y1="20" x2="7" y2="16"/><line x1="12" y1="20" x2="12" y2="16"/>',
   chevronDown: '<polyline points="6 9 12 15 18 9"/>',
   tv:          '<rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/>',
+  printer:     '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
 }
 
 export function Icon({
