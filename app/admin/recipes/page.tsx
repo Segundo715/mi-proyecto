@@ -40,6 +40,7 @@ export default function AdminRecipesPage() {
   const pendingCardId = useRef<string | null>(null)
 
   // Personalización de /resetas (color y logo)
+  const [brandOpen, setBrandOpen] = useState(false)
   const [brandColor, setBrandColor] = useState('#B90F45')
   const [brandLogo, setBrandLogo] = useState('')
   const [savingColor, setSavingColor] = useState(false)
@@ -234,11 +235,18 @@ export default function AdminRecipesPage() {
 
         {/* Personalización del recetario (/resetas) */}
         <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
-          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${S.border}` }}>
-            <p className="font-bold text-sm" style={{ color: S.text }}>Personalización del recetario</p>
-            <p className="text-xs mt-0.5" style={{ color: S.sub }}>Color y logo que se muestran en la página pública /resetas</p>
-          </div>
-          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <button onClick={() => setBrandOpen(o => !o)}
+            className="w-full px-5 py-4 flex items-center justify-between text-left transition-colors hover:bg-white/[.03]"
+            style={{ borderBottom: brandOpen ? `1px solid ${S.border}` : 'none' }}>
+            <div>
+              <p className="font-bold text-sm" style={{ color: S.text }}>Personalización del recetario</p>
+              <p className="text-xs mt-0.5" style={{ color: S.sub }}>Color y logo que se muestran en la página pública /resetas</p>
+            </div>
+            <span className={`transition-transform duration-200 shrink-0 ml-3 ${brandOpen ? 'rotate-180' : ''}`} style={{ color: S.sub }}>
+              <Icon name="chevronDown" size={18} />
+            </span>
+          </button>
+          {brandOpen && <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
 
             {/* Color */}
             <div>
@@ -283,7 +291,7 @@ export default function AdminRecipesPage() {
               <p className="text-xs mt-1" style={{ color: S.sub }}>PNG o SVG con fondo transparente recomendado</p>
             </div>
 
-          </div>
+          </div>}
         </div>
 
         {/* Buscar */}
