@@ -14,10 +14,16 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { name, phone, birthdate } = await req.json()
-  if (!name?.trim() || !phone?.trim() || !birthdate) {
-    return NextResponse.json({ error: 'Campos requeridos' }, { status: 400 })
+  try {
+    const { name, phone, birthdate } = await req.json()
+    if (!name?.trim() || !phone?.trim() || !birthdate) {
+      return NextResponse.json({ error: 'Campos requeridos' }, { status: 400 })
+    }
+    const reg = await createBirthday(name.trim(), phone.trim(), birthdate)
+    return NextResponse.json(reg, { status: 201 })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('cumpleanos POST error:', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
-  const reg = await createBirthday(name.trim(), phone.trim(), birthdate)
-  return NextResponse.json(reg, { status: 201 })
 }
