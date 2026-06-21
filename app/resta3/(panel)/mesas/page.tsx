@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Resta3Nav from '@/app/components/Resta3Nav'
-import { Icon, type IconName } from '@/app/components/Icon'
+import { Icon } from '@/app/components/Icon'
 
 const FloorPlanEditor = dynamic(() => import('@/components/floor-plan/FloorPlanEditor'), { ssr: false })
 const ServiceView     = dynamic(() => import('@/components/service/ServiceView'),         { ssr: false })
@@ -23,7 +23,7 @@ const S = {
 }
 
 const INPUT_CLS = 'w-full rounded-xl px-3 py-2 text-sm focus:outline-none transition-colors'
-const inputStyle = { backgroundColor: S.input, color: S.text, border: `1px solid rgba(0,230,118,0.25)` }
+const inputStyle = { backgroundColor: S.input, color: S.text, border: `1px solid color-mix(in srgb, var(--ad-accent) 25%, transparent)` }
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 type TableStatus = 'libre' | 'ocupada' | 'reservada' | 'limpieza'
