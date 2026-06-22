@@ -379,15 +379,17 @@ export default function TPVPage() {
                     </div>
                   )}
 
-                  {/* Método de pago */}
+                  {/* Método de pago — botones grandes */}
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: S.sub }}>Método de pago</label>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <label className="block text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: S.sub }}>Método de pago</label>
+                    <div className="grid grid-cols-3 gap-2">
                       {PAYMENT_METHODS.map(p => (
                         <button key={p.id} onClick={() => setPayment(p.id)}
-                          className="py-2 rounded-xl text-xs font-bold flex flex-col items-center gap-0.5 transition-all"
-                          style={payment === p.id ? { backgroundColor: `${S.accent}22`, color: S.accent, border: `1px solid ${S.accent}44` } : { backgroundColor: 'var(--ad-elevated)', color: S.sub, border: `1px solid ${S.border}` }}>
-                          <Icon name={p.icon} size={16} />
+                          className="py-4 rounded-2xl font-bold flex flex-col items-center gap-1.5 transition-all text-sm"
+                          style={payment === p.id
+                            ? { background: `linear-gradient(135deg,${S.accent}33,${S.accent}11)`, color: S.accent, border: `2px solid ${S.accent}`, boxShadow: `0 0 12px ${S.accent}33` }
+                            : { backgroundColor: 'var(--ad-elevated)', color: S.sub, border: `1px solid ${S.border}` }}>
+                          <Icon name={p.icon} size={22} />
                           <span>{p.label}</span>
                         </button>
                       ))}
@@ -396,29 +398,28 @@ export default function TPVPage() {
 
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 space-y-3 shrink-0" style={{ borderTop: `1px solid ${S.border}` }}>
+                {/* Footer con resumen + botones grandes estilo POS */}
+                <div className="shrink-0" style={{ borderTop: `1px solid ${S.border}` }}>
                   {lastOrder && postSend !== 'none' ? (
-                    /* Paso posterior al envío: ¿dónde se entrega? */
-                    <div className="rounded-xl px-3 py-3 space-y-2.5" style={{ backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
-                      <div>
-                        <p className="font-black text-xs flex items-center gap-1.5" style={{ color: '#22c55e' }}><Icon name="checkCircle" size={13} /> Orden enviada a cocina</p>
+                    <div className="p-4 space-y-3">
+                      <div className="rounded-xl px-3 py-3 space-y-2.5" style={{ backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
+                        <p className="font-black text-sm flex items-center gap-1.5" style={{ color: '#22c55e' }}><Icon name="checkCircle" size={15} /> Orden enviada a cocina</p>
                         <p className="text-xs" style={{ color: S.sub }}>#{lastOrder.id.slice(0, 8)} · ${lastOrder.total.toFixed(2)}</p>
                       </div>
 
                       {postSend === 'choose' && (
                         <div className="space-y-2">
-                          <p className="text-[11px] font-bold" style={{ color: S.text }}>¿Dónde se entrega?</p>
+                          <p className="text-xs font-bold" style={{ color: S.text }}>¿Dónde se entrega?</p>
                           <div className="grid grid-cols-2 gap-2">
                             <button onClick={() => { setPostSend('none'); setLastOrder(null) }}
-                              className="py-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-0.5 transition-all"
+                              className="py-4 rounded-2xl text-sm font-bold flex flex-col items-center gap-1.5 transition-all"
                               style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }}>
-                              <Icon name="utensils" size={16} /> Dentro
+                              <Icon name="utensils" size={20} /> En el local
                             </button>
                             <button onClick={() => { setDName(lastOrder.customerName); setPostSend('domicilio') }}
-                              className="py-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-0.5 transition-all"
+                              className="py-4 rounded-2xl text-sm font-bold flex flex-col items-center gap-1.5 transition-all"
                               style={{ backgroundColor: 'rgba(14,165,233,0.12)', color: '#0ea5e9', border: '1px solid rgba(14,165,233,0.4)' }}>
-                              <Icon name="truck" size={16} /> A domicilio
+                              <Icon name="truck" size={20} /> A domicilio
                             </button>
                           </div>
                         </div>
@@ -429,29 +430,29 @@ export default function TPVPage() {
                           <div>
                             <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}><Icon name="user" size={13} /> Quien recibe</label>
                             <input value={dName} onChange={e => setDName(e.target.value)} placeholder="Nombre de quien recibe"
-                              className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                              className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
                               style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
                           </div>
                           <div>
                             <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}><Icon name="pin" size={13} /> Domicilio</label>
                             <input value={dAddress} onChange={e => setDAddress(e.target.value)} placeholder="Calle, número, colonia"
-                              className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                              className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
                               style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
                           </div>
                           <div>
                             <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}><Icon name="bookmark" size={13} /> Referencias</label>
                             <input value={dReference} onChange={e => setDReference(e.target.value)} placeholder="Entre calles, color de fachada..."
-                              className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                              className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
                               style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
                           </div>
                           <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: S.sub }}>Enviar por</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: S.sub }}>Plataforma</p>
                             <div className="grid grid-cols-3 gap-2">
                               {DELIVERY_PLATFORMS.map(p => (
                                 <button key={p.key} onClick={() => saveDelivery(p.key)} disabled={savingDelivery}
-                                  className="py-2.5 rounded-xl text-xs font-black flex flex-col items-center gap-0.5 transition-all disabled:opacity-60"
+                                  className="py-3 rounded-2xl text-xs font-black flex flex-col items-center gap-1 transition-all disabled:opacity-60"
                                   style={{ background: `linear-gradient(135deg,${p.color},${p.color}bb)`, color: '#fff' }}>
-                                  <Icon name={p.icon} size={16} />{p.label}
+                                  <Icon name={p.icon} size={18} />{p.label}
                                 </button>
                               ))}
                             </div>
@@ -461,31 +462,70 @@ export default function TPVPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="space-y-1 mb-1">
-                        <div className="flex justify-between text-xs" style={{ color: S.sub }}>
-                          <span>Artículos</span><span>{cart.reduce((s, l) => s + l.qty, 0)}</span>
+                      {/* Resumen de totales */}
+                      <div className="px-4 py-3 space-y-1.5" style={{ borderBottom: `1px solid ${S.border}` }}>
+                        <div className="flex justify-between text-sm" style={{ color: S.sub }}>
+                          <span>Artículos</span><span className="font-bold">{cart.reduce((s, l) => s + l.qty, 0)}</span>
                         </div>
-                        <div className="flex justify-between text-xs" style={{ color: S.sub }}>
-                          <span>Descuento</span><span>$0.00</span>
+                        <div className="flex justify-between text-sm" style={{ color: S.sub }}>
+                          <span>Descuento total</span><span className="font-bold">$0.00</span>
                         </div>
-                        <div className="flex justify-between text-xl font-black" style={{ color: S.text }}>
-                          <span>Total</span><span style={{ color: S.accent }}>${total.toFixed(2)}</span>
+                        <div className="flex justify-between items-center pt-1">
+                          <span className="text-sm font-black" style={{ color: S.text }}>Total</span>
+                          <span className="text-2xl font-black" style={{ color: S.accent }}>${total.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm" style={{ color: S.sub }}>
+                          <span>Por pagar</span>
+                          <span className="font-bold" style={{ color: '#ef4444' }}>${total.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm" style={{ color: S.sub }}>
+                          <span>Impuesto</span><span className="font-bold">$0.00</span>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button onClick={placeOrder} disabled={saving || !canOrder}
-                          className="flex-1 py-4 rounded-xl font-black text-base disabled:opacity-40 transition-all"
-                          style={{ background: canOrder ? 'linear-gradient(135deg,#f59e0b,#d97706)' : S.card, color: canOrder ? '#000' : S.sub, boxShadow: canOrder ? '0 4px 16px rgba(245,158,11,0.35)' : 'none' }}>
-                          {saving ? 'Enviando...' : <span className="inline-flex items-center justify-center gap-1.5"><Icon name="receipt" size={18} /> Enviar a cocina</span>}
-                        </button>
-                        {cart.length > 0 && (
-                          <button onClick={() => printTicket('cart')}
-                            className="px-4 py-4 rounded-xl font-black text-sm transition-all"
-                            style={{ backgroundColor: 'var(--ad-elevated)', color: S.sub, border: `1px solid ${S.border}` }}
-                            title="Imprimir ticket">
-                            <Icon name="printer" size={20} />
+
+                      {/* Fila de acciones secundarias */}
+                      <div className="grid grid-cols-3 gap-0" style={{ borderBottom: `1px solid ${S.border}` }}>
+                        {[
+                          { icon: 'utensils' as const, label: 'En el local', action: () => {} },
+                          { icon: 'printer' as const,  label: 'Imprimir',    action: () => printTicket('cart') },
+                          { icon: 'clock' as const,    label: 'En espera',   action: () => {} },
+                        ].map((btn, i) => (
+                          <button key={i} onClick={btn.action}
+                            disabled={btn.label !== 'En el local' && cart.length === 0}
+                            className="py-4 flex flex-col items-center gap-1.5 text-xs font-bold disabled:opacity-30 transition-all hover:bg-white/5 active:bg-white/10"
+                            style={{ color: S.sub, borderRight: i < 2 ? `1px solid ${S.border}` : 'none' }}>
+                            <Icon name={btn.icon} size={20} />
+                            <span className="text-center leading-tight">{btn.label}</span>
                           </button>
-                        )}
+                        ))}
+                      </div>
+
+                      {/* Fila de botones principales — estilo POS */}
+                      <div className="grid grid-cols-3 gap-0">
+                        <button onClick={() => setCart([])} disabled={cart.length === 0}
+                          className="py-5 flex flex-col items-center gap-1.5 text-sm font-black disabled:opacity-30 transition-all hover:bg-red-500/10 active:scale-95"
+                          style={{ color: '#ef4444', borderRight: `1px solid ${S.border}` }}>
+                          <Icon name="trash" size={22} />
+                          <span>Limpiar</span>
+                        </button>
+                        <button onClick={placeOrder} disabled={saving || !canOrder}
+                          className="py-5 flex flex-col items-center gap-1.5 text-sm font-black disabled:opacity-30 transition-all active:scale-95"
+                          style={{ background: canOrder ? `linear-gradient(135deg,${S.accent}22,${S.accent}11)` : 'transparent', color: canOrder ? S.accent : S.sub, borderRight: `1px solid ${S.border}` }}>
+                          {saving ? (
+                            <span className="text-xs">Enviando...</span>
+                          ) : (
+                            <>
+                              <Icon name="receipt" size={22} />
+                              <span className="text-center leading-tight">Enviar a<br/>cocina</span>
+                            </>
+                          )}
+                        </button>
+                        <button onClick={() => cart.length > 0 && printTicket('cart')} disabled={cart.length === 0}
+                          className="py-5 flex flex-col items-center gap-1.5 text-sm font-black disabled:opacity-30 transition-all active:scale-95"
+                          style={{ background: canOrder ? 'linear-gradient(135deg,rgba(14,165,233,0.15),rgba(14,165,233,0.05))' : 'transparent', color: canOrder ? '#0ea5e9' : S.sub }}>
+                          <Icon name="cash" size={22} />
+                          <span>Cobrar</span>
+                        </button>
                       </div>
                     </>
                   )}
