@@ -306,8 +306,8 @@ export default function TPVPage() {
             {/* Comanda — portada al rail derecho fijo del layout */}
             {mount && createPortal(
               <div className="flex flex-col h-full">
-                <div className="p-4 space-y-3 flex-1 overflow-y-auto">
-                  {/* Cliente y mesa */}
+                {/* FIJO TOP: inputs + limpiar + cabeceras */}
+                <div className="px-4 pt-4 pb-2 space-y-2 shrink-0" style={{ borderBottom: `1px solid ${S.border}` }}>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Cliente</label>
@@ -328,19 +328,19 @@ export default function TPVPage() {
                         style={{ color: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)' }}>Limpiar comanda</button>
                     </div>
                   )}
-
-                  {/* Cabeceras tabla */}
                   {cart.length > 0 && (
-                    <div className="grid grid-cols-[1fr_auto_auto_auto] gap-1 py-2 text-[10px] font-bold uppercase tracking-wide"
-                      style={{ color: S.sub, borderBottom: `1px solid ${S.border}` }}>
+                    <div className="grid grid-cols-[1fr_auto_auto_auto] gap-1 pt-1 pb-0 text-[10px] font-bold uppercase tracking-wide"
+                      style={{ color: S.sub }}>
                       <span>Producto</span><span className="text-right">Cant.</span>
                       <span className="text-right">P/U</span><span className="text-right">Total</span>
                     </div>
                   )}
+                </div>
 
-                  {/* Items */}
+                {/* SCROLLABLE: solo la lista de ítems */}
+                <div className="flex-1 min-h-0 overflow-y-auto px-4">
                   {cart.length === 0 ? (
-                    <div className="flex flex-col items-center py-8 gap-2">
+                    <div className="flex flex-col items-center py-6 gap-2">
                       <span style={{ color: S.sub }}><Icon name="cart" size={32} /></span>
                       <p className="text-sm" style={{ color: S.sub }}>Toca un platillo</p>
                     </div>
@@ -348,14 +348,12 @@ export default function TPVPage() {
                     <div className="space-y-0 divide-y" style={{ borderColor: S.border }}>
                       {cart.map(line => (
                         <div key={line.item.id} className="py-3 space-y-2">
-                          {/* Fila datos */}
                           <div className="grid grid-cols-[1fr_auto_auto_auto] gap-1 items-center">
                             <p className="text-sm font-bold truncate" style={{ color: S.text }}>{line.item.name}</p>
                             <span className="text-sm font-black text-right" style={{ color: S.text }}>{line.qty}</span>
                             <span className="text-xs text-right" style={{ color: S.sub }}>${line.item.price.toFixed(2)}</span>
                             <span className="text-sm font-black text-right" style={{ color: S.accent }}>${(line.item.price * line.qty).toFixed(2)}</span>
                           </div>
-                          {/* Controles */}
                           <div className="flex items-center gap-2">
                             <button onClick={() => changeQty(line.item.id, -1)}
                               className="w-9 h-9 rounded-full text-base font-black flex items-center justify-center"
@@ -380,14 +378,16 @@ export default function TPVPage() {
                       ))}
                     </div>
                   )}
+                </div>
 
-                  {/* Método de pago — botones grandes */}
-                  <div>
+                {/* FIJO BOTTOM: método de pago + resumen + botones */}
+                <div className="shrink-0">
+                  <div className="px-4 py-3" style={{ borderTop: `1px solid ${S.border}` }}>
                     <label className="block text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: S.sub }}>Método de pago</label>
                     <div className="grid grid-cols-3 gap-2">
                       {PAYMENT_METHODS.map(p => (
                         <button key={p.id} onClick={() => setPayment(p.id)}
-                          className="py-4 rounded-2xl font-bold flex flex-col items-center gap-1.5 transition-all text-sm"
+                          className="py-3 rounded-2xl font-bold flex flex-col items-center gap-1.5 transition-all text-sm"
                           style={payment === p.id
                             ? { background: `linear-gradient(135deg,${S.accent}33,${S.accent}11)`, color: S.accent, border: `2px solid ${S.accent}`, boxShadow: `0 0 12px ${S.accent}33` }
                             : { backgroundColor: 'var(--ad-elevated)', color: S.sub, border: `1px solid ${S.border}` }}>
@@ -397,11 +397,7 @@ export default function TPVPage() {
                       ))}
                     </div>
                   </div>
-
-                </div>
-
-                {/* Footer con resumen + botones grandes estilo POS */}
-                <div className="shrink-0" style={{ borderTop: `1px solid ${S.border}` }}>
+                <div style={{ borderTop: `1px solid ${S.border}` }}>
                   {lastOrder && postSend !== 'none' ? (
                     <div className="p-4 space-y-3">
                       <div className="rounded-xl px-3 py-3 space-y-2.5" style={{ backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
@@ -531,6 +527,7 @@ export default function TPVPage() {
                       </div>
                     </>
                   )}
+                </div>
                 </div>
               </div>,
               mount
