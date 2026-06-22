@@ -80,8 +80,7 @@ export default function RightRail({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        {/* Contenido. pb-20 deja libre la esquina inferior derecha para la burbuja de AIChat */}
-        <div className="flex-1 min-h-0 flex flex-col pb-20">
+        <div className="flex-1 min-h-0 flex flex-col">
           {/* Slot del portal (lo llenan las páginas) */}
           <div ref={setMount} className="flex-1 min-h-0 flex flex-col" />
           {/* Contenido por defecto cuando ninguna página inyecta */}
