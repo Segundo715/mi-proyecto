@@ -445,15 +445,22 @@ export default function EmployeeOrdersPage() {
                 </div>
               )}
 
-              {/* Método de pago */}
+              {/* Método de pago — botones grandes */}
               <div className="px-4 py-3" style={{ borderTop: `1px solid ${S.border}` }}>
-                <label className="block text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: S.sub }}>Pago</label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {[{ id: 'efectivo', label: 'Efectivo' }, { id: 'tarjeta', label: 'Tarjeta' }, { id: 'transferencia', label: 'Transfer.' }].map(p => (
+                <label className="block text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: S.sub }}>Método de pago</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'efectivo', label: 'Efectivo', icon: 'cash' },
+                    { id: 'tarjeta', label: 'Tarjeta', icon: 'card' },
+                    { id: 'transferencia', label: 'Transfer.', icon: 'phone' },
+                  ].map(p => (
                     <button key={p.id} type="button" onClick={() => setTpvPayment(p.id)}
-                      className="py-2.5 rounded-xl text-xs font-bold transition-all"
-                      style={tpvPayment === p.id ? { backgroundColor: `${S.accent}22`, color: S.accent, border: `1px solid ${S.accent}55` } : { backgroundColor: S.elevated, color: S.sub, border: `1px solid ${S.border}` }}>
-                      {p.label}
+                      className="py-4 rounded-2xl font-bold flex flex-col items-center gap-1.5 transition-all text-sm"
+                      style={tpvPayment === p.id
+                        ? { background: `${S.accent}22`, color: S.accent, border: `2px solid ${S.accent}`, boxShadow: `0 0 12px ${S.accent}33` }
+                        : { backgroundColor: S.elevated, color: S.sub, border: `1px solid ${S.border}` }}>
+                      <Icon name={p.icon as 'cash' | 'card' | 'phone'} size={22} />
+                      <span>{p.label}</span>
                     </button>
                   ))}
                 </div>
@@ -466,24 +473,66 @@ export default function EmployeeOrdersPage() {
                   style={{ backgroundColor: S.elevated, color: S.text, border: `1px solid ${S.border}` }} />
               </div>
 
-              {/* Resumen + botón */}
-              <div className="px-4 pb-4 space-y-3" style={{ borderTop: `1px solid ${S.border}` }}>
-                <div className="pt-3 space-y-1">
-                  <div className="flex justify-between text-xs" style={{ color: S.sub }}>
-                    <span>Artículos</span><span>{cart.reduce((s, l) => s + l.qty, 0)}</span>
-                  </div>
-                  <div className="flex justify-between text-xs" style={{ color: S.sub }}>
-                    <span>Descuento</span><span>$0.00</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-black pt-1" style={{ color: S.text }}>
-                    <span>Total</span><span style={{ color: S.accent }}>${tpvTotal.toFixed(2)}</span>
-                  </div>
+              {/* Resumen de totales */}
+              <div className="px-4 py-3 space-y-1.5" style={{ borderTop: `1px solid ${S.border}` }}>
+                <div className="flex justify-between text-sm" style={{ color: S.sub }}>
+                  <span>Artículos</span><span className="font-bold">{cart.reduce((s, l) => s + l.qty, 0)}</span>
                 </div>
-                <button type="button" onClick={placeOrder}
-                  disabled={submitting || cart.length === 0}
-                  className="w-full py-4 rounded-xl font-black text-base disabled:opacity-40 transition-all flex items-center justify-center gap-2"
-                  style={{ backgroundColor: S.accent, color: '#000', boxShadow: `0 4px 16px ${S.accent}44` }}>
-                  {submitting ? 'Enviando...' : <><Icon name="receipt" size={18} /> Enviar a cocina</>}
+                <div className="flex justify-between text-sm" style={{ color: S.sub }}>
+                  <span>Descuento total</span><span className="font-bold">$0.00</span>
+                </div>
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-sm font-black" style={{ color: S.text }}>Total</span>
+                  <span className="text-2xl font-black" style={{ color: S.accent }}>${tpvTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm" style={{ color: S.sub }}>
+                  <span>Por pagar</span>
+                  <span className="font-bold" style={{ color: '#ef4444' }}>${tpvTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm" style={{ color: S.sub }}>
+                  <span>Impuesto</span><span className="font-bold">$0.00</span>
+                </div>
+              </div>
+
+              {/* Acciones secundarias */}
+              <div className="grid grid-cols-3 gap-0" style={{ borderTop: `1px solid ${S.border}`, borderBottom: `1px solid ${S.border}` }}>
+                {[
+                  { icon: 'utensils' as const, label: 'En el local', onClick: () => {} },
+                  { icon: 'printer' as const,  label: 'Imprimir',    onClick: () => {} },
+                  { icon: 'clock' as const,    label: 'En espera',   onClick: () => {} },
+                ].map((btn, i) => (
+                  <button key={i} type="button" onClick={btn.onClick}
+                    className="py-4 flex flex-col items-center gap-1.5 text-xs font-bold transition-all hover:bg-white/5"
+                    style={{ color: S.sub, borderRight: i < 2 ? `1px solid ${S.border}` : 'none' }}>
+                    <Icon name={btn.icon} size={20} />
+                    <span>{btn.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Botones principales estilo POS */}
+              <div className="grid grid-cols-3 gap-0">
+                <button type="button" onClick={() => setCart([])} disabled={cart.length === 0}
+                  className="py-5 flex flex-col items-center gap-1.5 text-sm font-black disabled:opacity-30 transition-all hover:bg-red-500/10 active:scale-95"
+                  style={{ color: '#ef4444', borderRight: `1px solid ${S.border}` }}>
+                  <Icon name="trash" size={22} />
+                  <span>Limpiar</span>
+                </button>
+                <button type="button" onClick={placeOrder} disabled={submitting || cart.length === 0}
+                  className="py-5 flex flex-col items-center gap-1.5 text-sm font-black disabled:opacity-30 transition-all active:scale-95"
+                  style={{ background: cart.length > 0 ? `${S.accent}22` : 'transparent', color: cart.length > 0 ? S.accent : S.sub, borderRight: `1px solid ${S.border}` }}>
+                  {submitting ? <span className="text-xs">Enviando...</span> : (
+                    <>
+                      <Icon name="receipt" size={22} />
+                      <span className="text-center leading-tight">Enviar a<br/>cocina</span>
+                    </>
+                  )}
+                </button>
+                <button type="button" disabled={cart.length === 0}
+                  className="py-5 flex flex-col items-center gap-1.5 text-sm font-black disabled:opacity-30 transition-all active:scale-95"
+                  style={{ background: cart.length > 0 ? 'rgba(14,165,233,0.1)' : 'transparent', color: cart.length > 0 ? '#0ea5e9' : S.sub }}>
+                  <Icon name="cash" size={22} />
+                  <span>Cobrar</span>
                 </button>
               </div>
             </div>
