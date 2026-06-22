@@ -50,6 +50,8 @@ export default function TPVPage() {
   const [dAddress, setDAddress] = useState('')
   const [dReference, setDReference] = useState('')
   const [savingDelivery, setSavingDelivery] = useState(false)
+  const [discount, setDiscount] = useState(0)
+  const [taxRate, setTaxRate] = useState(0)
 
   useEffect(() => {
     fetch('/api/menu').then(r => r.json()).then(d => setMenu(Array.isArray(d) ? d.filter((m: MenuItem) => m.available) : []))
@@ -102,7 +104,7 @@ export default function TPVPage() {
     const isOrder = typeof source === 'object'
     const custName  = isOrder ? source.customerName : customer.trim() || '—'
     const tableLabel = isOrder ? (source.tableNumber || '') : tableNum.trim()
-    const ticketTotal = isOrder ? source.total : cart.reduce((s, l) => s + l.item.price * l.qty, 0)
+    const ticketTotal = isOrder ? source.total : finalTotal
     const chk = (m: string) => payment === m ? '☑' : '☐'
     const now = new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
 
@@ -151,7 +153,10 @@ export default function TPVPage() {
     setTimeout(() => { win.print(); URL.revokeObjectURL(url) }, 300)
   }
 
-  const total = cart.reduce((s, l) => s + l.item.price * l.qty, 0)
+  const cartSubtotal = cart.reduce((s, l) => s + l.item.price * l.qty, 0)
+  const discountAmt = Math.min(discount, cartSubtotal)
+  const taxAmt = (cartSubtotal - discountAmt) * taxRate / 100
+  const finalTotal = cartSubtotal - discountAmt + taxAmt
   const canOrder = cart.length > 0
 
   async function placeOrder() {
@@ -164,17 +169,15 @@ export default function TPVPage() {
         customerName: customer.trim() || 'Cliente',
         tableNumber: tableNum.trim() || undefined,
         items: cart.map(l => ({ menuItemId: l.item.id, name: l.item.name, price: l.item.price, quantity: l.qty, note: l.note?.trim() || undefined })),
-        total,
+        total: finalTotal,
         notes: `[${payment.toUpperCase()}]`,
       }),
     })
     if (res.ok) {
       const order = await res.json()
       setLastOrder(order)
-      setPostSend('choose') // pedir clasificación: dentro o a domicilio
-      setCart([])
-      setCustomer('')
-      setTableNum('')
+      setPostSend('choose')
+      setCart([]); setCustomer(''); setTableNum(''); setDiscount(0); setTaxRate(0)
     }
     setSaving(false)
   }
@@ -324,7 +327,7 @@ export default function TPVPage() {
                   </div>
                   {cart.length > 0 && (
                     <div className="flex justify-end">
-                      <button onClick={() => setCart([])} className="text-xs font-bold px-2 py-1 rounded-lg"
+                      <button onClick={() => { setCart([]); setDiscount(0); setTaxRate(0) }} className="text-xs font-bold px-2 py-1 rounded-lg"
                         style={{ color: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)' }}>Limpiar comanda</button>
                     </div>
                   )}
@@ -460,15 +463,48 @@ export default function TPVPage() {
                     </div>
                   ) : (
                     <>
-                      {/* Total compacto */}
-                      <div className="px-4 py-2 flex items-center justify-between" style={{ borderBottom: `1px solid ${S.border}` }}>
-                        <div>
-                          <div className="text-[10px] font-bold uppercase tracking-wide" style={{ color: S.sub }}>
-                            Total · {cart.reduce((s, l) => s + l.qty, 0)} art.
-                          </div>
-                          <div className="text-[10px]" style={{ color: '#ef4444' }}>Por pagar ${total.toFixed(2)}</div>
+                      {/* Resumen de totales con descuento e impuesto editables */}
+                      <div className="px-4 py-2 space-y-1" style={{ borderBottom: `1px solid ${S.border}` }}>
+                        <div className="flex justify-between text-xs" style={{ color: S.sub }}>
+                          <span>Artículos</span>
+                          <span className="font-bold">{cart.reduce((s, l) => s + l.qty, 0)}</span>
                         </div>
-                        <span className="text-2xl font-black" style={{ color: S.accent }}>${total.toFixed(2)}</span>
+                        <div className="flex justify-between items-center text-xs" style={{ color: S.sub }}>
+                          <span>Descuento</span>
+                          <div className="flex items-center gap-1">
+                            <span>$</span>
+                            <input
+                              type="number" min="0" step="0.01"
+                              value={discount === 0 ? '' : discount}
+                              onChange={e => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                              placeholder="0.00"
+                              className="w-20 text-right px-1.5 py-0.5 rounded-lg text-xs outline-none"
+                              style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center pt-0.5">
+                          <span className="text-sm font-black" style={{ color: S.text }}>Total</span>
+                          <span className="text-xl font-black" style={{ color: S.accent }}>${finalTotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs" style={{ color: S.sub }}>
+                          <span>Por pagar</span>
+                          <span className="font-bold" style={{ color: '#ef4444' }}>${finalTotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs" style={{ color: S.sub }}>
+                          <span>Impuesto %</span>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number" min="0" max="100" step="0.5"
+                              value={taxRate === 0 ? '' : taxRate}
+                              onChange={e => setTaxRate(Math.max(0, parseFloat(e.target.value) || 0))}
+                              placeholder="0"
+                              className="w-14 text-right px-1.5 py-0.5 rounded-lg text-xs outline-none"
+                              style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }}
+                            />
+                            <span>%  ${taxAmt.toFixed(2)}</span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Acciones secundarias compactas */}
@@ -490,7 +526,7 @@ export default function TPVPage() {
 
                       {/* Botones POS */}
                       <div className="grid grid-cols-3 gap-0">
-                        <button onClick={() => setCart([])} disabled={cart.length === 0}
+                        <button onClick={() => { setCart([]); setDiscount(0); setTaxRate(0) }} disabled={cart.length === 0}
                           className="py-3 flex flex-col items-center gap-1 text-sm font-black disabled:opacity-30 transition-all hover:bg-red-500/10 active:scale-95"
                           style={{ color: '#ef4444', borderRight: `1px solid ${S.border}` }}>
                           <Icon name="trash" size={20} />
