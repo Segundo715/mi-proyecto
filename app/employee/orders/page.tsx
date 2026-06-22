@@ -7,7 +7,7 @@ import EmployeeNav from '@/app/components/EmployeeNav'
 import { Icon } from '@/app/components/Icon'
 
 interface MenuItemTPV { id: string; name: string; category: string; price: number; imageUrl?: string; available: boolean }
-interface LineItem { item: MenuItemTPV; qty: number }
+interface LineItem { item: MenuItemTPV; qty: number; note?: string }
 
 interface OrderItem { name: string; quantity: number; price: number }
 interface Order {
@@ -176,7 +176,6 @@ export default function EmployeeOrdersPage() {
   const [cart, setCart] = useState<LineItem[]>([])
   const [tpvCustomer, setTpvCustomer] = useState('')
   const [tpvTable, setTpvTable] = useState('')
-  const [tpvNotes, setTpvNotes] = useState('')
   const [tpvPayment, setTpvPayment] = useState('efectivo')
   const [tpvSearch, setTpvSearch] = useState('')
   const [tpvCat, setTpvCat] = useState('Todos')
@@ -203,12 +202,20 @@ export default function EmployeeOrdersPage() {
     setCart(c => c.map(l => l.item.id === id ? { ...l, qty: Math.max(1, l.qty + delta) } : l).filter(l => l.qty > 0))
   }
 
+  function changeNote(id: string, note: string) {
+    setCart(c => c.map(l => l.item.id === id ? { ...l, note } : l))
+  }
+
   function printCart() {
     const fakeOrder: Order = {
       id: 'PREVENTA',
       customerName: tpvCustomer.trim() || 'Cliente',
       tableNumber: tpvTable.trim() || undefined,
-      items: cart.map(l => ({ name: l.item.name, quantity: l.qty, price: l.item.price })),
+      items: cart.map(l => ({
+        name: l.note?.trim() ? `${l.item.name} (${l.note.trim()})` : l.item.name,
+        quantity: l.qty,
+        price: l.item.price,
+      })),
       total: cart.reduce((s, l) => s + l.item.price * l.qty, 0),
       status: 'pending',
       createdAt: new Date().toISOString(),
@@ -226,14 +233,14 @@ export default function EmployeeOrdersPage() {
       body: JSON.stringify({
         customerName: tpvCustomer.trim() || 'Cliente',
         tableNumber: tpvTable.trim() || undefined,
-        items: cart.map(l => ({ menuItemId: l.item.id, name: l.item.name, price: l.item.price, quantity: l.qty })),
+        items: cart.map(l => ({ menuItemId: l.item.id, name: l.item.name, price: l.item.price, quantity: l.qty, note: l.note?.trim() || undefined })),
         total,
-        notes: tpvNotes.trim() ? `[${tpvPayment.toUpperCase()}] ${tpvNotes.trim()}` : `[${tpvPayment.toUpperCase()}]`,
+        notes: `[${tpvPayment.toUpperCase()}]`,
       }),
     })
     setSubmitting(false)
     if (res.ok) {
-      setCart([]); setTpvCustomer(''); setTpvTable(''); setTpvNotes('')
+      setCart([]); setTpvCustomer(''); setTpvTable('')
       setTpvSuccess(true); setTimeout(() => setTpvSuccess(false), 3000)
       setTab('activos'); load()
     }
@@ -443,19 +450,25 @@ export default function EmployeeOrdersPage() {
                         <span className="text-xs text-right" style={{ color: S.sub }}>${line.item.price.toFixed(2)}</span>
                         <span className="text-sm font-black text-right" style={{ color: S.accent }}>${(line.item.price * line.qty).toFixed(2)}</span>
                       </div>
-                      {/* Controles */}
+                      {/* Controles + nota inline */}
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          <button type="button" onClick={() => changeQty(line.item.id, -1)}
-                            className="w-9 h-9 rounded-full text-base font-black flex items-center justify-center transition-all"
-                            style={{ backgroundColor: S.elevated, color: S.sub, border: `1px solid ${S.border}` }}>−</button>
-                          <span className="text-base font-black w-8 text-center" style={{ color: S.text }}>{line.qty}</span>
-                          <button type="button" onClick={() => changeQty(line.item.id, 1)}
-                            className="w-9 h-9 rounded-full text-base font-black flex items-center justify-center transition-all"
-                            style={{ backgroundColor: S.elevated, color: S.accent, border: `1px solid ${S.border}` }}>+</button>
-                        </div>
+                        <button type="button" onClick={() => changeQty(line.item.id, -1)}
+                          className="w-9 h-9 rounded-full text-base font-black flex items-center justify-center shrink-0 transition-all"
+                          style={{ backgroundColor: S.elevated, color: S.sub, border: `1px solid ${S.border}` }}>−</button>
+                        <span className="text-base font-black w-6 text-center shrink-0" style={{ color: S.text }}>{line.qty}</span>
+                        <button type="button" onClick={() => changeQty(line.item.id, 1)}
+                          className="w-9 h-9 rounded-full text-base font-black flex items-center justify-center shrink-0 transition-all"
+                          style={{ backgroundColor: S.elevated, color: S.accent, border: `1px solid ${S.border}` }}>+</button>
+                        <input
+                          type="text"
+                          value={line.note ?? ''}
+                          onChange={e => changeNote(line.item.id, e.target.value)}
+                          placeholder="Nota..."
+                          className="flex-1 rounded-xl px-3 py-2 text-xs outline-none min-w-0"
+                          style={{ backgroundColor: S.elevated, color: S.text, border: `1px solid ${S.border}` }}
+                        />
                         <button type="button" onClick={() => setCart(c => c.filter(l => l.item.id !== line.item.id))}
-                          className="ml-auto w-9 h-9 rounded-full text-sm font-black flex items-center justify-center"
+                          className="w-9 h-9 rounded-full text-sm font-black flex items-center justify-center shrink-0"
                           style={{ backgroundColor: 'rgba(248,113,113,0.12)', color: '#f87171', border: '1px solid rgba(248,113,113,0.25)' }}>✕</button>
                       </div>
                     </div>
@@ -482,13 +495,6 @@ export default function EmployeeOrdersPage() {
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Notas */}
-              <div className="px-4 pb-3">
-                <input value={tpvNotes} onChange={e => setTpvNotes(e.target.value)} placeholder="Alergias, preferencias..."
-                  className="w-full px-3 py-2.5 rounded-xl text-xs outline-none"
-                  style={{ backgroundColor: S.elevated, color: S.text, border: `1px solid ${S.border}` }} />
               </div>
 
               {/* Resumen de totales */}
