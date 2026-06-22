@@ -28,12 +28,12 @@ interface Customer {
   id: string; name: string; phone: string; visits: number; active: boolean; confirmed: boolean
 }
 
-type Step = 'form' | 'waiting' | 'card'
+type Step = 'loading' | 'form' | 'waiting' | 'card'
 
 const INPUT = 'w-full border border-[#B90F45]/40 rounded-2xl px-4 py-3.5 text-white bg-[#1a1a1a] placeholder-gray-500 focus:outline-none focus:border-[#B90F45] text-sm transition-colors'
 
 export default function CardPage() {
-  const [step, setStep] = useState<Step>('form')
+  const [step, setStep] = useState<Step>('loading')
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -52,11 +52,14 @@ export default function CardPage() {
             setCustomer(data)
             setStep(data.active ? 'card' : 'waiting')
           } else {
-            // Tarjeta eliminada — limpiar locadelStorage y mostrar formulario
+            // Tarjeta eliminada — limpiar localStorage y mostrar formulario
             localStorage.removeItem(STORAGE_KEY)
+            setStep('form')
           }
         })
-        .catch(() => {})
+        .catch(() => { setStep('form') })
+    } else {
+      setStep('form')
     }
     // Cargar parámetros de la categoría "Tarjeta de Café" desde /admin/tarjetas
     fetch(`/api/settings?key=${CATEGORIES_KEY}`)
@@ -119,6 +122,15 @@ export default function CardPage() {
     return () => clearInterval(id)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, customer?.id])
+
+  if (step === 'loading') {
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center" style={{ backgroundColor: '#000' }}>
+        <img src={cfg.logo} alt="Logo" className="h-20 w-auto mx-auto mb-4 animate-pulse" />
+        <p className="text-sm" style={{ color: '#555' }}>Verificando...</p>
+      </div>
+    )
+  }
 
   if (step === 'waiting') {
     return (
