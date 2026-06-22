@@ -199,6 +199,20 @@ export default function EmployeeOrdersPage() {
     setCart(c => c.map(l => l.item.id === id ? { ...l, qty: Math.max(1, l.qty + delta) } : l).filter(l => l.qty > 0))
   }
 
+  function printCart() {
+    const fakeOrder: Order = {
+      id: 'PREVENTA',
+      customerName: tpvCustomer.trim() || 'Cliente',
+      tableNumber: tpvTable.trim() || undefined,
+      items: cart.map(l => ({ name: l.item.name, quantity: l.qty, price: l.item.price })),
+      total: cart.reduce((s, l) => s + l.item.price * l.qty, 0),
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      notes: `[${tpvPayment.toUpperCase()}]`,
+    }
+    printTicket(fakeOrder, ticketInfo)
+  }
+
   async function placeOrder() {
     if (cart.length === 0) return
     setSubmitting(true)
@@ -332,7 +346,7 @@ export default function EmployeeOrdersPage() {
 
         {/* ===== TAB: NUEVA ORDEN ===== */}
         {tab === 'nueva' && (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-4">
             {/* Catálogo */}
             <div className="space-y-3">
               {menuLoading ? (
@@ -497,12 +511,12 @@ export default function EmployeeOrdersPage() {
               {/* Acciones secundarias */}
               <div className="grid grid-cols-3 gap-0" style={{ borderTop: `1px solid ${S.border}`, borderBottom: `1px solid ${S.border}` }}>
                 {[
-                  { icon: 'utensils' as const, label: 'En el local', onClick: () => {} },
-                  { icon: 'printer' as const,  label: 'Imprimir',    onClick: () => {} },
-                  { icon: 'clock' as const,    label: 'En espera',   onClick: () => {} },
+                  { icon: 'utensils' as const, label: 'En el local', onClick: () => {},         disabled: false },
+                  { icon: 'printer' as const,  label: 'Imprimir',    onClick: () => printCart(), disabled: cart.length === 0 },
+                  { icon: 'clock' as const,    label: 'En espera',   onClick: () => {},         disabled: false },
                 ].map((btn, i) => (
-                  <button key={i} type="button" onClick={btn.onClick}
-                    className="py-4 flex flex-col items-center gap-1.5 text-xs font-bold transition-all hover:bg-white/5"
+                  <button key={i} type="button" onClick={btn.onClick} disabled={btn.disabled}
+                    className="py-4 flex flex-col items-center gap-1.5 text-xs font-bold transition-all hover:bg-white/5 disabled:opacity-30"
                     style={{ color: S.sub, borderRight: i < 2 ? `1px solid ${S.border}` : 'none' }}>
                     <Icon name={btn.icon} size={20} />
                     <span>{btn.label}</span>
@@ -528,7 +542,7 @@ export default function EmployeeOrdersPage() {
                     </>
                   )}
                 </button>
-                <button type="button" disabled={cart.length === 0}
+                <button type="button" onClick={printCart} disabled={cart.length === 0}
                   className="py-5 flex flex-col items-center gap-1.5 text-sm font-black disabled:opacity-30 transition-all active:scale-95"
                   style={{ background: cart.length > 0 ? 'rgba(14,165,233,0.1)' : 'transparent', color: cart.length > 0 ? '#0ea5e9' : S.sub }}>
                   <Icon name="cash" size={22} />

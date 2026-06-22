@@ -46,7 +46,7 @@ export default function RightRail({ children }: { children: React.ReactNode }) {
   return (
     <RightRailContext.Provider value={{ mount, setFilled, setTitle, open, setOpen }}>
       {/* Reserva el espacio derecho global en escritorio sin tocar cada página */}
-      <div className="lg:mr-[380px]">{children}</div>
+      <div className="lg:mr-[420px]">{children}</div>
 
       {/* Botón de apertura (móvil/tablet) — lengüeta en el borde derecho */}
       <button
@@ -67,7 +67,7 @@ export default function RightRail({ children }: { children: React.ReactNode }) {
 
       {/* Rail: fijo en lg+, drawer translado en pantallas menores */}
       <aside
-        className={`fixed top-0 right-0 h-screen w-[380px] z-40 flex flex-col transition-transform duration-250 ease-out lg:translate-x-0 ${open ? 'translate-x-0 shadow-2xl' : 'translate-x-full lg:shadow-none'}`}
+        className={`fixed top-0 right-0 h-screen w-[420px] z-40 flex flex-col transition-transform duration-250 ease-out lg:translate-x-0 ${open ? 'translate-x-0 shadow-2xl' : 'translate-x-full lg:shadow-none'}`}
         style={{ backgroundColor: S.card, borderLeft: `1px solid ${S.border}` }}>
         {/* Encabezado */}
         <div className="px-4 py-4 flex items-center justify-between shrink-0" style={{ borderBottom: `1px solid ${S.border}` }}>
