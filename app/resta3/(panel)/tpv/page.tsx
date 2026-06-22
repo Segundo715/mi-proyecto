@@ -103,7 +103,6 @@ export default function TPVPage() {
     const custName  = isOrder ? source.customerName : customer.trim() || '—'
     const tableLabel = isOrder ? (source.tableNumber || '') : tableNum.trim()
     const ticketTotal = isOrder ? source.total : cart.reduce((s, l) => s + l.item.price * l.qty, 0)
-    const payLabel = payment.toUpperCase()
     const chk = (m: string) => payment === m ? '☑' : '☐'
     const now = new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
 
@@ -213,8 +212,9 @@ export default function TPVPage() {
   const statusLabel: Record<string, string> = { pending: 'Pendiente', preparing: 'En cocina', ready: 'Listo', enviado: 'Enviado', delivered: 'Entregado' }
 
   return (
-    <div className="min-h-screen md:ml-[240px]" style={{ backgroundColor: S.bg }}>
+    <div className="h-screen overflow-hidden md:ml-[240px] flex flex-col" style={{ backgroundColor: S.bg }}>
       <Resta3Nav />
+      <div className="flex-1 min-h-0 overflow-y-auto">
       <div className="max-w-[1300px] mx-auto p-4">
 
         {/* Tabs */}
@@ -537,6 +537,7 @@ export default function TPVPage() {
             )}
           </>
         )}
+      </div>
       </div>
     </div>
   )
