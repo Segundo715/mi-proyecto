@@ -36,7 +36,6 @@ export default function TPVPage() {
   const [customer, setCustomer] = useState('')
   const [tableNum, setTableNum] = useState('')
   const [payment, setPayment] = useState('efectivo')
-  const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [lastOrder, setLastOrder] = useState<Order | null>(null)
   const [tab, setTab] = useState<'nueva' | 'historial'>('nueva')
@@ -139,7 +138,6 @@ export default function TPVPage() {
   <div class="row total"><span>TOTAL</span><span>$${ticketTotal.toFixed(2)}</span></div>
   <div class="sep"></div>
   <div class="center">Pago: ${payLabel}</div>
-  ${notes.trim() && !isOrder ? `<div class="center" style="font-size:10px">${notes.trim()}</div>` : ''}
   <div class="sep"></div>
   <div class="center">¡Gracias por su preferencia!</div>
 </body></html>`
@@ -166,7 +164,7 @@ export default function TPVPage() {
         tableNumber: tableNum.trim() || undefined,
         items: cart.map(l => ({ menuItemId: l.item.id, name: l.item.name, price: l.item.price, quantity: l.qty, note: l.note?.trim() || undefined })),
         total,
-        notes: notes.trim() ? `[${payment.toUpperCase()}] ${notes.trim()}` : `[${payment.toUpperCase()}]`,
+        notes: `[${payment.toUpperCase()}]`,
       }),
     })
     if (res.ok) {
@@ -176,7 +174,6 @@ export default function TPVPage() {
       setCart([])
       setCustomer('')
       setTableNum('')
-      setNotes('')
     }
     setSaving(false)
   }
@@ -383,13 +380,6 @@ export default function TPVPage() {
                     </div>
                   </div>
 
-                  {/* Notas */}
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Notas</label>
-                    <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Alergias, preferencias..."
-                      className="w-full px-3 py-2 rounded-xl text-xs outline-none"
-                      style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
-                  </div>
                 </div>
 
                 {/* Footer */}
