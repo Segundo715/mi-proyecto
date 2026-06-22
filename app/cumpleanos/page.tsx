@@ -305,6 +305,21 @@ export default function CumpleanosPage() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [showFireworks, setShowFireworks] = useState(false)
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('cumpleanos_data')
+      if (!saved) return
+      const { name: n, birthdate: b } = JSON.parse(saved) as { name: string; birthdate: string }
+      if (!n || !b) return
+      setName(n); setBirthdate(b)
+      const today = isBirthdayToday(b)
+      setIsToday(today)
+      setShowConfetti(true)
+      if (today) setShowFireworks(true)
+      setStep('success')
+    } catch {}
+  }, [])
+
   async function handleSubmit() {
     if (!name.trim() || !phone.trim() || !birthdate) { setError('Por favor completa todos los campos.'); return }
     if (!accepted) { setError('Debes aceptar los términos y condiciones.'); return }
@@ -322,6 +337,7 @@ export default function CumpleanosPage() {
         setShowConfetti(true)
         if (today) { setShowFireworks(true); setTimeout(playManianitas, 800) }
         setStep('success')
+        localStorage.setItem('cumpleanos_data', JSON.stringify({ name: name.trim(), birthdate }))
       }
     } catch { setError('Error de conexión. Intenta de nuevo.') }
     finally { setLoading(false) }
