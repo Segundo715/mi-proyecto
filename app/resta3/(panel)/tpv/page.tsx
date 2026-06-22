@@ -281,19 +281,21 @@ export default function TPVPage() {
                   </button>
                 ))}
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {filtered.map(item => (
                   <button key={item.id} onClick={() => addToCart(item)}
-                    className="text-left rounded-2xl overflow-hidden transition-all hover:scale-[1.02] active:scale-95"
+                    className="text-left rounded-2xl overflow-hidden transition-all hover:scale-[1.02] active:scale-95 relative"
                     style={{ backgroundColor: S.card, border: `1px solid ${S.border}` }}>
                     {item.imageUrl
-                      ? <img src={item.imageUrl} alt={item.name} className="w-full object-cover" style={{ height: '80px' }} />
-                      : <div className="w-full flex items-center justify-center" style={{ height: '60px', backgroundColor: 'var(--ad-elevated)', color: S.sub }}><Icon name="utensils" size={24} /></div>
+                      ? <img src={item.imageUrl} alt={item.name} className="w-full object-cover" style={{ height: '140px' }} />
+                      : <div className="w-full flex items-center justify-center" style={{ height: '140px', backgroundColor: 'var(--ad-elevated)', color: S.sub }}><Icon name="utensils" size={40} /></div>
                     }
                     <div className="p-3">
-                      <p className="text-xs font-bold truncate" style={{ color: S.text }}>{item.name}</p>
-                      <p className="text-sm font-black mt-0.5" style={{ color: S.accent }}>${item.price.toFixed(2)}</p>
+                      <p className="text-sm font-bold leading-tight line-clamp-2" style={{ color: S.text }}>{item.name}</p>
+                      <p className="text-lg font-black mt-1" style={{ color: S.accent }}>${item.price.toFixed(2)}</p>
                     </div>
+                    <div className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-lg font-black shadow-lg"
+                      style={{ backgroundColor: S.accent, color: '#000' }}>+</div>
                   </button>
                 ))}
               </div>
@@ -303,63 +305,75 @@ export default function TPVPage() {
             {mount && createPortal(
               <div className="flex flex-col h-full">
                 <div className="p-4 space-y-3 flex-1 overflow-y-auto">
-                  {/* Limpiar */}
-                  {cart.length > 0 && (
-                    <div className="flex justify-end">
-                      <button onClick={() => setCart([])} className="text-xs font-bold" style={{ color: '#f87171' }}>Limpiar comanda</button>
-                    </div>
-                  )}
-
                   {/* Cliente y mesa */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Cliente *</label>
+                      <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Cliente</label>
                       <input value={customer} onChange={e => setCustomer(e.target.value)} placeholder="Nombre"
-                        className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                        className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
                         style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: S.sub }}>Mesa</label>
                       <input value={tableNum} onChange={e => setTableNum(e.target.value)} placeholder="Ej: Mesa 3"
-                        className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                        className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
                         style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }} />
                     </div>
                   </div>
+                  {cart.length > 0 && (
+                    <div className="flex justify-end">
+                      <button onClick={() => setCart([])} className="text-xs font-bold px-2 py-1 rounded-lg"
+                        style={{ color: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)' }}>Limpiar comanda</button>
+                    </div>
+                  )}
+
+                  {/* Cabeceras tabla */}
+                  {cart.length > 0 && (
+                    <div className="grid grid-cols-[1fr_auto_auto_auto] gap-1 py-2 text-[10px] font-bold uppercase tracking-wide"
+                      style={{ color: S.sub, borderBottom: `1px solid ${S.border}` }}>
+                      <span>Producto</span><span className="text-right">Cant.</span>
+                      <span className="text-right">P/U</span><span className="text-right">Total</span>
+                    </div>
+                  )}
 
                   {/* Items */}
                   {cart.length === 0 ? (
-                    <div className="flex flex-col items-center py-6">
-                      <span className="mb-1" style={{ color: S.sub }}><Icon name="cart" size={22} /></span>
-                      <p className="text-xs" style={{ color: S.sub }}>Toca un platillo</p>
+                    <div className="flex flex-col items-center py-8 gap-2">
+                      <span style={{ color: S.sub }}><Icon name="cart" size={32} /></span>
+                      <p className="text-sm" style={{ color: S.sub }}>Toca un platillo</p>
                     </div>
                   ) : (
-                    <div className="space-y-1.5">
+                    <div className="space-y-0 divide-y" style={{ borderColor: S.border }}>
                       {cart.map(line => (
-                        <div key={line.item.id} className="rounded-xl p-2.5 space-y-1.5"
-                          style={{ backgroundColor: 'var(--ad-elevated)' }}>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold truncate" style={{ color: S.text }}>{line.item.name}</p>
-                              <p className="text-xs" style={{ color: S.accent }}>${(line.item.price * line.qty).toFixed(2)}</p>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <button onClick={() => changeQty(line.item.id, -1)}
-                                className="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center"
-                                style={{ backgroundColor: S.card, color: '#f87171' }}>−</button>
-                              <span className="text-xs font-black w-4 text-center" style={{ color: S.text }}>{line.qty}</span>
-                              <button onClick={() => changeQty(line.item.id, 1)}
-                                className="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center"
-                                style={{ backgroundColor: S.card, color: S.accent }}>+</button>
-                            </div>
+                        <div key={line.item.id} className="py-3 space-y-2">
+                          {/* Fila datos */}
+                          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-1 items-center">
+                            <p className="text-sm font-bold truncate" style={{ color: S.text }}>{line.item.name}</p>
+                            <span className="text-sm font-black text-right" style={{ color: S.text }}>{line.qty}</span>
+                            <span className="text-xs text-right" style={{ color: S.sub }}>${line.item.price.toFixed(2)}</span>
+                            <span className="text-sm font-black text-right" style={{ color: S.accent }}>${(line.item.price * line.qty).toFixed(2)}</span>
                           </div>
-                          <input
-                            type="text"
-                            value={line.note ?? ''}
-                            onChange={e => changeNote(line.item.id, e.target.value)}
-                            placeholder="Nota del platillo..."
-                            className="w-full rounded-lg px-2 py-1 text-xs outline-none"
-                            style={{ backgroundColor: S.card, color: S.text, border: `1px solid ${S.border}` }}
-                          />
+                          {/* Controles */}
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => changeQty(line.item.id, -1)}
+                              className="w-9 h-9 rounded-full text-base font-black flex items-center justify-center"
+                              style={{ backgroundColor: 'var(--ad-elevated)', color: S.sub, border: `1px solid ${S.border}` }}>−</button>
+                            <span className="text-base font-black w-6 text-center" style={{ color: S.text }}>{line.qty}</span>
+                            <button onClick={() => changeQty(line.item.id, 1)}
+                              className="w-9 h-9 rounded-full text-base font-black flex items-center justify-center"
+                              style={{ backgroundColor: 'var(--ad-elevated)', color: S.accent, border: `1px solid ${S.border}` }}>+</button>
+                            <input
+                              type="text"
+                              value={line.note ?? ''}
+                              onChange={e => changeNote(line.item.id, e.target.value)}
+                              placeholder="Nota..."
+                              className="flex-1 rounded-lg px-2 py-1.5 text-xs outline-none"
+                              style={{ backgroundColor: 'var(--ad-elevated)', color: S.text, border: `1px solid ${S.border}` }}
+                            />
+                            <button onClick={() => setCart(c => c.filter(l => l.item.id !== line.item.id))}
+                              className="w-9 h-9 rounded-full text-sm font-black flex items-center justify-center shrink-0"
+                              style={{ backgroundColor: 'rgba(248,113,113,0.12)', color: '#f87171', border: '1px solid rgba(248,113,113,0.25)' }}>✕</button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -447,22 +461,29 @@ export default function TPVPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm" style={{ color: S.sub }}>Total ({cart.reduce((s, l) => s + l.qty, 0)} items)</span>
-                        <span className="text-2xl font-black" style={{ color: S.accent }}>${total.toFixed(2)}</span>
+                      <div className="space-y-1 mb-1">
+                        <div className="flex justify-between text-xs" style={{ color: S.sub }}>
+                          <span>Artículos</span><span>{cart.reduce((s, l) => s + l.qty, 0)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs" style={{ color: S.sub }}>
+                          <span>Descuento</span><span>$0.00</span>
+                        </div>
+                        <div className="flex justify-between text-xl font-black" style={{ color: S.text }}>
+                          <span>Total</span><span style={{ color: S.accent }}>${total.toFixed(2)}</span>
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         <button onClick={placeOrder} disabled={saving || !canOrder}
-                          className="flex-1 py-3.5 rounded-xl font-black text-sm disabled:opacity-40 transition-all"
-                          style={{ background: canOrder ? 'linear-gradient(135deg,#f59e0b,#d97706)' : S.card, color: canOrder ? '#000' : S.sub }}>
-                          {saving ? 'Enviando...' : <span className="inline-flex items-center justify-center gap-1.5"><Icon name="receipt" size={15} /> Enviar a cocina</span>}
+                          className="flex-1 py-4 rounded-xl font-black text-base disabled:opacity-40 transition-all"
+                          style={{ background: canOrder ? 'linear-gradient(135deg,#f59e0b,#d97706)' : S.card, color: canOrder ? '#000' : S.sub, boxShadow: canOrder ? '0 4px 16px rgba(245,158,11,0.35)' : 'none' }}>
+                          {saving ? 'Enviando...' : <span className="inline-flex items-center justify-center gap-1.5"><Icon name="receipt" size={18} /> Enviar a cocina</span>}
                         </button>
                         {cart.length > 0 && (
                           <button onClick={() => printTicket('cart')}
-                            className="px-3 py-3.5 rounded-xl font-black text-sm transition-all"
+                            className="px-4 py-4 rounded-xl font-black text-sm transition-all"
                             style={{ backgroundColor: 'var(--ad-elevated)', color: S.sub, border: `1px solid ${S.border}` }}
                             title="Imprimir ticket">
-                            <Icon name="printer" size={17} />
+                            <Icon name="printer" size={20} />
                           </button>
                         )}
                       </div>
