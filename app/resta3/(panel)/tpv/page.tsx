@@ -151,7 +151,7 @@ export default function TPVPage() {
   }
 
   const total = cart.reduce((s, l) => s + l.item.price * l.qty, 0)
-  const canOrder = customer.trim() && cart.length > 0
+  const canOrder = cart.length > 0
 
   async function placeOrder() {
     if (!canOrder) return
@@ -160,7 +160,7 @@ export default function TPVPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        customerName: customer.trim(),
+        customerName: customer.trim() || 'Cliente',
         tableNumber: tableNum.trim() || undefined,
         items: cart.map(l => ({ menuItemId: l.item.id, name: l.item.name, price: l.item.price, quantity: l.qty, note: l.note?.trim() || undefined })),
         total,
