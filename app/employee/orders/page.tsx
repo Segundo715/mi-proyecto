@@ -70,6 +70,10 @@ function printTicket(order: Order, info: TicketInfo) {
   })
   const name = info.name || 'Restaurante'
 
+  // Detectar método de pago desde notes: [EFECTIVO], [TARJETA], [TRANSFERENCIA]
+  const payMatch = order.notes?.match(/\[(EFECTIVO|TARJETA|TRANSFERENCIA)\]/i)?.[1]?.toLowerCase() ?? ''
+  const chk = (m: string) => payMatch === m ? '☑' : '☐'
+
   // IVA incluido en precios (estándar México)
   const subtotalBase = order.total / 1.16
   const iva = order.total - subtotalBase
@@ -120,7 +124,7 @@ ${rows}
 <div class="pago">
   <div class="sm b">Método de pago:</div>
   <div class="sm" style="margin-top:3px">
-    ☐ Efectivo &nbsp;&nbsp; ☐ Tarjeta &nbsp;&nbsp; ☐ Transferencia
+    ${chk('efectivo')} Efectivo &nbsp;&nbsp; ${chk('tarjeta')} Tarjeta &nbsp;&nbsp; ${chk('transferencia')} Transferencia
   </div>
 </div>
 

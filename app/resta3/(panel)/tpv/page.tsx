@@ -104,6 +104,7 @@ export default function TPVPage() {
     const tableLabel = isOrder ? (source.tableNumber || '') : tableNum.trim()
     const ticketTotal = isOrder ? source.total : cart.reduce((s, l) => s + l.item.price * l.qty, 0)
     const payLabel = payment.toUpperCase()
+    const chk = (m: string) => payment === m ? '☑' : '☐'
     const now = new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
 
     const rows = isOrder
@@ -137,7 +138,8 @@ export default function TPVPage() {
   <div class="sep"></div>
   <div class="row total"><span>TOTAL</span><span>$${ticketTotal.toFixed(2)}</span></div>
   <div class="sep"></div>
-  <div class="center">Pago: ${payLabel}</div>
+  <div style="margin:3px 0"><b>Método de pago:</b></div>
+  <div>${chk('efectivo')} Efectivo &nbsp;&nbsp; ${chk('tarjeta')} Tarjeta &nbsp;&nbsp; ${chk('transferencia')} Transferencia</div>
   <div class="sep"></div>
   <div class="center">¡Gracias por su preferencia!</div>
 </body></html>`
