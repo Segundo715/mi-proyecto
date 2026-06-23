@@ -30,7 +30,7 @@ const NAV_LINKS: NavLink[] = [
   { href: '/admin/produccion',      icon: 'produccion',       label: 'Producción',          feature: 'produccion' },
   { href: '/admin/estadisticas',    icon: 'analytics',        label: 'Analytics',           feature: 'analytics' },
   { href: '/admin/reportes',        icon: 'reportes',         label: 'Reportes',            feature: 'reportes' },
-  { href: '/admin/cumpleanos',       icon: 'birthday',         label: 'Cumpleaños' },
+  { href: '/admin/cumpleanos',       icon: 'birthday',         label: 'Cumpleaños',          feature: 'cumpleanos' },
   { href: '/admin/configuracion',   icon: 'settings',         label: 'Configuración',       feature: 'configuracion' },
 ]
 
@@ -96,6 +96,7 @@ export default function AdminNav() {
   const [order, setOrder] = useState<string[]>([])
   const [draggingHref, setDraggingHref] = useState<string | null>(null)
   const [subtitle, setSubtitle] = useState('Dirección General')
+  const [liveFeatures, setLiveFeatures] = useState<Partial<Record<FeatureKey, boolean>> | null>(null)
   const dragRef = useRef<{ href: string; startX: number; startY: number; dragging: boolean } | null>(null)
   const suppressClickRef = useRef(false)
   const brand = useBrand()
@@ -112,7 +113,14 @@ export default function AdminNav() {
       .then(r => r.json())
       .then(d => { if (d?.value) setSubtitle(d.value) })
       .catch(() => {})
+    const fetchFeatures = () =>
+      fetch('/api/features').then(r => r.json()).then(setLiveFeatures).catch(() => {})
+    fetchFeatures()
+    window.addEventListener('focus', fetchFeatures)
+    return () => window.removeEventListener('focus', fetchFeatures)
   }, [])
+
+  const activeFeatures = liveFeatures ?? brand.features
 
   const brandName = brand.name || 'NICHO'
   const brandLogo = brand.logo || '/logo.png'
@@ -262,7 +270,7 @@ export default function AdminNav() {
         <nav data-admin-nav-list className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto" style={navVars}>
           {orderedLinks.map(link => {
             const active = isActive(link.href, link.exact)
-            const enabled = isEnabled(brand.features, link.feature)
+            const enabled = isEnabled(activeFeatures, link.feature)
             const isDragging = draggingHref === link.href
             return (
               <a key={link.href}
@@ -336,7 +344,7 @@ export default function AdminNav() {
           <nav data-admin-nav-list className="flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto" style={navVars}>
             {orderedLinks.map(link => {
               const active = isActive(link.href, link.exact)
-              const enabled = isEnabled(brand.features, link.feature)
+              const enabled = isEnabled(activeFeatures, link.feature)
               const isDragging = draggingHref === link.href
               return (
                 <a key={link.href}

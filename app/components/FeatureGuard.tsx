@@ -23,7 +23,28 @@ const ROUTE_FEATURE: Record<string, string> = {
   '/admin/reviews':          'reviews',
   '/admin/sellar':           'loyaltyCard',
   '/admin/tarjetas':         'loyaltyCard',
+  '/admin/cumpleanos':       'cumpleanos',
 }
+
+const ADMIN_FALLBACKS = [
+  { href: '/admin',               feature: 'loyaltyCard'     },
+  { href: '/admin/orders',        feature: 'orders'          },
+  { href: '/admin/menu',          feature: 'menu'            },
+  { href: '/admin/tv',            feature: 'tv'              },
+  { href: '/admin/produccion',    feature: 'produccion'      },
+  { href: '/admin/ventas',        feature: 'ventas'          },
+  { href: '/admin/marketing',     feature: 'marketing'       },
+  { href: '/admin/analytics',     feature: 'analytics'       },
+  { href: '/admin/crm',           feature: 'crm'             },
+  { href: '/admin/reservaciones', feature: 'reservaciones'   },
+  { href: '/admin/operaciones',   feature: 'operaciones'     },
+  { href: '/admin/automatizaciones', feature: 'automatizaciones' },
+  { href: '/admin/contenido',     feature: 'contenido'       },
+  { href: '/admin/reportes',      feature: 'reportes'        },
+  { href: '/admin/reviews',       feature: 'reviews'         },
+  { href: '/admin/configuracion', feature: 'configuracion'   },
+  { href: '/admin/cumpleanos',    feature: 'cumpleanos'      },
+]
 
 // Employee module permissions
 const EMPLOYEE_ROUTE_MODULE: Record<string, string> = {
@@ -34,6 +55,12 @@ const EMPLOYEE_ROUTE_MODULE: Record<string, string> = {
   '/employee/tv':        'emp_pantalla_tv',
 }
 
+const EMPLOYEE_FALLBACKS = [
+  { href: '/employee/orders',    feature: 'orders',     empModule: 'emp_pedidos'      },
+  { href: '/employee/menu',      feature: 'menu',       empModule: 'emp_menu_ver'     },
+  { href: '/employee/recipes',   feature: 'produccion', empModule: 'emp_recetario'    },
+  { href: '/employee/customers', feature: 'customers',  empModule: 'emp_clientes_ver' },
+]
 
 // Componente invisible que corre en el cliente después de cada navegación.
 // Si el SuperAdmin desactivó el módulo al que se intenta acceder, redirige al inicio.
@@ -42,15 +69,35 @@ export default function FeatureGuard() {
   const router = useRouter()
 
   useEffect(() => {
-    // Verificar feature flags del admin
-    const feature = ROUTE_FEATURE[pathname]
+    // Verificar feature flags del admin (incluyendo /admin = Fidelización)
+    const feature = pathname === '/admin' ? 'loyaltyCard' : ROUTE_FEATURE[pathname]
     if (feature) {
       fetch('/api/features')
         .then(r => r.json())
         .then((flags: Record<FeatureKey, boolean>) => {
-          if (flags[feature as FeatureKey] === false) router.replace('/admin')
+          if (flags[feature as FeatureKey] === false) {
+            const next = ADMIN_FALLBACKS.find(f => f.href !== pathname && flags[f.feature as FeatureKey] !== false)
+            router.replace(next?.href ?? '/admin/menu')
+          }
         })
         .catch(() => {})
+      return
+    }
+
+    // /employee (Fidelización): si está deshabilitada redirige al primer módulo disponible
+    if (pathname === '/employee') {
+      Promise.all([
+        fetch('/api/permissions').then(r => r.json()),
+        fetch('/api/features').then(r => r.json()),
+      ]).then(([perms, flags]) => {
+        const emp = perms.employee ?? {}
+        if (emp['emp_fidelizacion'] === false) {
+          const next = EMPLOYEE_FALLBACKS.find(f =>
+            flags[f.feature] !== false && emp[f.empModule] !== false
+          )
+          if (next) router.replace(next.href)
+        }
+      }).catch(() => {})
       return
     }
 
