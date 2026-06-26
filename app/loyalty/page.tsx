@@ -10,7 +10,7 @@ const INPUT = 'w-full border rounded-2xl px-4 py-3.5 text-white bg-[#1a1a1a] pla
 
 export default function LoyaltyPage() {
   const router = useRouter()
-  const tab = 'login' as const
+  const [tab, setTab] = useState<'login' | 'register'>('login')
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -62,8 +62,18 @@ export default function LoyaltyPage() {
       {/* Card */}
       <div className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden" style={{ backgroundColor: '#0d0d0d', border: '1px solid #1a1a1a' }}>
 
-        {/* Solo login — sin opción de crear cuenta */}
-        <p className="text-sm font-black text-center pt-4 pb-1" style={{ color: accent }}>Iniciar sesión</p>
+        <div className="flex border-b" style={{ borderColor: '#1a1a1a' }}>
+          <button type="button" onClick={() => { setTab('login'); setError('') }}
+            className="flex-1 py-3 text-sm font-black transition-colors"
+            style={{ color: tab === 'login' ? accent : '#555', borderBottom: tab === 'login' ? `2px solid ${accent}` : '2px solid transparent' }}>
+            Iniciar sesión
+          </button>
+          <button type="button" onClick={() => { setTab('register'); setError('') }}
+            className="flex-1 py-3 text-sm font-black transition-colors"
+            style={{ color: tab === 'register' ? accent : '#555', borderBottom: tab === 'register' ? `2px solid ${accent}` : '2px solid transparent' }}>
+            Crear cuenta
+          </button>
+        </div>
 
         {/* Fields */}
         <div className="px-5 pb-5 space-y-3">
