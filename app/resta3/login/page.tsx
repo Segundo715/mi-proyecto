@@ -14,14 +14,17 @@ export default function Resta3LoginPage() {
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
 
-  const [accent, setAccent]       = useState(() => localStorage.getItem(LS_ACCENT) || '#00e676')
-  const [logo, setLogo]           = useState(() => localStorage.getItem(LS_LOGO) || '/logo.png')
-  const [brandName, setBrandName] = useState(() => localStorage.getItem(LS_BRAND) || 'RESTA3')
+  const [accent, setAccent]       = useState('#00e676')
+  const [logo, setLogo]           = useState('/logo.png')
+  const [brandName, setBrandName] = useState('RESTA3')
   const brandSub = 'Panel de gestión'
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) setName(saved)
+    const ca = localStorage.getItem(LS_ACCENT); if (ca) setAccent(ca)
+    const cl = localStorage.getItem(LS_LOGO);   if (cl) setLogo(cl)
+    const cn = localStorage.getItem(LS_BRAND);  if (cn) setBrandName(cn)
     Promise.all([
       fetch('/api/settings?key=sidebar_accent').then(r => r.json()),
       fetch('/api/settings?key=profile_logo').then(r => r.json()),
