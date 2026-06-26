@@ -3,8 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-const LS_ID   = 'loyalty_id'
-const LS_NAME = 'nicho_last_customer_name'
+const LS_ID     = 'loyalty_id'
+const LS_NAME   = 'nicho_last_customer_name'
+const LS_ACCENT = 'cfg_accent'
+const LS_LOGO   = 'cfg_logo'
+const LS_BRAND  = 'cfg_brand'
 
 const INPUT = 'w-full border rounded-2xl px-4 py-3.5 text-white bg-[#1a1a1a] placeholder-gray-500 focus:outline-none text-sm transition-colors'
 
@@ -15,17 +18,17 @@ export default function LoyaltyPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [logo, setLogo] = useState('/logo.png')
-  const [brandName, setBrandName] = useState('NICHO')
-  const [accent, setAccent] = useState('#B90F45')
+  const [logo, setLogo] = useState(() => localStorage.getItem(LS_LOGO) || '/logo.png')
+  const [brandName, setBrandName] = useState(() => localStorage.getItem(LS_BRAND) || 'NICHO')
+  const [accent, setAccent] = useState(() => localStorage.getItem(LS_ACCENT) || '#B90F45')
 
   useEffect(() => {
     if (localStorage.getItem(LS_ID)) { router.replace('/menu'); return }
     const savedName = localStorage.getItem(LS_NAME)
     if (savedName) { setName(savedName) }
-    fetch('/api/settings?key=profile_logo').then(r => r.json()).then(d => { if (d?.value) setLogo(d.value) }).catch(() => {})
-    fetch('/api/settings?key=restaurant_name').then(r => r.json()).then(d => { if (d?.value) setBrandName(d.value) }).catch(() => {})
-    fetch('/api/settings?key=sidebar_accent').then(r => r.json()).then(d => { if (d?.value) setAccent(d.value) }).catch(() => {})
+    fetch('/api/settings?key=profile_logo').then(r => r.json()).then(d => { if (d?.value) { setLogo(d.value); localStorage.setItem(LS_LOGO, d.value) } }).catch(() => {})
+    fetch('/api/settings?key=restaurant_name').then(r => r.json()).then(d => { if (d?.value) { setBrandName(d.value); localStorage.setItem(LS_BRAND, d.value) } }).catch(() => {})
+    fetch('/api/settings?key=sidebar_accent').then(r => r.json()).then(d => { if (d?.value) { setAccent(d.value); localStorage.setItem(LS_ACCENT, d.value) } }).catch(() => {})
   }, [router])
 
   async function handleSubmit() {
