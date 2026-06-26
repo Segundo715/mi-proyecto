@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-type Tab = 'login' | 'register'
-
 const LS_ID   = 'loyalty_id'
 const LS_NAME = 'nicho_last_customer_name'
 
@@ -12,12 +10,11 @@ const INPUT = 'w-full border rounded-2xl px-4 py-3.5 text-white bg-[#1a1a1a] pla
 
 export default function LoyaltyPage() {
   const router = useRouter()
-  const [tab, setTab] = useState<Tab>('login')
+  const tab = 'login' as const
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [returnUser, setReturnUser] = useState(false)
   const [logo, setLogo] = useState('/logo.png')
   const [brandName, setBrandName] = useState('NICHO')
   const [accent, setAccent] = useState('#B90F45')
@@ -25,7 +22,7 @@ export default function LoyaltyPage() {
   useEffect(() => {
     if (localStorage.getItem(LS_ID)) { router.replace('/menu'); return }
     const savedName = localStorage.getItem(LS_NAME)
-    if (savedName) { setName(savedName); setReturnUser(true) }
+    if (savedName) { setName(savedName) }
     fetch('/api/settings?key=profile_logo').then(r => r.json()).then(d => { if (d?.value) setLogo(d.value) }).catch(() => {})
     fetch('/api/settings?key=restaurant_name').then(r => r.json()).then(d => { if (d?.value) setBrandName(d.value) }).catch(() => {})
     fetch('/api/settings?key=sidebar_accent').then(r => r.json()).then(d => { if (d?.value) setAccent(d.value) }).catch(() => {})
@@ -65,23 +62,8 @@ export default function LoyaltyPage() {
       {/* Card */}
       <div className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden" style={{ backgroundColor: '#0d0d0d', border: '1px solid #1a1a1a' }}>
 
-        {/* Tabs — solo para usuarios nuevos */}
-        {returnUser ? (
-          <p className="text-sm font-black text-center pt-4 pb-1" style={{ color: accent }}>Iniciar sesión</p>
-        ) : (
-          <div className="flex p-1.5 gap-1.5 m-4 rounded-2xl" style={{ backgroundColor: '#1a1a1a' }}>
-            {(['login', 'register'] as const).map(t => (
-              <button key={t} type="button"
-                onClick={() => { setTab(t); setError('') }}
-                className="flex-1 py-2.5 text-sm font-bold rounded-xl transition-all"
-                style={tab === t
-                  ? { backgroundColor: accent, color: '#fff' }
-                  : { color: '#6b7280' }}>
-                {t === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Solo login — sin opción de crear cuenta */}
+        <p className="text-sm font-black text-center pt-4 pb-1" style={{ color: accent }}>Iniciar sesión</p>
 
         {/* Fields */}
         <div className="px-5 pb-5 space-y-3">
@@ -109,13 +91,6 @@ export default function LoyaltyPage() {
             {submitting ? 'Cargando...' : tab === 'login' ? '☕ Entrar a NICHO' : '☕ Unirme a NICHO'}
           </button>
 
-          {returnUser && (
-            <button type="button"
-              onClick={() => { setReturnUser(false); setTab('register'); setName(''); setPassword(''); setError('') }}
-              className="w-full text-xs text-center py-1" style={{ color: '#555' }}>
-              ¿Cuenta nueva? Registrarse
-            </button>
-          )}
         </div>
       </div>
     </div>
