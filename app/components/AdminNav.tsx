@@ -31,6 +31,7 @@ const NAV_LINKS: NavLink[] = [
   { href: '/admin/estadisticas',    icon: 'analytics',        label: 'Analytics',           feature: 'analytics' },
   { href: '/admin/reportes',        icon: 'reportes',         label: 'Reportes',            feature: 'reportes' },
   { href: '/admin/cumpleanos',       icon: 'birthday',         label: 'Cumpleaños',          feature: 'cumpleanos' },
+  { href: '/admin/resta3',          icon: 'resta3',           label: 'Usuarios Resta3' },
   { href: '/admin/configuracion',   icon: 'settings',         label: 'Configuración',       feature: 'configuracion' },
 ]
 
@@ -60,6 +61,7 @@ const ICONS: Record<string, string> = {
   navbar:           '<rect x="3" y="14" width="18" height="7" rx="2"/><circle cx="8" cy="17.5" r="1"/><circle cx="12" cy="17.5" r="1"/><circle cx="16" cy="17.5" r="1"/><path d="M12 3v8M8 7l4-4 4 4"/>',
   demo:             '<polygon points="5 3 19 12 5 21 5 3"/>',
   birthday:         '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M12 3v1"/><path d="M8 7h1M15 7h1"/>',
+  resta3:           '<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><circle cx="12" cy="10" r="3"/>',
 }
 
 function NavIcon({ name }: { name: string }) {
