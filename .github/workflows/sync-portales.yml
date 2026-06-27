@@ -24,7 +24,7 @@ jobs:
       - name: Sync files
         run: |
           # app/ completo — excluir archivos específicos de cada restaurante
-          rsync -av --exclude='api/auth/route.ts' --exclude='admin/layout.tsx' mi-proyecto/app/ mi-restauranteportales/app/
+          rsync -av --exclude='api/auth/route.ts' --exclude='admin/layout.tsx' --exclude='globals.css' mi-proyecto/app/ mi-restauranteportales/app/
 
           # lib/ excepto supabase.ts (portales tiene su propia versión con otra BD)
           rsync -av --exclude='supabase.ts' mi-proyecto/lib/ mi-restauranteportales/lib/
