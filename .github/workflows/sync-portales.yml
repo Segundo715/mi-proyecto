@@ -47,6 +47,7 @@ jobs:
             --exclude='components/EmployeeNav.tsx' \
             --exclude='employee/login/page.tsx' \
             --exclude='employee/recipes/page.tsx' \
+            --exclude='resta3/login/page.tsx' \
             mi-proyecto/app/ mi-restauranteportales/app/
 
           # lib/ excepto supabase.ts (portales tiene su propia versión con otra BD)
