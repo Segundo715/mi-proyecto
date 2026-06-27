@@ -23,8 +23,19 @@ jobs:
 
       - name: Sync files
         run: |
-          # app/ completo — excluir archivos específicos de cada restaurante
-          rsync -av --exclude='api/auth/route.ts' --exclude='admin/layout.tsx' --exclude='globals.css' mi-proyecto/app/ mi-restauranteportales/app/
+          # app/ completo — excluir archivos con branding/colores propios de cada restaurante
+          rsync -av \
+            --exclude='api/auth/route.ts' \
+            --exclude='admin/layout.tsx' \
+            --exclude='globals.css' \
+            --exclude='menu/page.tsx' \
+            --exclude='page.tsx' \
+            --exclude='loyalty/page.tsx' \
+            --exclude='registro/page.tsx' \
+            --exclude='resena/page.tsx' \
+            --exclude='card/' \
+            --exclude='components/CustomerNav.tsx' \
+            mi-proyecto/app/ mi-restauranteportales/app/
 
           # lib/ excepto supabase.ts (portales tiene su propia versión con otra BD)
           rsync -av --exclude='supabase.ts' mi-proyecto/lib/ mi-restauranteportales/lib/
