@@ -27,14 +27,26 @@ jobs:
           rsync -av \
             --exclude='api/auth/route.ts' \
             --exclude='admin/layout.tsx' \
+            --exclude='admin/login/page.tsx' \
+            --exclude='admin/configuracion/page.tsx' \
+            --exclude='admin/menu/page.tsx' \
+            --exclude='admin/recipes/page.tsx' \
             --exclude='globals.css' \
             --exclude='menu/page.tsx' \
             --exclude='page.tsx' \
             --exclude='loyalty/page.tsx' \
             --exclude='registro/page.tsx' \
             --exclude='resena/page.tsx' \
+            --exclude='recetas/page.tsx' \
+            --exclude='resetas/page.tsx' \
+            --exclude='review/page.tsx' \
+            --exclude='salon/page.tsx' \
             --exclude='card/' \
             --exclude='components/CustomerNav.tsx' \
+            --exclude='components/AdminNav.tsx' \
+            --exclude='components/EmployeeNav.tsx' \
+            --exclude='employee/login/page.tsx' \
+            --exclude='employee/recipes/page.tsx' \
             mi-proyecto/app/ mi-restauranteportales/app/
 
           # lib/ excepto supabase.ts (portales tiene su propia versión con otra BD)
