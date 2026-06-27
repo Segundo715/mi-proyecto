@@ -23,8 +23,8 @@ jobs:
 
       - name: Sync files
         run: |
-          # app/ completo (portales tiene api/admin/ que no existe en mi-proyecto, rsync no lo borra)
-          rsync -av mi-proyecto/app/ mi-restauranteportales/app/
+          # app/ completo — excluir auth/route.ts (portales tiene nombre propio "Los Portales")
+          rsync -av --exclude='api/auth/route.ts' mi-proyecto/app/ mi-restauranteportales/app/
 
           # lib/ excepto supabase.ts (portales tiene su propia versión con otra BD)
           rsync -av --exclude='supabase.ts' mi-proyecto/lib/ mi-restauranteportales/lib/
