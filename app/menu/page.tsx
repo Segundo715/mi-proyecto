@@ -333,7 +333,7 @@ export default function MenuPage() {
           <div className="flex items-center justify-center gap-3 pb-3">
             <button type="button" onClick={() => changeQty(item.id, -1)}
               className="text-white font-black text-lg w-8 h-8 rounded flex items-center justify-center"
-              style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>âˆ'</button>
+              style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>−</button>
             <span className="text-white font-bold w-6 text-center">{inCart.qty}</span>
             <button type="button" onClick={() => changeQty(item.id, 1)}
               className="text-white font-black text-lg w-8 h-8 rounded flex items-center justify-center"
@@ -607,7 +607,7 @@ export default function MenuPage() {
                     <div className="flex items-center gap-2 shrink-0">
                       <button type="button" onClick={() => changeQty(c.item.id, -1)}
                         className="w-8 h-8 rounded-full font-bold text-lg flex items-center justify-center text-white"
-                        style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>âˆ'</button>
+                        style={{ backgroundColor: '#1a1a1a', border: '1px solid #B90F45' }}>−</button>
                       <span className="font-black text-white w-4 text-center text-sm">{c.qty}</span>
                       <button type="button" onClick={() => changeQty(c.item.id, 1)}
                         className="w-8 h-8 rounded-full font-bold text-lg flex items-center justify-center text-white"
