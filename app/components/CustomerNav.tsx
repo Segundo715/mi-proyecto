@@ -38,7 +38,7 @@ export const DEFAULT_NAV: NavConfig = {
     { id: 'review', label: 'Reseñas', href: '/review', icon: '' },
     { id: 'card',   label: 'Tarjeta', href: '/card',   icon: '' },
   ],
-  showLogout: true,
+  showLogout: false,
 }
 
 // Acepta config nueva (tabs) y migra la antigua (labels) sin romper nada.
@@ -86,10 +86,9 @@ function TabIcon({ icon, builtin, className }: { icon: string; builtin?: string;
 }
 
 function logout() {
-  localStorage.removeItem('loyalty_id')
+  localStorage.removeItem('registro_card_id')
   localStorage.removeItem('loyalty_pending_id')
-  localStorage.removeItem('loyalty_card_id')
-  window.location.href = '/loyalty'
+  window.location.href = '/registro'
 }
 
 export default function CustomerNav({ active }: { active?: string }) {

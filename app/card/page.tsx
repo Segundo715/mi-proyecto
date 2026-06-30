@@ -9,7 +9,7 @@ import { RewardIcon } from '@/app/components/RewardIcon'
 
 const QRCode = dynamic(() => import('react-qr-code'), { ssr: false })
 
-const STORAGE_KEY = 'loyalty_card_id'
+const STORAGE_KEY = 'registro_card_id'
 const CATEGORIES_KEY = 'reward_categories'
 
 // Config por defecto de la "Tarjeta de Café" (se sobreescribe desde /admin/tarjetas)
