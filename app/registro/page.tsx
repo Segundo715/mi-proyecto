@@ -189,7 +189,12 @@ export default function RegistroPage() {
               Acumula 5 visitas y gana un café gratis ☕
             </p>
           </div>
-          <button onClick={registerAnother} className="text-sm font-semibold" style={{ color: '#B90F45' }}>
+          <a href="/card"
+            className="block w-full py-4 rounded-2xl text-white font-black text-base text-center transition-all"
+            style={{ backgroundColor: '#B90F45' }}>
+            Ver mi tarjeta
+          </a>
+          <button onClick={registerAnother} className="text-sm font-semibold" style={{ color: '#555' }}>
             Registrar otra persona
           </button>
         </div>
