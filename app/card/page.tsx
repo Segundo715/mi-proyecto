@@ -25,13 +25,17 @@ interface Customer {
   id: string; name: string; phone: string; visits: number; active: boolean; confirmed: boolean
 }
 
-type Step = 'loading' | 'waiting' | 'card'
+type Step = 'loading' | 'form' | 'waiting' | 'card'
 
 export default function CardPage() {
   const [step, setStep] = useState<Step>('loading')
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [cfg, setCfg] = useState<CafeConfig>(DEFAULT_CAFE)
   const [flipped, setFlipped] = useState(false)
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -44,12 +48,12 @@ export default function CardPage() {
             setStep(data.active ? 'card' : 'waiting')
           } else {
             localStorage.removeItem(STORAGE_KEY)
-            window.location.replace('/registro')
+            setStep('form')
           }
         })
-        .catch(() => { window.location.replace('/registro') })
+        .catch(() => { setStep('form') })
     } else {
-      window.location.replace('/registro')
+      setStep('form')
     }
     fetch(`/api/settings?key=${CATEGORIES_KEY}`)
       .then(r => r.ok ? r.json() : null)
@@ -85,6 +89,88 @@ export default function CardPage() {
     return () => clearInterval(id)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, customer?.id])
+
+  async function handleSubmit() {
+    if (!name.trim() || !phone.trim()) { setError('Completa todos los campos'); return }
+    setError('')
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/loyalty', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), cardType: 'cafe' }),
+      })
+      if (res.ok) {
+        const data: Customer = await res.json()
+        localStorage.setItem(STORAGE_KEY, data.id)
+        setCustomer(data)
+        setStep(data.active ? 'card' : 'waiting')
+      } else {
+        const d = await res.json()
+        setError(d.error ?? 'Error al registrar')
+      }
+    } catch {
+      setError('Error de conexión. Intenta de nuevo.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (step === 'form') {
+    const INPUT = 'w-full rounded-2xl px-4 py-3.5 text-sm text-white placeholder-gray-500 outline-none transition-colors'
+    return (
+      <div className="fixed inset-0 flex flex-col" style={{ backgroundColor: '#0a0a0a' }}>
+        {/* Hero con gradiente NICHO */}
+        <div className="relative flex flex-col items-center justify-end pb-8 pt-12 px-6"
+          style={{ background: 'linear-gradient(160deg, #3a0018 0%, #B90F45 60%, #8c0a32 100%)', minHeight: '40%' }}>
+          <div className="absolute top-4 right-4 w-24 h-24 rounded-full opacity-10 bg-white" />
+          <div className="absolute top-12 right-12 w-12 h-12 rounded-full opacity-10 bg-white" />
+          <div className="absolute bottom-10 left-6 w-16 h-16 rounded-full opacity-10 bg-white" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={cfg.logo} alt="NICHO" className="h-24 w-auto object-contain drop-shadow-2xl relative z-10" />
+          <p className="text-white font-black text-lg tracking-widest text-center mt-4 relative z-10">NICHO</p>
+          <p className="text-white/70 text-sm text-center mt-1 relative z-10">
+            {cfg.goal} visitas = {cfg.reward} ☕
+          </p>
+        </div>
+
+        {/* Formulario */}
+        <div className="flex-1 flex flex-col items-center px-5 -mt-6 relative z-10">
+          <div className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden"
+            style={{ backgroundColor: '#141414', border: '1px solid #2a2a2a' }}>
+            <div className="px-6 pt-6 pb-2">
+              <h2 className="text-white font-black text-xl">Tu tarjeta de lealtad</h2>
+              <p className="text-sm mt-0.5" style={{ color: '#888' }}>Ingresa tus datos para acceder</p>
+            </div>
+            <div className="px-6 pb-6 pt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold mb-2 uppercase tracking-widest" style={{ color: '#B90F45' }}>Nombre completo</label>
+                <input type="text" value={name} onChange={e => { setName(e.target.value); setError('') }}
+                  placeholder="Ej. María González" autoFocus className={INPUT}
+                  style={{ backgroundColor: '#1e1e1e', border: '1.5px solid #2a2a2a' }} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold mb-2 uppercase tracking-widest" style={{ color: '#B90F45' }}>Teléfono</label>
+                <input type="tel" value={phone} onChange={e => { setPhone(e.target.value); setError('') }}
+                  placeholder="Ej. 443 123 4567" className={INPUT}
+                  style={{ backgroundColor: '#1e1e1e', border: '1.5px solid #2a2a2a' }} />
+              </div>
+              {error && (
+                <div className="rounded-2xl px-4 py-3 text-sm font-medium text-red-300"
+                  style={{ backgroundColor: '#2d0a0a', border: '1px solid #7f1d1d' }}>{error}</div>
+              )}
+              <button type="button" onClick={handleSubmit} disabled={submitting}
+                className="w-full py-4 rounded-2xl text-white font-black text-base disabled:opacity-60 transition-all active:scale-95"
+                style={{ backgroundColor: '#B90F45', boxShadow: '0 6px 24px #B90F4555' }}>
+                {submitting ? 'Buscando...' : '☕  Ver mi tarjeta'}
+              </button>
+            </div>
+          </div>
+        </div>
+        <CustomerNav active="card" />
+      </div>
+    )
+  }
 
   if (step === 'loading') {
     return (
