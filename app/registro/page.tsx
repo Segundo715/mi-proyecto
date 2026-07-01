@@ -25,6 +25,19 @@ export default function RegistroPage() {
   const [welcomeSubtitle, setWelcomeSubtitle] = useState(DEFAULT_SUBTITLE)
   const [existingCard, setExistingCard] = useState<Card | null>(null)
 
+  // Pollea activación cuando está en espera — debe ir antes de los returns condicionales
+  useEffect(() => {
+    if (step !== 'waiting' || !existingCard) return
+    const id = setInterval(() => {
+      fetch(`/api/loyalty/${existingCard.id}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data?.active) setStep('active') })
+        .catch(() => {})
+    }, 5000)
+    return () => clearInterval(id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, existingCard?.id])
+
   useEffect(() => {
     fetch('/api/settings?key=registro_titulo').then(r => r.json()).then(d => { if (d.value) setWelcomeTitle(d.value) })
     fetch('/api/settings?key=registro_subtitulo').then(r => r.json()).then(d => { if (d.value) setWelcomeSubtitle(d.value) })
@@ -132,19 +145,6 @@ export default function RegistroPage() {
       </div>
     )
   }
-
-  // Esperando activación del admin — pollea cada 5s
-  useEffect(() => {
-    if (step !== 'waiting' || !existingCard) return
-    const id = setInterval(() => {
-      fetch(`/api/loyalty/${existingCard.id}`)
-        .then(r => r.ok ? r.json() : null)
-        .then(data => { if (data?.active) setStep('active') })
-        .catch(() => {})
-    }, 5000)
-    return () => clearInterval(id)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, existingCard?.id])
 
   if (step === 'waiting') {
     return (
