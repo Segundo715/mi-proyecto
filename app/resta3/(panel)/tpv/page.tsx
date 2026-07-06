@@ -225,7 +225,7 @@ export default function TPVPage() {
           {(['nueva', 'historial'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className="px-4 py-2 rounded-xl text-sm font-bold capitalize transition-all"
-              style={tab === t ? { background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' } : { backgroundColor: S.card, color: S.sub, border: `1px solid ${S.border}` }}>
+              style={tab === t ? { backgroundColor: S.accent, color: '#fff' } : { backgroundColor: S.card, color: S.sub, border: `1px solid ${S.border}` }}>
               <span className="inline-flex items-center gap-1.5">{t === 'nueva' ? <><Icon name="receipt" size={15} /> Nueva orden</> : <><Icon name="clipboard" size={15} /> Historial</>}</span>
             </button>
           ))}
@@ -281,7 +281,7 @@ export default function TPVPage() {
                 {CATS.map(c => (
                   <button key={c} onClick={() => setCat(c)}
                     className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
-                    style={cat === c ? { background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' } : { backgroundColor: S.card, color: S.sub, border: `1px solid ${S.border}` }}>
+                    style={cat === c ? { backgroundColor: S.accent, color: '#fff' } : { backgroundColor: S.card, color: S.sub, border: `1px solid ${S.border}` }}>
                     {c}
                   </button>
                 ))}
