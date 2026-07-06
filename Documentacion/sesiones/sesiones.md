@@ -28,3 +28,11 @@ Documentacion/cli.md,Documentacion/indice.md,Documentacion/sesiones/sesiones.md,
 app/resta3/(panel)/tpv/page.tsx
 
 ---
+
+## 2026-07-06 — Monday
+
+### 01:39 PM — main
+**fix: reemplazar naranja hardcodeado por accent en todas las páginas resta3**
+app/resta3/(panel)/cocina/page.tsx,app/resta3/(panel)/compras/page.tsx,app/resta3/(panel)/corte/page.tsx,app/resta3/(panel)/empleados/page.tsx,app/resta3/(panel)/inventario/page.tsx,app/resta3/(panel)/reportes/page.tsx
+
+---
