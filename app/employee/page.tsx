@@ -114,10 +114,10 @@ export default function EmployeePage() {
           <p className="text-xs mb-4" style={{ color: S.sub }}>Los clientes escanean este para registrarse</p>
           <div className="flex justify-center mb-3">
             <div className="p-3 rounded-2xl bg-white inline-flex items-center justify-center min-h-[172px] min-w-[172px]">
-              {origin ? <QRCode value={`${origin}/loyalty`} size={160} /> : <span className="text-gray-400 text-sm">Cargando…</span>}
+              {origin ? <QRCode value={`${origin}/card`} size={160} /> : <span className="text-gray-400 text-sm">Cargando…</span>}
             </div>
           </div>
-          {origin && <p className="text-xs break-all" style={{ color: S.sub }}>{origin}/loyalty</p>}
+          {origin && <p className="text-xs break-all" style={{ color: S.sub }}>{origin}/card</p>}
         </div>
 
         {/* Stamp visit */}

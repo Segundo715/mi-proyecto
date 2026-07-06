@@ -2,6 +2,8 @@
 // Edge Runtime causaba 401 porque Vercel no inyecta env vars sensibles en ese contexto.
 export const maxDuration = 60
 
+import { verifySession } from '@/lib/auth'
+
 import { getAllOrders } from '@/lib/ordersDb'
 import { getAllMenuItems } from '@/lib/menuDb'
 import { getAllRecipes } from '@/lib/recipeDb'
@@ -273,6 +275,17 @@ export async function POST(req: Request) {
 
     const body = await req.json()
     const { messages, role = 'staff', menuContext } = body
+
+    // customer es público; todos los demás roles requieren sesión válida
+    if ((role as Role) !== 'customer') {
+      const cookieHeader = req.headers.get('cookie') ?? ''
+      const parseCookie = (name: string) => cookieHeader.match(new RegExp(`(?:^|;)\\s*${name}=([^;]*)`))?.[1]
+      const hasSession =
+        verifySession(parseCookie('admin_session')) ||
+        verifySession(parseCookie('employee_session')) ||
+        verifySession(parseCookie('resta3_session'))
+      if (!hasSession) return streamText('Sesión no válida. Inicia sesión para usar el asistente.')
+    }
 
     // Para customer: saltamos getSetting para no perder ~1s de timeout de Vercel Hobby.
     // El nombre del restaurante no es crítico en el rol cliente.
