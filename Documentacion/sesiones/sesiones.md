@@ -13,6 +13,28 @@ Documentacion/indice.md, Documentacion/sesiones/sesiones.md, Documentacion/sql/t
 
 ---
 
+## 2026-07-06 — Lunes — Resumen de sesión
+
+### Auditoría de seguridad y correcciones generales
+
+**Vulnerabilidades corregidas:**
+- `/api/ai/chat`: abierto sin auth → agregado `verifySession()` con parse manual de cookie. Rol `customer` permanece público.
+- `/api/features` (mi-restauranteportales): solo CORS → agregado header `x-admin-secret` contra `ADMIN_SECRET`.
+- `/api/save-flags` (superadmin): sin auth → agregado `verifySaSession()`.
+
+**Correcciones funcionales:**
+- QR del panel de empleado (`app/employee/page.tsx:117,120`): apuntaba a `/loyalty` (ruta inexistente) → corregido a `/card`.
+- 7 páginas de resta3 (`tpv`, `cocina`, `compras`, `corte`, `empleados`, `inventario`, `reportes`): color naranja hardcodeado `linear-gradient(135deg,#f59e0b,#d97706)` en botones de acción → reemplazado por `{ backgroundColor: S.accent, color: '#fff' }`.
+
+**Documentación nueva:**
+- `Documentacion/cli.md` — comandos de demo (mi-pruebas) con y sin combo por rol (admin, empleado, resta3, usuario)
+
+**Módulos demo (`mi-pruebas/scripts/module.js`):**
+- `combo_empleado`: faltaba `tv: true` → corregido
+- `combo_resta3`: tenía `dashboard: true` de más → removido; target → `/resta3/tpv`
+
+---
+
 ## 2026-07-06 — Monday
 
 ### 01:08 PM — main

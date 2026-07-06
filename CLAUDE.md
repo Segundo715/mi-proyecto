@@ -130,6 +130,7 @@ Claves conocidas:
 
 Endpoint de chat en streaming respaldado por la API de Groq. Restricciones clave:
 
+- **Autenticación:** el rol `customer` es público. Todos los demás roles (`staff`, `cook`, `employee`, `resta3`, `admin`, `recipe`) requieren cookie de sesión válida (`admin_session`, `employee_session` o `resta3_session`). El handler parsea el header `Cookie` manualmente (no usa `NextRequest`) y verifica con `verifySession()` de `lib/auth.ts`.
 - **Debe usar Lambda de Node.js** — `export const maxDuration = 60`. Nunca usar `export const runtime = 'edge'`; Vercel no inyecta `GROQ_API_KEY` en los aislados V8 del Edge Runtime (causa 401).
 - Modelos: `llama-3.1-8b-instant` (rol cliente, rápido) · `llama-3.3-70b-versatile` (todos los roles de personal/admin)
 - `buildSystem(role, restaurantName, menuContext?)` obtiene datos en tiempo real de Supabase por rol (timeout de 2.5 s por llamada via `Promise.race`):
@@ -193,6 +194,7 @@ Ruta de colección (`GET`/`POST`) + ruta `[id]` (`GET`/`PATCH`/`DELETE`). `PATCH
 ### Códigos QR y escáner
 
 - QR del negocio (`/admin`): codifica `window.location.origin`
+- QR del panel empleado (`/employee`): codifica `${origin}/card` — redirige al cliente a su tarjeta de lealtad. **No usar `/loyalty`** (ruta inexistente).
 - QR del cliente: codifica el UUID — el empleado escanea para sellar
 - `QRScanner` importa dinámicamente `html5-qrcode` dentro de `useEffect` (no seguro en SSR). El `div#qr-reader` debe existir antes de `Html5Qrcode.start()`; el padre lo remonta vía bump de ref `scanKey`.
 - `/activate` envuelve `useSearchParams()` en `<Suspense>` (requerido por App Router).
@@ -240,8 +242,15 @@ Carpeta raíz `components/` (distinta de `app/components/`), importada via `@/co
 
 `app/components/LoyaltyCard.tsx` tiene una constante `BUSINESS_WA` (número de WhatsApp, sin `+` ni espacios) que cambiar por despliegue.
 
+## Seguridad
+
+- **CORS no es suficiente:** el endpoint `POST /api/features` dependía solo de CORS. CORS no protege peticiones server-to-server (curl, fetch de servidor). Cualquier endpoint de escritura sin autenticación real está expuesto.
+- **`/api/ai/chat`:** protegido con `verifySession()` para roles de personal (corregido 2026-07-06). El rol `customer` permanece público por diseño.
+- **`/api/features` (portales):** protegido con header `x-admin-secret` verificado contra `ADMIN_SECRET` (corregido 2026-07-06).
+
 ## Notas de contexto — lecciones aprendidas
 
+- **2026-07-06 — Seguridad y correcciones:** `/api/ai/chat` ahora requiere sesión para roles no-customer. QR en panel empleado corregido a `/card` (era `/loyalty`, ruta inexistente). Color hardcodeado `#f59e0b→#d97706` en 7 páginas resta3 reemplazado por `S.accent` (variable de marca dinámica). Módulos demo en `mi-pruebas` corregidos: `combo_empleado` agregó `tv`, `combo_resta3` removió `dashboard`.
 - **restaurant_id='default':** todos los datos se crean con `restaurant_id='default'` cuando `NEXT_PUBLIC_RESTAURANT_ID` no está configurada. Si la app muestra datos vacíos tras configurar esa variable, hacer PATCH masivo en Supabase: `PATCH /rest/v1/menu_items?restaurant_id=eq.default` con `{"restaurant_id":"portales"}`. Aplica a: `menu_items`, `recipes`, `admins`, `employees`, `customers`, `orders`.
 - **Dos Supabase para portales:** `.env.local` en `mi-restauranteportales` usa la BD principal (zxynrlqubdlrwcfoewdv) para desarrollo local. Vercel usa la BD propia de portales (qmtsetcqnovcahuimkvg). Los seeds locales NO afectan producción.
 - **Vercel no auto-deploya portales:** el proyecto portales en Vercel no está conectado a GitHub. Después de cada push, hacer `vercel --prod --token $TOKEN` manualmente desde `mi-restauranteportales/`.
