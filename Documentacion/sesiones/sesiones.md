@@ -20,3 +20,11 @@ Documentacion/indice.md, Documentacion/sesiones/sesiones.md, Documentacion/sql/t
 Documentacion/cli.md,Documentacion/indice.md,Documentacion/sesiones/sesiones.md,Documentacion/sql/tablas.sql,app/api/ai/chat/route.ts,app/employee/page.tsx
 
 ---
+
+## 2026-07-06 — Monday
+
+### 01:22 PM — main
+**fix: reemplazar naranja hardcodeado por accent color en TPV resta3**
+app/resta3/(panel)/tpv/page.tsx
+
+---
