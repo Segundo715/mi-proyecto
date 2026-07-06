@@ -80,7 +80,7 @@ export default function EmpleadosPage() {
           </div>
           <button onClick={() => setShowForm(true)}
             className="text-xs font-bold px-3 py-1.5 rounded-xl"
-            style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' }}>
+            style={{ backgroundColor: S.accent, color: '#fff' }}>
             + Agregar empleado
           </button>
         </div>
@@ -185,7 +185,7 @@ export default function EmpleadosPage() {
             {error && <p className="text-xs font-bold" style={{ color: '#f87171' }}>{error}</p>}
             <button onClick={addEmployee} disabled={saving}
               className="w-full py-3 rounded-xl font-black text-sm disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' }}>
+              style={{ backgroundColor: S.accent, color: '#fff' }}>
               {saving ? 'Creando...' : 'Crear empleado'}
             </button>
           </div>

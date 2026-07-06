@@ -83,7 +83,7 @@ export default function InventarioPage() {
           </div>
           <button onClick={() => setShowForm(true)}
             className="text-xs font-bold px-3 py-1.5 rounded-xl"
-            style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' }}>
+            style={{ backgroundColor: S.accent, color: '#fff' }}>
             + Agregar producto
           </button>
         </div>
@@ -211,7 +211,7 @@ export default function InventarioPage() {
             </div>
             <button onClick={saveNew} disabled={saving || !form.name.trim()}
               className="w-full py-3 rounded-xl font-black text-sm disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' }}>
+              style={{ backgroundColor: S.accent, color: '#fff' }}>
               {saving ? 'Guardando...' : 'Agregar producto'}
             </button>
           </div>

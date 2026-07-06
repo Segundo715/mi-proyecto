@@ -143,7 +143,7 @@ export default function CorteCajaPage() {
 
               <button onClick={ejecutarCorte} disabled={saving}
                 className="w-full py-3.5 rounded-xl font-black text-sm disabled:opacity-50 transition-all"
-                style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' }}>
+                style={{ backgroundColor: S.accent, color: '#fff' }}>
                 {saving ? 'Ejecutando corte...' : <span className="inline-flex items-center justify-center gap-2"><Icon name="receipt" size={16} /> Cerrar turno y hacer corte</span>}
               </button>
             </div>

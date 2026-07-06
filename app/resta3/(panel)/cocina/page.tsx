@@ -224,7 +224,7 @@ export default function CocinaPage() {
 
       {newAlert && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl font-black text-sm animate-bounce inline-flex items-center gap-2"
-          style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' }}>
+          style={{ backgroundColor: S.accent, color: '#fff' }}>
           <Icon name="bell" size={16} /> ¡Nuevo pedido!
         </div>
       )}

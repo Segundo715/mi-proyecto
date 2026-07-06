@@ -130,7 +130,7 @@ export default function ReportesPage() {
             {(['hoy', 'semana', 'mes'] as const).map(p => (
               <button key={p} onClick={() => setPeriod(p)}
                 className="px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all"
-                style={period === p ? { background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' } : { backgroundColor: S.card, color: S.sub, border: `1px solid ${S.border}` }}>
+                style={period === p ? { backgroundColor: S.accent, color: '#fff' } : { backgroundColor: S.card, color: S.sub, border: `1px solid ${S.border}` }}>
                 {p}
               </button>
             ))}
@@ -340,7 +340,7 @@ export default function ReportesPage() {
                 {reviews.slice(0, 5).map(r => (
                   <div key={r.id} className="px-5 py-3 flex items-start gap-3">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shrink-0"
-                      style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#000' }}>
+                      style={{ backgroundColor: S.accent, color: '#fff' }}>
                       {r.customerName.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
