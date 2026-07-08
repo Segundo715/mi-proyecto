@@ -67,6 +67,27 @@ CLAUDE.md,Documentacion/sesiones/sesiones.md
 
 ---
 
+## 2026-07-08 — Miércoles — Resumen de sesión
+
+### Documentación del usuario cliente + corrección de flujo de registro
+
+**Documentación nueva:**
+- Carpeta `Documentacion/documentacion-usuario/` creada con `usuario-cliente.md`
+- Generada con Claude Opus (1481 líneas): 25 secciones, código real leído de los archivos fuente, diagramas ASCII, 24 FAQ, glosario
+- Corrige errores del documento anterior: estados reales del registro, claves de localStorage, `/recetas` vs `/resetas`, dos sistemas separados (`loyalty_cards` vs `customers`)
+
+**Corrección de flujo de registro (`app/registro/page.tsx`):**
+- `findOrCreate()` crea tarjetas con `active: true` inmediatamente — clientes nuevos nunca esperan activación de admin
+- Paso `active` ahora redirige automáticamente a `/card` en 3 segundos (`useEffect` con `setTimeout`)
+- El estado `waiting` solo existe para tarjetas desactivadas manualmente por admin
+
+**Sincronización de mi-restauranteportales:**
+- Miembro de equipo hizo commit de sync (GitHub Actions) con el fix de `ai/chat`
+- Rebase local: 4 commits (Dashboard/analytics + fix features POST) sobre el commit del miembro
+- Push limpio sin conflictos
+
+---
+
 ## 2026-07-08 — Wednesday
 
 ### 11:19 AM — main
