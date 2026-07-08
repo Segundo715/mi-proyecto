@@ -22,6 +22,7 @@
 | [documentacion-completa-2026-06-28](documentos/documentacion-completa-2026-06-28.md) | Snapshot completo del sistema |
 | [manual-tecnico-2026-06-28](documentos/manual-tecnico-2026-06-28.md) | Manual técnico para desarrolladores |
 | [manual-usuario-2026-06-28](documentos/manual-usuario-2026-06-28.md) | Manual de uso para administradores |
+| [usuario-cliente](documentos/usuario-cliente.md) | Documentación completa del portal del cliente: menú, lealtad, tarjeta, reseñas, QR, permisos |
 
 ---
 
