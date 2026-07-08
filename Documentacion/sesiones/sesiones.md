@@ -74,3 +74,11 @@ CLAUDE.md,Documentacion/sesiones/sesiones.md
 Documentacion/documentos/usuario-cliente.md,Documentacion/indice.md
 
 ---
+
+## 2026-07-08 — Wednesday
+
+### 11:31 AM — main
+**docs: documentacion exhaustiva del usuario cliente con Opus (566 lineas)**
+Documentacion/documentacion-usuario/usuario-cliente.md,Documentacion/documentos/usuario-cliente.md,Documentacion/indice.md
+
+---
