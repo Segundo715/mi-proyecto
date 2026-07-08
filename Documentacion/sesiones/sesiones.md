@@ -66,3 +66,11 @@ app/resta3/(panel)/cocina/page.tsx,app/resta3/(panel)/compras/page.tsx,app/resta
 CLAUDE.md,Documentacion/sesiones/sesiones.md
 
 ---
+
+## 2026-07-08 — Wednesday
+
+### 11:19 AM — main
+**docs: agregar documentacion completa del usuario cliente**
+Documentacion/documentos/usuario-cliente.md,Documentacion/indice.md
+
+---
