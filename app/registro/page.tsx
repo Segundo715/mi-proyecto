@@ -25,6 +25,13 @@ export default function RegistroPage() {
   const [welcomeSubtitle, setWelcomeSubtitle] = useState(DEFAULT_SUBTITLE)
   const [existingCard, setExistingCard] = useState<Card | null>(null)
 
+  // Auto-redirige a /card cuando la tarjeta ya está activa
+  useEffect(() => {
+    if (step !== 'active') return
+    const t = setTimeout(() => { window.location.href = '/card' }, 3000)
+    return () => clearTimeout(t)
+  }, [step])
+
   // Pollea activación cuando está en espera — debe ir antes de los returns condicionales
   useEffect(() => {
     if (step !== 'waiting' || !existingCard) return
@@ -188,11 +195,12 @@ export default function RegistroPage() {
             <p className="text-xs font-bold" style={{ color: '#B90F45' }}>
               Acumula 5 visitas y gana un café gratis ☕
             </p>
+            <p className="text-xs" style={{ color: '#555' }}>Redirigiendo a tu tarjeta...</p>
           </div>
           <a href="/card"
             className="block w-full py-4 rounded-2xl text-white font-black text-base text-center transition-all"
             style={{ backgroundColor: '#B90F45' }}>
-            Ver mi tarjeta
+            Ver mi tarjeta ahora
           </a>
           <button onClick={registerAnother} className="text-sm font-semibold" style={{ color: '#555' }}>
             Registrar otra persona

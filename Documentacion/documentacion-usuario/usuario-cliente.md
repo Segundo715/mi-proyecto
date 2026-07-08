@@ -222,14 +222,14 @@ que **busca por teléfono normalizado + tipo de tarjeta**. Devuelve:
 
 | HTTP | Significado | Reacción de la UI de `/registro` |
 |------|-------------|----------------------------------|
-| `201 Created` | Tarjeta **nueva** creada (aún inactiva) | pasa al estado `active` (muestra "¡Tarjeta activada!") |
+| `201 Created` | Tarjeta **nueva** creada (`active: true` inmediatamente) | pasa al estado `active` → muestra "¡Tarjeta activada!" y redirige a `/card` en 3 s |
 | `200 OK` | Ya **existía** una tarjeta con ese teléfono+tipo | pasa al estado `already` (muestra sellos actuales) |
 | `400 Bad Request` | Falta nombre o teléfono (`{ "error": "Nombre y teléfono requeridos" }`) | muestra el error en rojo |
 
-> **Matiz técnico:** en `/registro`, tras un `201`, la UI salta directamente a `active`. En
-> cambio, la página `/card` interpreta la misma respuesta con la lógica `data.active ? 'card' :
-> 'waiting'`, es decir, si la tarjeta viene inactiva muestra la pantalla de espera. Ambas son
-> válidas; simplemente las dos páginas presentan el registro con matices distintos.
+> **Importante:** `findOrCreate()` en `lib/loyaltyDb.ts` siempre crea tarjetas nuevas con
+> `active: true`. Los clientes nuevos **nunca** quedan en espera — su tarjeta está lista
+> de inmediato. El estado `waiting` solo aparece si un administrador **desactiva manualmente**
+> una tarjeta existente desde el panel.
 
 ### 5.4 Vigencia de la tarjeta
 
@@ -258,8 +258,8 @@ checking → form → already
 | `checking` | `'checking'` | Pantalla "Verificando..." con logo pulsante mientras se revisa el `localStorage`. |
 | `form` | `'form'` | El formulario de registro. |
 | `already` | `'already'` | "¡Hola, [nombre]! Ya estás registrado" + sellos actuales. |
-| `waiting` | `'waiting'` | "¡Registro recibido!" — espera activación del admin (con polling). |
-| `active` | `'active'` | "¡Tarjeta activada!" + botón "Ver mi tarjeta". |
+| `waiting` | `'waiting'` | "¡Registro recibido!" — solo aparece si el admin desactivó la tarjeta manualmente (con polling cada 5 s). Los clientes nuevos **nunca** llegan a este estado. |
+| `active` | `'active'` | "¡Tarjeta activada!" + redirige automáticamente a `/card` en 3 segundos. |
 
 > **Nota:** no existe un estado `confirm` intermedio. El formulario se envía directamente sin
 > una pantalla de confirmación de datos.
@@ -275,7 +275,7 @@ loading → form → waiting (polling cada 5 s) → card
 |--------|-------------------|
 | `loading` | "Verificando..." con logo pulsante. |
 | `form` | Mini-formulario (solo nombre + teléfono) para recuperar/crear la tarjeta. |
-| `waiting` | "Registro recibido" — polling cada 5 s a `/api/loyalty/{id}` esperando `active`. |
+| `waiting` | "Registro recibido" — solo si la tarjeta fue desactivada manualmente por admin. Los clientes nuevos van directo a `card`. |
 | `card` | La tarjeta activada, girable (frente ↔ reverso con QR). |
 
 ### 6.3 Clave de localStorage: `registro_card_id`
