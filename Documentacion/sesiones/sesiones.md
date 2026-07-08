@@ -90,3 +90,11 @@ Documentacion/documentacion-usuario/usuario-cliente.md,Documentacion/documentos/
 Documentacion/documentacion-usuario/usuario-cliente.md
 
 ---
+
+## 2026-07-08 — Wednesday
+
+### 12:27 PM — main
+**fix: auto-redirigir a /card tras registro exitoso + corregir docs**
+Documentacion/documentacion-usuario/usuario-cliente.md,app/registro/page.tsx
+
+---
