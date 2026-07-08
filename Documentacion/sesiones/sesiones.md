@@ -82,3 +82,11 @@ Documentacion/documentos/usuario-cliente.md,Documentacion/indice.md
 Documentacion/documentacion-usuario/usuario-cliente.md,Documentacion/documentos/usuario-cliente.md,Documentacion/indice.md
 
 ---
+
+## 2026-07-08 — Wednesday
+
+### 11:46 AM — main
+**docs: reescribir documentacion cliente con Opus v2.0 (1481 lineas)**
+Documentacion/documentacion-usuario/usuario-cliente.md
+
+---
