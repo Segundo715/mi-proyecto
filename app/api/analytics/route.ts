@@ -83,6 +83,6 @@ export async function GET(req: NextRequest) {
       bad: reviews.filter(r => r.bad).length,
     },
     topItems,
-    ordersPerDay: Object.entries(ordersPerDay).map(([day, data]) => ({ day, ...data })),
+    ordersPerDay: Object.entries(ordersPerDay).map(([label, data]) => ({ label, ...data })),
   })
 }
