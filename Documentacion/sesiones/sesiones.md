@@ -135,3 +135,11 @@ Documentacion/sesiones/sesiones.md
 app/api/analytics/route.ts,app/api/employee/auth/route.ts
 
 ---
+
+## 2026-07-20 — Monday
+
+### 10:24 AM — main
+**docs: agregar skill de CLI y completar comandos faltantes de mi-pruebas**
+.claude/skills/cli/SKILL.md,.gitignore,Documentacion/cli.md
+
+---
