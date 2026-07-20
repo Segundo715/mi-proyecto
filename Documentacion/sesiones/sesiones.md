@@ -173,3 +173,11 @@ app/api/analytics/route.ts,app/api/employee/auth/route.ts
 Documentacion/sesiones/sesiones.md
 
 ---
+
+## 2026-07-20 — Monday
+
+### 10:36 AM — main
+**docs: acotar skill y cli.md solo a mi-proyecto (quitar mi-pruebas)**
+.claude/skills/cli/SKILL.md,Documentacion/cli.md,Documentacion/sesiones/sesiones.md
+
+---
