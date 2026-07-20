@@ -159,9 +159,10 @@ app/api/analytics/route.ts,app/api/employee/auth/route.ts
 - Auditoría del resto de `/resta3` (mesas, inventario, tpv, cocina, domicilios, menú, corte, reportes) buscando el mismo patrón de campo renombrado entre API y frontend: sin otros casos encontrados
 
 **Nueva skill de CLI + documentación:**
-- `.claude/skills/cli/SKILL.md`: todos los atajos npm de `mi-proyecto` (dev/build/start/seed) y `mi-pruebas` (módulos por rol, combos, `copia`), más el truco de forjar cookies de sesión (`admin_session`/`employee_session`) con `ADMIN_SECRET` para probar rutas protegidas sin login real, y la advertencia de no matar procesos `node` a lo bruto (mata también los del usuario)
-- `Documentacion/cli.md` actualizado: se completaron 17+ módulos de `mi-pruebas` que faltaban (reseñas, cumpleaños, clientes, tarjetas, ventas, dashboard, estadísticas, reportes, marketing, CRM, automatizaciones, contenido, reservaciones, operaciones, producción, inventario, recetas, empleados, y los módulos exclusivos de resta3), descripciones reales de los `seed:*` (antes solo decía "Preset 1/2/3"), y `ADMIN_SECRET` agregado a las variables de entorno documentadas
+- `.claude/skills/cli/SKILL.md`: atajos npm de `mi-proyecto` (dev/build/start/seed), el truco de forjar cookies de sesión (`admin_session`/`employee_session`) con `ADMIN_SECRET` para probar rutas protegidas sin login real, y la advertencia de no matar procesos `node` a lo bruto (mata también los del usuario)
+- `Documentacion/cli.md` actualizado: descripciones reales de los `seed:*` (antes solo decía "Preset 1/2/3"), y `ADMIN_SECRET` agregado a las variables de entorno documentadas
 - `.gitignore`: `.claude/skills/` ahora se trackea en git (antes todo `.claude/` estaba ignorado); `settings.local.json` y `worktrees/` se mantienen ignorados
+- Primera versión incluía también los comandos de `mi-pruebas` (proyecto hermano, generador de demos por módulo/rol) en ambos archivos — se retiró a pedido del usuario para mantener la skill y `cli.md` enfocados solo en `mi-proyecto`
 
 ---
 

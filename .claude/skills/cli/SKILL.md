@@ -1,17 +1,13 @@
 ---
 name: cli
-description: Todos los comandos npm de mi-proyecto (dev/build/start/lint/seed) y del generador de demos mi-pruebas (módulos por rol, combos, copia de cliente). Úsala antes de levantar el servidor, poblar datos de prueba, generar una demo para un cliente, o probar rutas protegidas (/admin, /employee, /resta3) sin credenciales reales.
+description: Todos los comandos npm de mi-proyecto (dev/build/start/lint/seed). Úsala antes de levantar el servidor, poblar datos de prueba, o probar rutas protegidas (/admin, /employee, /resta3) sin credenciales reales.
 ---
 
-# CLI — mi-proyecto y mi-pruebas
+# CLI — mi-proyecto
 
-Referencia completa de atajos de línea de comandos de ambos proyectos.
-`mi-proyecto` es la app real (NICHO); `mi-pruebas` es un generador de
-copias de demo por módulo/rol para mostrar a clientes potenciales —
-son dos carpetas hermanas, cada comando de esta guía indica desde
-cuál se ejecuta.
+Referencia completa de atajos de línea de comandos de este repo.
 
-## mi-proyecto — desarrollo
+## Desarrollo
 
 Desde la raíz de `mi-proyecto`:
 
@@ -33,7 +29,7 @@ lee la línea `- Local: http://localhost:XXXX`.
 solo el servidor que tú arrancaste, guarda su PID (`echo $! > /tmp/dev.pid`
 en bash, o filtra `ps aux` por el puerto/PID exacto) y mata solo ese proceso.
 
-## mi-proyecto — seeds (poblar Supabase)
+## Seeds (poblar Supabase)
 
 Requieren `.env.local` con las variables de entorno (ver abajo). Todos son
 **idempotentes** — no duplican datos si se corren varias veces.
@@ -93,72 +89,3 @@ GROQ_API_KEY=
 
 `GROQ_API_KEY` es para el chat de IA (Llama vía Groq): https://console.groq.com/keys.
 `NEXT_PUBLIC_RESTAURANT_ID` va vacío en este repo (NICHO = `'default'`).
-
-## mi-pruebas — generador de demos por módulo/rol
-
-Desde la raíz de **`mi-pruebas`** (carpeta hermana de `mi-proyecto`). Cada
-comando activa un set de feature flags en `features.config.json` y luego
-levanta `next dev --webpack` aterrizando directo en la ruta del módulo.
-
-### Por módulo, todos los roles que aplican
-
-| Módulo | Admin | Empleado | Usuario | Resta3 |
-|---|---|---|---|---|
-| Menú | `npm run admin:menu` | `npm run empleado:menu` | `npm run menu` | `npm run resta3:menu` |
-| Pantallas (TV) | `npm run admin:pantallas` | `npm run empleado:pantallas` | `npm run tv` | `npm run resta3:tv` |
-| Pedidos | `npm run pedidos` | `npm run empleado:pedidos` | — no aplica — | `npm run resta3:tpv` o `resta3:cocina` |
-| Fidelización | `npm run fidelizacion` | `npm run empleado:fidelizacion` | `npm run usuarios` | — no aplica — |
-| Reseñas | `npm run resenas` | — | — | — |
-| Cumpleaños | `npm run cumpleanos` | — | — | — |
-| Clientes | `npm run clientes` | — | — | — |
-| Tarjetas | `npm run tarjetas` | — | — | — |
-| Ventas | `npm run ventas` | — | — | — |
-| Dashboard | `npm run dashboard` | — | — | `npm run resta3:dashboard` |
-| Estadísticas | `npm run estadisticas` | — | — | — |
-| Reportes | `npm run reportes` | — | — | `npm run resta3:reportes` |
-| Marketing | `npm run marketing` | — | — | — |
-| CRM | `npm run crm` | — | — | — |
-| Automatizaciones | `npm run automatizaciones` | — | — | — |
-| Contenido | `npm run contenido` | — | — | — |
-| Reservaciones | `npm run reservaciones` | — | — | — |
-| Operaciones | `npm run operaciones` | — | — | — |
-| Producción | `npm run produccion` | — | — | — |
-| Inventario | `npm run inventario` | — | — | `npm run resta3:inventario` |
-| Recetas | `npm run recetas` | — | — | — |
-| Empleados (gestión) | — | `npm run empleados` | — | `npm run resta3:empleados` |
-| Mesas | — | — | — | `npm run resta3:mesas` |
-| Domicilios | — | — | — | `npm run resta3:domicilios` |
-| Compras | — | — | — | `npm run resta3:compras` |
-| Corte de caja | — | — | — | `npm run resta3:corte` |
-| Resta3 completo | — | — | — | `npm run resta3` |
-
-### Combos (Menú + Pantallas + Pedidos + Fidelización, un comando por rol)
-
-| Rol | Comando |
-|---|---|
-| Admin | `npm run combo:admin` |
-| Empleado | `npm run combo:empleado` |
-| Resta3 | `npm run combo:resta3` |
-| Usuario | `npm run combo:usuario` |
-
-### Todo activado
-
-`npm run todo` — activa todos los flags, aterriza en `/admin`.
-
-### Generar una copia de proyecto para un cliente
-
-En vez de correr `next dev` in-place, `copia` clona el proyecto a una carpeta
-nueva ya configurada con un solo módulo activo:
-
-```
-npm run copia <modulo> <nombre-carpeta>
-```
-
-`<modulo>` es cualquiera de las claves usadas arriba (`menu`, `admin_menu`,
-`resta3_tpv`, `combo_admin`, `todo`, etc. — la lista completa de claves
-válidas vive en `mi-pruebas/scripts/module.js`, objeto `MODULES`). Ejemplo:
-`npm run copia resta3_tpv mi-cliente-resta3-tpv`.
-
-**Antes de usar un módulo que no esté en esta tabla**, confirma la clave
-exacta corriendo `node scripts/module.js` sin argumentos (mi-pruebas) — imprime
-la lista completa vigente y evita adivinar un nombre que ya no exista.
