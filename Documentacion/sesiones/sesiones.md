@@ -143,3 +143,24 @@ app/api/analytics/route.ts,app/api/employee/auth/route.ts
 .claude/skills/cli/SKILL.md,.gitignore,Documentacion/cli.md
 
 ---
+
+## 2026-07-20 — Lunes — Resumen de sesión
+
+### Bug de tarjetas encimadas en Dashboard + lista de empleados vacía en RESTA3 + skill de CLI
+
+**Bug corregido — Dashboard (`/admin/analytics`) con tarjetas encimadas en móvil:**
+- `app/api/analytics/route.ts:86`: el histograma de "Últimos 7 días" devolvía cada entrada como `{ day, orders, revenue }`, pero `app/admin/analytics/page.tsx` esperaba `{ label, orders, revenue }` → `d.label` era `undefined` en las 7 tarjetas, dándoles a todas el mismo `key` de React (bug de reconciliación: fechas en blanco + warning de "duplicate key" en consola)
+- Corregido renombrando el campo a `label`. Reproducido y verificado el fix con Chrome headless en viewport móvil (cookie de sesión forjada localmente con `ADMIN_SECRET`, sin credenciales reales)
+- El encimado visual que el usuario seguía viendo después del fix se aisló a una limitación de GPU del teléfono (Samsung Galaxy A05 / SM-A055M, gama muy baja, Chrome 150 actualizado) — confirmado porque el mismo efecto ya se veía en otras apps/sitios de ese equipo, no es un bug de esta app
+
+**Bug corregido — RESTA3, lista de Empleados siempre vacía:**
+- `app/resta3/(panel)/empleados/page.tsx:29` pedía `GET /api/employee/auth` para listar empleados, pero esa ruta solo tenía `POST` (login/registro) y `DELETE` (logout) → 405 atrapado en silencio por el `try/catch`, la lista nunca se llenaba
+- Agregado `GET` en `app/api/employee/auth/route.ts` que devuelve `listEmployees()` (sin datos sensibles: id, nombre, rol, fecha de alta)
+- Auditoría del resto de `/resta3` (mesas, inventario, tpv, cocina, domicilios, menú, corte, reportes) buscando el mismo patrón de campo renombrado entre API y frontend: sin otros casos encontrados
+
+**Nueva skill de CLI + documentación:**
+- `.claude/skills/cli/SKILL.md`: todos los atajos npm de `mi-proyecto` (dev/build/start/seed) y `mi-pruebas` (módulos por rol, combos, `copia`), más el truco de forjar cookies de sesión (`admin_session`/`employee_session`) con `ADMIN_SECRET` para probar rutas protegidas sin login real, y la advertencia de no matar procesos `node` a lo bruto (mata también los del usuario)
+- `Documentacion/cli.md` actualizado: se completaron 17+ módulos de `mi-pruebas` que faltaban (reseñas, cumpleaños, clientes, tarjetas, ventas, dashboard, estadísticas, reportes, marketing, CRM, automatizaciones, contenido, reservaciones, operaciones, producción, inventario, recetas, empleados, y los módulos exclusivos de resta3), descripciones reales de los `seed:*` (antes solo decía "Preset 1/2/3"), y `ADMIN_SECRET` agregado a las variables de entorno documentadas
+- `.gitignore`: `.claude/skills/` ahora se trackea en git (antes todo `.claude/` estaba ignorado); `settings.local.json` y `worktrees/` se mantienen ignorados
+
+---
