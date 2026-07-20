@@ -44,7 +44,9 @@ next-env.d.ts
 # local data
 /data/customers.json
 
-.claude/
+.claude/*
+!.claude/skills/
+!.claude/skills/**
 
 # proyectos de referencia externos (tienen su propio node_modules)
 pantallas/
