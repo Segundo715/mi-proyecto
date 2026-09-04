@@ -181,3 +181,11 @@ Documentacion/sesiones/sesiones.md
 .claude/skills/cli/SKILL.md,Documentacion/cli.md,Documentacion/sesiones/sesiones.md
 
 ---
+
+## 2026-09-04 — Friday
+
+### 11:08 AM — main
+**Agregar toggle de mostrar contraseña, quitar lineas del menu, docs de servicio social**
+Documentacion/documentacion-usuario/manual-usuario-2026-06-28.md,Documentacion/documentos/manual-usuario-2026-06-28.md,app/admin/login/page.tsx,app/card/usuario/page.tsx,app/card/wallet/page.tsx,app/employee/login/page.tsx,app/menu/page.tsx,diagramas/anexo-evidencia.docx
+
+---
