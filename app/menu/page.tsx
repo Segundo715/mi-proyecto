@@ -478,7 +478,7 @@ export default function MenuPage() {
                 <div key={category}>
                   <button type="button" onClick={() => toggleCategory(category)}
                     className="w-full flex items-center justify-between px-3 py-3 text-white font-bold text-base"
-                    style={{ backgroundColor: isOpen ? hoverColor : btnColor, borderTop: '1px solid #1a1a1a' }}>
+                    style={{ backgroundColor: isOpen ? hoverColor : btnColor }}>
                     <span>{category}</span>
                     <svg className="shrink-0 mr-10" width="18" height="18" viewBox="0 0 24 24" fill="none"
                       stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -498,7 +498,6 @@ export default function MenuPage() {
                               className="w-full flex items-center py-3 px-4 text-white"
                               style={{
                                 backgroundColor: isItemOpen ? hoverColor : btnColor,
-                                borderTop: '1px solid #1a1a1a',
                                 cursor: item.available ? 'pointer' : 'not-allowed',
                               }}>
                               {/* Nombre */}
@@ -541,7 +540,6 @@ export default function MenuPage() {
                 </div>
               )
             })}
-            <div style={{ borderBottom: '1px solid #1a1a1a' }} />
           </>
         )}
       </div>
