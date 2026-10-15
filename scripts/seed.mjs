@@ -96,7 +96,8 @@ async function modMenu() {
   ]
   const r = await api('/api/menu/seed', {})
   if (r.created > 0) console.log(`   ✅  ${r.created} platillos insertados`)
-  else               console.log(`   ⏭  Menú ya cargado`)
+  if (r.imaged > 0)  console.log(`   🖼️  ${r.imaged} fotos restauradas`)
+  if (!r.created && !r.imaged) console.log(`   ⏭  Menú ya cargado`)
   console.log('   👉  /menu\n')
 }
 

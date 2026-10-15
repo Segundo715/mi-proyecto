@@ -4,6 +4,7 @@
     "description": "Carne de res 180g, lechuga, jitomate, queso cheddar y aderezo de la casa",
     "price": 120,
     "category": "Hamburguesas",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/HamburguesaClasica.jpg",
     "available": true
   },
   {
@@ -11,6 +12,7 @@
     "description": "Carne de res, tocino crujiente, cebolla caramelizada y salsa BBQ ahumada",
     "price": 145,
     "category": "Hamburguesas",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/HamburguesaBBQ.jpg",
     "available": true
   },
   {
@@ -18,6 +20,7 @@
     "description": "Salsa de tomate artesanal, mozzarella fresca y albahaca",
     "price": 155,
     "category": "Pizzas",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/PizzaMargherita.jpg",
     "available": true
   },
   {
@@ -25,6 +28,7 @@
     "description": "Salsa de tomate, queso mozzarella y pepperoni importado",
     "price": 170,
     "category": "Pizzas",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/PizzaPepperoni.jpg",
     "available": true
   },
   {
@@ -32,6 +36,7 @@
     "description": "Lechuga romana, crutones, queso parmesano y aderezo César clásico",
     "price": 95,
     "category": "Ensaladas",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/EnsaCesar.jpeg",
     "available": true
   },
   {
@@ -39,6 +44,7 @@
     "description": "Fettuccine con salsa cremosa de mantequilla, ajo y queso parmesano",
     "price": 130,
     "category": "Pastas",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/PastaAlfredo.jpg",
     "available": true
   },
   {
@@ -46,6 +52,7 @@
     "description": "Espresso con agua caliente. Disponible en tamaño chico o grande",
     "price": 45,
     "category": "Bebidas",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/CafeAmericano.jpg",
     "available": true
   },
   {
@@ -53,6 +60,111 @@
     "description": "Base de galleta, relleno de queso crema y cobertura de fresas frescas",
     "price": 80,
     "category": "Postres",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/CheesecakeFresa.jpg",
+    "available": true
+  },
+  {
+    "name": "Pollo Dorado en Arroz Verde",
+    "description": "Pollo dorado servido sobre arroz verde con hierbas",
+    "price": 150,
+    "category": "Platillos",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/ArrozVerde.jpeg",
+    "available": true
+  },
+  {
+    "name": "Pescado Imperial",
+    "description": "Filete de pescado en salsa imperial con guarnición",
+    "price": 150,
+    "category": "Platillos",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/PescadoImperial.jpeg",
+    "available": true
+  },
+  {
+    "name": "Cremoso de Zanahoria con Pepinillos",
+    "description": "Crema suave de zanahoria acompañada de pepinillos",
+    "price": 150,
+    "category": "Platillos",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/ZanahoriaPepinillos.jpeg",
+    "available": true
+  },
+  {
+    "name": "Pechuga de pollo en salsa",
+    "description": "Pechuga de pollo bañada en salsa de la casa",
+    "price": 150,
+    "category": "Platillos",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/PolloEnSalsa.jpeg",
+    "available": true
+  },
+  {
+    "name": "Salmon Bowl",
+    "description": "Bowl de salmón con arroz y vegetales frescos",
+    "price": 150,
+    "category": "Platillos",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/SalmonBowl.jpeg",
+    "available": true
+  },
+  {
+    "name": "Fusión Campestre",
+    "description": "Combinación campestre de proteína, vegetales y granos",
+    "price": 150,
+    "category": "Platillos",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/FusionCampestre.jpeg",
+    "available": true
+  },
+  {
+    "name": "Frappe de oreo",
+    "description": "Frappé cremoso con galleta Oreo",
+    "price": 150,
+    "category": "Bebidas",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/FrappeOreo.jpeg",
+    "available": true
+  },
+  {
+    "name": "Smoothie tropical",
+    "description": "Smoothie de frutas tropicales",
+    "price": 150,
+    "category": "Bebidas",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/SmoothieTropical.jpeg",
+    "available": true
+  },
+  {
+    "name": "Naranjada",
+    "description": "Naranjada natural recién preparada",
+    "price": 150,
+    "category": "Bebidas",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/Naranjada.jpeg",
+    "available": true
+  },
+  {
+    "name": "Smoothie con rebanada de pastel de fresa",
+    "description": "Smoothie de fresa acompañado de una rebanada de pastel",
+    "price": 150,
+    "category": "Postres",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/SmoothieRFresa.jpeg",
+    "available": true
+  },
+  {
+    "name": "Helado 3 marias",
+    "description": "Helado de tres sabores",
+    "price": 150,
+    "category": "Postres",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/3Marias.jpeg",
+    "available": true
+  },
+  {
+    "name": "Rebanada de pastel",
+    "description": "Rebanada de pastel del día",
+    "price": 150,
+    "category": "Postres",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/Rebanada%20de%20pastel.jpeg",
+    "available": true
+  },
+  {
+    "name": "Ensalada Tropical Fresh",
+    "description": "Mezcla de lechugas con frutas tropicales",
+    "price": 150,
+    "category": "Ensaladas",
+    "imageUrl": "https://zxynrlqubdlrwcfoewdv.supabase.co/storage/v1/object/public/uploads/menu/EnsaTropical.jpeg",
     "available": true
   }
 ]
