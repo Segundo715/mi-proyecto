@@ -189,3 +189,11 @@ Documentacion/sesiones/sesiones.md
 Documentacion/documentacion-usuario/manual-usuario-2026-06-28.md,Documentacion/documentos/manual-usuario-2026-06-28.md,app/admin/login/page.tsx,app/card/usuario/page.tsx,app/card/wallet/page.tsx,app/employee/login/page.tsx,app/menu/page.tsx,diagramas/anexo-evidencia.docx
 
 ---
+
+## 2026-10-14 — Wednesday
+
+### 08:46 PM — main
+**Restaurar fotos del menu y platillos originales de _menu_3**
+app/api/menu/seed/route.ts,lib/demo-menu.json,scripts/seed.mjs
+
+---
